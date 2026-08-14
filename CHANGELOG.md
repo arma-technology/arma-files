@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.4.0
+
+- przebudowano ekran główny na widok „Mój komputer”
+- dodano przypięte foldery Pobrane i Zdjęcia
+- dodano karty pamięci wbudowanej i kart SD z informacją o zajętości
+- aktywne zasoby chmurowe/sieciowe są prezentowane jako „Połączone zasoby”; pusta sekcja jest ukrywana
+- dodano lokalny backend `file://` dla pełnoprawnego przeglądania pamięci urządzenia
+- dodano obsługę specjalnego uprawnienia MANAGE_EXTERNAL_STORAGE na Androidzie 11+
+- SAF pozostaje dostępny jako alternatywny sposób podpinania folderów
+- PDF działa w trybie ciągłego przewijania
+- dodano pasek miniaturek PDF i skok do wybranego numeru strony
+- strony PDF są renderowane leniwie
+- zachowano zoom PDF i dodano pinch-to-zoom bez blokowania zwykłego przewijania
+- dodano natywny viewer obrazów z zoomem i przesuwaniem
+- miniatury obrazów pokazują cały kadr (`ContentScale.Fit`) zamiast centralnego wycinka
+- miniatury rastrowe działają również dla FTP/SMB i innych źródeł zdalnych
+- dodano zmianę liczby kolumn gestem prawo/lewo w zakresie lista / 2–5 kolumn
+- rozszerzono typy obrazów o AVIF
+- poprawiono udostępnianie lokalnych plików `file://` przez prywatny cache + FileProvider
+
+## 0.3.1
+
+- dodano wbudowaną przeglądarkę PDF
+- PDF nie wymaga już zewnętrznej aplikacji do podstawowego podglądu
+- dodano obsługę wielu stron z nawigacją poprzednia / następna
+- dodano pinch-to-zoom, przesuwanie powiększonej strony i kontrolki zoomu
+- dodano dopasowanie strony do ekranu
+- PDF z SAF, chmur, FTP/FTPS i SMB jest lokalnie buforowany przed renderowaniem
+- PDF jest rozpoznawany po MIME i rozszerzeniu `.pdf`
+- renderowanie korzysta z natywnego Android PdfRenderer, bez nowej zależności
+
 ## 0.3.0
 
 - dodano ekran Ustawienia / Źródła i połączenia

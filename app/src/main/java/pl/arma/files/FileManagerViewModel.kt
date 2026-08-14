@@ -1,9 +1,20 @@
 package pl.arma.files
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.graphics.Color as AndroidColor
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.os.StatFs
+import android.os.storage.StorageManager
+import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -61,14 +72,21 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _clipboard = MutableStateFlow<ClipboardPayload?>(null)
     val clipboard: StateFlow<ClipboardPayload?> = _clipboard.asStateFlow()
 
+    private val _deviceStorages = MutableStateFlow<List<DeviceStorage>>(emptyList())
+    val deviceStorages: StateFlow<List<DeviceStorage>> = _deviceStorages.asStateFlow()
+
+    private val _pinnedFolders = MutableStateFlow<List<PinnedFolder>>(emptyList())
+    val pinnedFolders: StateFlow<List<PinnedFolder>> = _pinnedFolders.asStateFlow()
+
+    private val _allFilesAccess = MutableStateFlow(hasBroadStorageAccess())
+    val allFilesAccess: StateFlow<Boolean> = _allFilesAccess.asStateFlow()
+
     private val navStack = ArrayDeque<Uri>()
 
     init {
         loadSavedCollections()
         updateSources()
-        val initial = _sources.value.firstOrNull { it.type == SourceType.LOCAL && it.configured }
-            ?: _sources.value.firstOrNull { it.enabled && it.configured }
-        if (initial != null) openSource(initial.type)
+        refreshDeviceLocations()
     }
 
     fun setTree(tree: Uri) {
@@ -170,10 +188,38 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun goBack(): Boolean {
-        val previous = navStack.removeLastOrNull() ?: return false
-        _currentDir.value = previous
+        val previous = navStack.removeLastOrNull()
+        if (previous != null) {
+            _currentDir.value = previous
+            refresh()
+            return true
+        }
+        if (_currentDir.value != null) {
+            goComputerHome()
+            return true
+        }
+        return false
+    }
+
+    fun goComputerHome() {
+        navStack.clear()
+        _files.value = emptyList()
+        _currentDir.value = null
+        _root.value = null
+        _currentSource.value = SourceType.LOCAL
+        refreshDeviceLocations()
+    }
+
+    fun openLocalLocation(uri: Uri) {
+        if (uri.scheme == "file" && !hasBroadStorageAccess()) {
+            _error.value = "ARMA Files potrzebuje dostępu do wszystkich plików, aby otworzyć pamięć urządzenia lub kartę SD."
+            return
+        }
+        _currentSource.value = SourceType.LOCAL
+        _root.value = uri
+        _currentDir.value = uri
+        navStack.clear()
         refresh()
-        return true
     }
 
     fun goRoot() {
@@ -187,7 +233,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun createFolder(name: String) {
         val parent = _currentDir.value ?: return
         launchOperation(success = "Utworzono folder") {
-            repo.createFolder(parent, name.trim()) ?: error("Nie udało się utworzyć folderu.")
+            repo.createFolder(parent, validatedName(name)) ?: error("Nie udało się utworzyć folderu.")
             refresh()
         }
     }
@@ -195,18 +241,27 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun createFile(name: String) {
         val parent = _currentDir.value ?: return
         launchOperation(success = "Utworzono plik") {
-            repo.createFile(parent, name.trim(), guessMime(name)) ?: error("Nie udało się utworzyć pliku.")
+            val safe = validatedName(name)
+            repo.createFile(parent, safe, guessMime(safe)) ?: error("Nie udało się utworzyć pliku.")
             refresh()
         }
     }
 
     fun rename(item: FileItem, name: String) {
         launchOperation(success = "Zmieniono nazwę") {
-            val newUri = repo.rename(item, name.trim())
+            val newUri = repo.rename(item, validatedName(name))
             if (newUri != null) prefs.replaceUri(item.uri, newUri)
             refresh()
             loadSavedCollections()
         }
+    }
+
+    private fun validatedName(name: String): String {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) error("Nazwa nie może być pusta.")
+        if (trimmed == "." || trimmed == "..") error("Nieprawidłowa nazwa.")
+        if (trimmed.any { it == '/' || it == '\\' }) error("Nazwa nie może zawierać \"/\" ani \"\\\".")
+        return trimmed
     }
 
     fun delete(items: List<FileItem>) {
@@ -283,7 +338,6 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun materializeUri(item: FileItem): Uri = withContext(Dispatchers.IO) {
         if (item.uri.scheme == "content") return@withContext item.uri
-        if (item.uri.scheme == "file") return@withContext item.uri
         val cache = File(getApplication<Application>().cacheDir, "remote_files").apply { mkdirs() }
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "file" }
         val file = File(cache, "${item.uri.toString().hashCode()}_$safe")
@@ -293,6 +347,172 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             "${getApplication<Application>().packageName}.files",
             file
         )
+    }
+
+    suspend fun decodeImage(item: FileItem, targetMaxSide: Int = 2400): Bitmap = withContext(Dispatchers.IO) {
+        val file = preparePreviewFile(item, "image_preview")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val source = ImageDecoder.createSource(file)
+            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                val sourceWidth = info.size.width.coerceAtLeast(1)
+                val sourceHeight = info.size.height.coerceAtLeast(1)
+                val maxSide = maxOf(sourceWidth, sourceHeight)
+                if (maxSide > targetMaxSide) {
+                    val ratio = targetMaxSide.toFloat() / maxSide.toFloat()
+                    decoder.setTargetSize(
+                        (sourceWidth * ratio).toInt().coerceAtLeast(1),
+                        (sourceHeight * ratio).toInt().coerceAtLeast(1)
+                    )
+                }
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            }
+        } else {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / sample > targetMaxSide * 2) sample *= 2
+            val options = BitmapFactory.Options().apply { inSampleSize = sample.coerceAtLeast(1) }
+            BitmapFactory.decodeFile(file.absolutePath, options)
+                ?: throw IllegalArgumentException("Android nie potrafi zdekodować tego obrazu.")
+        }
+    }
+
+    suspend fun prepareImageUri(item: FileItem): Uri = withContext(Dispatchers.IO) {
+        if (item.uri.scheme == "content" || item.uri.scheme == "file") return@withContext item.uri
+        val file = preparePreviewFile(item, "image_preview")
+        FileProvider.getUriForFile(getApplication(), "${getApplication<Application>().packageName}.files", file)
+    }
+
+    private fun preparePreviewFile(item: FileItem, folderName: String): File {
+        if (item.uri.scheme == "file") return File(item.uri.path ?: error("Brak ścieżki pliku."))
+        val cache = File(getApplication<Application>().cacheDir, folderName).apply { mkdirs() }
+        val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "preview.bin" }
+        val signature = "${item.uri}|${item.size}|${item.lastModified}".hashCode()
+        val file = File(cache, "${signature}_$safe")
+        val metadataKnown = item.size > 0 && item.lastModified > 0
+        if (!metadataKnown || !file.exists() || file.length() == 0L || (item.size > 0 && file.length() != item.size)) {
+            val temp = File(cache, "${file.name}.part")
+            runCatching { temp.delete() }
+            repo.openInput(item.uri).use { input -> temp.outputStream().buffered().use { output -> input.copyTo(output) } }
+            if (!temp.renameTo(file)) {
+                temp.copyTo(file, overwrite = true)
+                temp.delete()
+            }
+        }
+        return file
+    }
+
+    suspend fun preparePdf(item: FileItem): File = withContext(Dispatchers.IO) {
+        preparePreviewFile(item, "pdf_preview")
+    }
+
+    suspend fun pdfPageCount(file: File): Int = withContext(Dispatchers.IO) {
+        val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        val renderer = try {
+            PdfRenderer(descriptor)
+        } catch (error: Throwable) {
+            runCatching { descriptor.close() }
+            throw error
+        }
+        renderer.use { it.pageCount }
+    }
+
+    suspend fun renderPdfPage(file: File, pageIndex: Int, targetWidth: Int = 1600): Bitmap = withContext(Dispatchers.IO) {
+        val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        val renderer = try {
+            PdfRenderer(descriptor)
+        } catch (error: Throwable) {
+            runCatching { descriptor.close() }
+            throw error
+        }
+        renderer.use { pdf ->
+            require(pageIndex in 0 until pdf.pageCount) { "Nieprawidłowy numer strony PDF." }
+            pdf.openPage(pageIndex).use { page ->
+                val width = targetWidth.coerceAtLeast(720)
+                val pageWidth = page.width.coerceAtLeast(1)
+                val height = (width.toFloat() * page.height / pageWidth).toInt().coerceAtLeast(1)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                bitmap.eraseColor(AndroidColor.WHITE)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                bitmap
+            }
+        }
+    }
+
+    fun refreshDeviceLocations() {
+        _allFilesAccess.value = hasBroadStorageAccess()
+        val context = getApplication<Application>()
+        val storageManager = context.getSystemService(StorageManager::class.java)
+        val roots = linkedMapOf<String, DeviceStorage>()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            storageManager.storageVolumes.forEachIndexed { index, volume ->
+                val dir = volume.directory ?: return@forEachIndexed
+                if (!dir.exists()) return@forEachIndexed
+                val stat = runCatching { StatFs(dir.absolutePath) }.getOrNull()
+                val total = stat?.totalBytes ?: 0L
+                val free = stat?.availableBytes ?: 0L
+                val label = when {
+                    volume.isPrimary -> "Pamięć wbudowana"
+                    volume.isRemovable -> volume.getDescription(context).ifBlank { "Karta pamięci" }
+                    else -> volume.getDescription(context).ifBlank { "Pamięć ${index + 1}" }
+                }
+                roots[dir.absolutePath] = DeviceStorage(
+                    id = dir.absolutePath,
+                    label = label,
+                    rootUri = Uri.fromFile(dir),
+                    totalBytes = total,
+                    freeBytes = free,
+                    removable = volume.isRemovable
+                )
+            }
+        } else {
+            val candidates = context.getExternalFilesDirs(null).mapNotNull { appDir ->
+                var root: File? = appDir
+                repeat(4) { root = root?.parentFile }
+                root
+            }
+            candidates.distinctBy { it.absolutePath }.forEachIndexed { index, dir ->
+                val stat = runCatching { StatFs(dir.absolutePath) }.getOrNull()
+                roots[dir.absolutePath] = DeviceStorage(
+                    id = dir.absolutePath,
+                    label = if (index == 0) "Pamięć wbudowana" else "Karta pamięci",
+                    rootUri = Uri.fromFile(dir),
+                    totalBytes = stat?.totalBytes ?: 0L,
+                    freeBytes = stat?.availableBytes ?: 0L,
+                    removable = index != 0
+                )
+            }
+        }
+
+        if (roots.isEmpty()) {
+            val dir = Environment.getExternalStorageDirectory()
+            val stat = runCatching { StatFs(dir.absolutePath) }.getOrNull()
+            roots[dir.absolutePath] = DeviceStorage(
+                id = dir.absolutePath,
+                label = "Pamięć wbudowana",
+                rootUri = Uri.fromFile(dir),
+                totalBytes = stat?.totalBytes ?: 0L,
+                freeBytes = stat?.availableBytes ?: 0L,
+                removable = false
+            )
+        }
+        _deviceStorages.value = roots.values.toList()
+
+        val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val pictures = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        _pinnedFolders.value = listOf(
+            PinnedFolder("downloads", "Pobrane", Uri.fromFile(downloads), downloads.absolutePath),
+            PinnedFolder("pictures", "Zdjęcia", Uri.fromFile(pictures), pictures.absolutePath)
+        )
+    }
+
+    private fun hasBroadStorageAccess(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) return Environment.isExternalStorageManager()
+        val context = getApplication<Application>()
+        val read = ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val write = ContextCompat.checkSelfPermission(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        return read && write
     }
 
     fun clearError() { _error.value = null }
@@ -314,7 +534,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
         fun doc(tree: Uri?): Uri? = tree?.let { runCatching { repo.treeToDocumentUri(it) }.getOrNull() }
         _sources.value = listOf(
-            StorageSource(SourceType.LOCAL, "Urządzenie", true, localTree != null, doc(localTree), "Pamięć lokalna"),
+            StorageSource(SourceType.LOCAL, "Folder lokalny", true, localTree != null, doc(localTree), "Dostęp przez Android SAF"),
             StorageSource(SourceType.GOOGLE_DRIVE, "Google Drive", networkPrefs.isEnabled(SourceType.GOOGLE_DRIVE), googleTree != null, doc(googleTree), if (googleTree != null) "Podłączony" else "Wymaga wybrania folderu"),
             StorageSource(SourceType.ONEDRIVE, "OneDrive", networkPrefs.isEnabled(SourceType.ONEDRIVE), oneDriveTree != null, doc(oneDriveTree), if (oneDriveTree != null) "Podłączony" else "Wymaga wybrania folderu"),
             StorageSource(SourceType.DROPBOX, "Dropbox", networkPrefs.isEnabled(SourceType.DROPBOX), dropboxTree != null, doc(dropboxTree), if (dropboxTree != null) "Podłączony" else "Wymaga wybrania folderu"),

@@ -2,13 +2,14 @@ package pl.arma.files
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -16,28 +17,39 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +60,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import pl.arma.files.ui.theme.ArmaFilesTheme
+import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -67,6 +80,11 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         externalUri.value = intent.data
+    }
+
+    override fun onResume() {
+        super.onResume()
+        vm.refreshDeviceLocations()
     }
 }
 
@@ -88,11 +106,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val currentSource by vm.currentSource.collectAsStateWithLifecycle()
     val ftpConfig by vm.ftpConfig.collectAsStateWithLifecycle()
     val smbConfig by vm.smbConfig.collectAsStateWithLifecycle()
+    val deviceStorages by vm.deviceStorages.collectAsStateWithLifecycle()
+    val pinnedFolders by vm.pinnedFolders.collectAsStateWithLifecycle()
+    val allFilesAccess by vm.allFilesAccess.collectAsStateWithLifecycle()
 
     var tab by remember { mutableStateOf(Tab.FILES) }
     var query by remember { mutableStateOf("") }
     var sort by remember { mutableStateOf(SortMode.NAME) }
-    var viewMode by remember { mutableStateOf(ViewMode.LIST) }
+    var viewMode by rememberSaveable { mutableStateOf(ViewMode.LIST) }
+    var gridColumns by rememberSaveable { mutableIntStateOf(2) }
     var category by remember { mutableStateOf(FileCategory.ALL) }
     var selectedUris by remember { mutableStateOf<Set<String>>(emptySet()) }
     var preview by remember { mutableStateOf<FileItem?>(null) }
@@ -101,10 +123,13 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var renameItem by remember { mutableStateOf<FileItem?>(null) }
     var deleteItems by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var archiveItems by remember { mutableStateOf<List<FileItem>>(emptyList()) }
+    var dragX by remember { mutableFloatStateOf(0f) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
     var pendingCloudSource by remember { mutableStateOf<SourceType?>(null) }
+    var pendingLocalUri by remember { mutableStateOf<Uri?>(null) }
+
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let(vm::setTree)
     }
@@ -112,6 +137,49 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         val type = pendingCloudSource
         pendingCloudSource = null
         if (uri != null && type != null) vm.setCloudTree(type, uri)
+    }
+    val broadStorageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        vm.refreshDeviceLocations()
+        pendingLocalUri?.let { uri ->
+            pendingLocalUri = null
+            vm.openLocalLocation(uri)
+        }
+    }
+    val legacyStorageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        vm.refreshDeviceLocations()
+        pendingLocalUri?.let { uri ->
+            pendingLocalUri = null
+            vm.openLocalLocation(uri)
+        }
+    }
+
+    fun requestBroadStorageAccess() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val intent = Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+            runCatching { broadStorageLauncher.launch(intent) }
+                .onFailure { broadStorageLauncher.launch(Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) }
+        } else {
+            legacyStorageLauncher.launch(
+                arrayOf(
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            )
+        }
+    }
+
+    fun openLocal(uri: Uri) {
+        if (!allFilesAccess) {
+            pendingLocalUri = uri
+            requestBroadStorageAccess()
+        } else {
+            vm.openLocalLocation(uri)
+            tab = Tab.FILES
+            query = ""
+            category = FileCategory.ALL
+        }
     }
 
     LaunchedEffect(initialUri) {
@@ -150,9 +218,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         baseFiles.filter { it.uri.toString() in selectedUris }
     }
     val selectionMode = selectedUris.isNotEmpty()
+    val computerHome = tab == Tab.FILES && currentDir == null
 
     BackHandler(
-        enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || (currentDir != null && currentDir != root)
+        enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || currentDir != null
     ) {
         when {
             preview != null -> preview = null
@@ -179,49 +248,29 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     canExtract = selectedItems.size == 1 && isZip(selectedItems.first()),
                     onClose = { selectedUris = emptySet() },
                     onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
-                    onFavorite = {
-                        vm.toggleFavorites(selectedItems)
-                        selectedUris = emptySet()
-                    },
+                    onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
                     onCopy = {
                         vm.setClipboard(selectedItems, cut = false)
-                        selectedUris = emptySet()
-                        tab = Tab.FILES
+                        selectedUris = emptySet(); tab = Tab.FILES
                     },
                     onCut = {
                         vm.setClipboard(selectedItems, cut = true)
-                        selectedUris = emptySet()
-                        tab = Tab.FILES
+                        selectedUris = emptySet(); tab = Tab.FILES
                     },
                     onArchive = { archiveItems = selectedItems },
-                    onExtract = {
-                        selectedItems.firstOrNull()?.let(vm::extractArchive)
-                        selectedUris = emptySet()
-                    },
-                    onRename = {
-                        renameItem = selectedItems.firstOrNull()
-                        selectedUris = emptySet()
-                    },
-                    onDetails = {
-                        details = selectedItems.firstOrNull()
-                        selectedUris = emptySet()
-                    },
-                    onShare = {
-                        appScope.launch { shareItems(context, selectedItems, vm) }
-                        selectedUris = emptySet()
-                    },
-                    onDelete = {
-                        deleteItems = selectedItems
-                        selectedUris = emptySet()
-                    }
+                    onExtract = { selectedItems.firstOrNull()?.let(vm::extractArchive); selectedUris = emptySet() },
+                    onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
+                    onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
+                    onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
+                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() }
                 )
             }
         },
         bottomBar = {
             if (!selectionMode) {
                 NavigationBar(tonalElevation = 0.dp) {
-                    NavItem(Tab.FILES, tab, Icons.Default.Folder, "Pliki") {
-                        tab = Tab.FILES; query = ""; category = FileCategory.ALL
+                    NavItem(Tab.FILES, tab, Icons.Default.Computer, "Mój komputer") {
+                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
                     }
                     NavItem(Tab.RECENT, tab, Icons.Default.Schedule, "Ostatnie") {
                         tab = Tab.RECENT; query = ""; category = FileCategory.ALL
@@ -248,149 +297,191 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            if (tab == Tab.SETTINGS) {
-                SettingsScreen(
-                    sources = sources,
-                    ftpConfig = ftpConfig,
-                    smbConfig = smbConfig,
-                    onEnabled = vm::setSourceEnabled,
-                    onConnectCloud = { type ->
-                        pendingCloudSource = type
-                        cloudFolderPicker.launch(null)
-                    },
-                    onSaveFtp = vm::saveFtp,
-                    onTestFtp = { vm.testSource(SourceType.FTP) },
-                    onSaveSmb = vm::saveSmb,
-                    onTestSmb = { vm.testSource(SourceType.SMB) }
-                )
-            } else if (tab == Tab.FILES && currentDir == null) {
-                EmptyStorage(onPick = { folderPicker.launch(null) })
-            } else {
-                Column(Modifier.fillMaxSize()) {
-                    AppHero(
-                        tab = tab,
-                        currentDir = currentDir,
-                        fileCount = baseFiles.size,
-                        totalSize = baseFiles.filterNot { it.isDirectory }.sumOf { it.size },
-                        onPickRoot = { folderPicker.launch(null) },
-                        onRefresh = vm::refresh
+            when {
+                tab == Tab.SETTINGS -> {
+                    SettingsScreen(
+                        sources = sources,
+                        ftpConfig = ftpConfig,
+                        smbConfig = smbConfig,
+                        allFilesAccess = allFilesAccess,
+                        onGrantAllFilesAccess = ::requestBroadStorageAccess,
+                        onPickLocalFolder = { folderPicker.launch(null) },
+                        onEnabled = vm::setSourceEnabled,
+                        onConnectCloud = { type ->
+                            pendingCloudSource = type
+                            cloudFolderPicker.launch(null)
+                        },
+                        onSaveFtp = vm::saveFtp,
+                        onTestFtp = { vm.testSource(SourceType.FTP) },
+                        onSaveSmb = vm::saveSmb,
+                        onTestSmb = { vm.testSource(SourceType.SMB) }
                     )
+                }
 
-                    Column(
-                        Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Spacer(Modifier.height(2.dp))
+                computerHome -> {
+                    ComputerHome(
+                        storages = deviceStorages,
+                        pinned = pinnedFolders,
+                        connectedSources = sources.filter {
+                            (it.type == SourceType.LOCAL && it.configured) ||
+                                (it.type != SourceType.LOCAL && it.enabled && it.configured)
+                        },
+                        allFilesAccess = allFilesAccess,
+                        onOpenPinned = { openLocal(it.rootUri) },
+                        onOpenStorage = { openLocal(it.rootUri) },
+                        onOpenSource = { vm.openSource(it.type) },
+                        onGrantAccess = ::requestBroadStorageAccess,
+                        onAddFolder = { folderPicker.launch(null) },
+                        onSettings = { tab = Tab.SETTINGS }
+                    )
+                }
 
-                        if (tab == Tab.FILES) {
-                            ActiveSourcesRow(
-                                sources = sources.filter { it.type == SourceType.LOCAL || (it.enabled && it.configured) },
-                                selected = currentSource,
-                                onOpen = { source ->
-                                    when {
-                                        source.configured -> vm.openSource(source.type)
-                                        source.type == SourceType.LOCAL -> folderPicker.launch(null)
-                                        source.type in setOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX) -> {
-                                            pendingCloudSource = source.type
-                                            cloudFolderPicker.launch(null)
-                                        }
-                                        else -> tab = Tab.SETTINGS
+                else -> {
+                    Column(Modifier.fillMaxSize()) {
+                        AppHero(
+                            tab = tab,
+                            currentDir = currentDir,
+                            fileCount = baseFiles.size,
+                            totalSize = baseFiles.filterNot { it.isDirectory }.sumOf { it.size },
+                            onPickRoot = { folderPicker.launch(null) },
+                            onRefresh = vm::refresh
+                        )
+
+                        Column(
+                            Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Spacer(Modifier.height(2.dp))
+
+                            if (tab == Tab.FILES) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    LocationStrip(
+                                        label = folderLabel(currentDir),
+                                        atRoot = currentDir == root,
+                                        onRoot = vm::goRoot
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    IconButton(onClick = vm::goComputerHome) {
+                                        Icon(Icons.Default.Computer, "Mój komputer")
                                     }
                                 }
-                            )
-                            LocationStrip(
-                                label = folderLabel(currentDir),
-                                atRoot = currentDir == root,
-                                onRoot = vm::goRoot
-                            )
-                        } else {
-                            SectionHint(tab)
-                        }
+                            } else {
+                                SectionHint(tab)
+                            }
 
-                        SearchToolbar(
-                            query = query,
-                            onQuery = { query = it },
-                            sort = sort,
-                            onSort = { sort = it },
-                            view = viewMode,
-                            onView = { viewMode = it },
-                            placeholder = if (tab == Tab.FILES) "Szukaj w tym folderze" else "Szukaj plików"
-                        )
-
-                        CategoryRow(
-                            selected = category,
-                            source = baseFiles,
-                            onSelected = { category = it }
-                        )
-
-                        AnimatedVisibility(clipboard != null && tab == Tab.FILES) {
-                            ClipboardCard(
-                                payload = clipboard,
-                                onPaste = vm::paste,
-                                onCancel = vm::clearClipboard
+                            SearchToolbar(
+                                query = query,
+                                onQuery = { query = it },
+                                sort = sort,
+                                onSort = { sort = it },
+                                view = viewMode,
+                                onView = { viewMode = it },
+                                placeholder = if (tab == Tab.FILES) "Szukaj w tym folderze" else "Szukaj plików"
                             )
-                        }
 
-                        if (visibleFiles.isEmpty()) {
-                            EmptyFolder(
-                                filtered = query.isNotBlank() || category != FileCategory.ALL,
-                                tab = tab
-                            )
-                        } else if (viewMode == ViewMode.LIST) {
-                            LazyColumn(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(bottom = 96.dp)
-                            ) {
-                                items(visibleFiles, key = { it.uri.toString() }) { item ->
-                                    FileRow(
-                                        item = item,
-                                        favorite = item.uri.toString() in favoriteUris,
-                                        selected = item.uri.toString() in selectedUris,
-                                        selectionMode = selectionMode,
-                                        onClick = {
-                                            if (selectionMode) {
-                                                selectedUris = toggleSelection(selectedUris, item)
-                                            } else {
-                                                openItem(vm, item, onOpenFile = { preview = it })
-                                                if (item.isDirectory) {
-                                                    tab = Tab.FILES
-                                                    query = ""
-                                                    category = FileCategory.ALL
+                            CategoryRow(selected = category, source = baseFiles, onSelected = { category = it })
+
+                            AnimatedVisibility(clipboard != null && tab == Tab.FILES) {
+                                ClipboardCard(payload = clipboard, onPaste = vm::paste, onCancel = vm::clearClipboard)
+                            }
+
+                            if (viewMode == ViewMode.GRID) {
+                                Text(
+                                    "$gridColumns kolumny • przeciągnij w lewo/prawo, aby zmienić gęstość",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            val fileAreaModifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(viewMode, gridColumns) {
+                                    val columnSwipeThreshold = 72.dp.toPx()
+                                    detectHorizontalDragGestures(
+                                        onDragStart = { dragX = 0f },
+                                        onHorizontalDrag = { change, amount ->
+                                            change.consume()
+                                            dragX += amount
+                                        },
+                                        onDragEnd = {
+                                            if (kotlin.math.abs(dragX) >= columnSwipeThreshold) {
+                                                if (dragX < 0f) {
+                                                    if (viewMode == ViewMode.LIST) {
+                                                        viewMode = ViewMode.GRID
+                                                        gridColumns = 2
+                                                    } else {
+                                                        gridColumns = (gridColumns + 1).coerceAtMost(5)
+                                                    }
+                                                } else {
+                                                    if (viewMode == ViewMode.GRID && gridColumns > 2) {
+                                                        gridColumns--
+                                                    } else {
+                                                        viewMode = ViewMode.LIST
+                                                    }
                                                 }
                                             }
+                                            dragX = 0f
                                         },
-                                        onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
-                                        onMenu = { selectedUris = setOf(item.uri.toString()) }
+                                        onDragCancel = { dragX = 0f }
                                     )
                                 }
-                            }
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(145.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                                contentPadding = PaddingValues(bottom = 96.dp)
-                            ) {
-                                gridItems(visibleFiles, key = { it.uri.toString() }) { item ->
-                                    FileTile(
-                                        item = item,
-                                        favorite = item.uri.toString() in favoriteUris,
-                                        selected = item.uri.toString() in selectedUris,
-                                        selectionMode = selectionMode,
-                                        onClick = {
-                                            if (selectionMode) {
-                                                selectedUris = toggleSelection(selectedUris, item)
-                                            } else {
-                                                openItem(vm, item, onOpenFile = { preview = it })
-                                                if (item.isDirectory) {
-                                                    tab = Tab.FILES
-                                                    query = ""
-                                                    category = FileCategory.ALL
-                                                }
-                                            }
-                                        },
-                                        onLongClick = { selectedUris = toggleSelection(selectedUris, item) }
-                                    )
+
+                            Box(fileAreaModifier) {
+                                if (visibleFiles.isEmpty()) {
+                                    EmptyFolder(filtered = query.isNotBlank() || category != FileCategory.ALL, tab = tab)
+                                } else if (viewMode == ViewMode.LIST) {
+                                    LazyColumn(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(bottom = 96.dp)
+                                    ) {
+                                        items(visibleFiles, key = { it.uri.toString() }) { item ->
+                                            FileRow(
+                                                item = item,
+                                                vm = vm,
+                                                favorite = item.uri.toString() in favoriteUris,
+                                                selected = item.uri.toString() in selectedUris,
+                                                selectionMode = selectionMode,
+                                                onClick = {
+                                                    if (selectionMode) selectedUris = toggleSelection(selectedUris, item)
+                                                    else {
+                                                        openItem(vm, item, onOpenFile = { preview = it })
+                                                        if (item.isDirectory) {
+                                                            tab = Tab.FILES; query = ""; category = FileCategory.ALL
+                                                        }
+                                                    }
+                                                },
+                                                onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
+                                                onMenu = { selectedUris = setOf(item.uri.toString()) }
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(gridColumns),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                        contentPadding = PaddingValues(bottom = 96.dp)
+                                    ) {
+                                        gridItems(visibleFiles, key = { it.uri.toString() }) { item ->
+                                            FileTile(
+                                                item = item,
+                                                vm = vm,
+                                                favorite = item.uri.toString() in favoriteUris,
+                                                selected = item.uri.toString() in selectedUris,
+                                                selectionMode = selectionMode,
+                                                onClick = {
+                                                    if (selectionMode) selectedUris = toggleSelection(selectedUris, item)
+                                                    else {
+                                                        openItem(vm, item, onOpenFile = { preview = it })
+                                                        if (item.isDirectory) {
+                                                            tab = Tab.FILES; query = ""; category = FileCategory.ALL
+                                                        }
+                                                    }
+                                                },
+                                                onLongClick = { selectedUris = toggleSelection(selectedUris, item) }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -431,9 +522,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         )
     }
 
-    details?.let { item ->
-        DetailsSheet(item = item, vm = vm, onDismiss = { details = null })
-    }
+    details?.let { item -> DetailsSheet(item = item, vm = vm, onDismiss = { details = null }) }
 
     error?.let {
         AlertDialog(
@@ -461,8 +550,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
     renameItem?.let { item ->
         NameDialog("Zmień nazwę", item.name, item.name, onDismiss = { renameItem = null }) {
-            vm.rename(item, it)
-            renameItem = null
+            vm.rename(item, it); renameItem = null
         }
     }
 
@@ -474,10 +562,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             title = { Text(if (itemsToDelete.size == 1) "Usunąć ${itemsToDelete.first().name}?" else "Usunąć ${itemsToDelete.size} elementów?") },
             text = { Text("Tej operacji nie można cofnąć.") },
             confirmButton = {
-                TextButton(onClick = {
-                    vm.delete(itemsToDelete)
-                    deleteItems = emptyList()
-                }) { Text("Usuń") }
+                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text("Usuń") }
             },
             dismissButton = { TextButton(onClick = { deleteItems = emptyList() }) { Text("Anuluj") } }
         )
@@ -497,6 +582,254 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         }
     }
 }
+
+@Composable
+private fun ComputerHome(
+    storages: List<DeviceStorage>,
+    pinned: List<PinnedFolder>,
+    connectedSources: List<StorageSource>,
+    allFilesAccess: Boolean,
+    onOpenPinned: (PinnedFolder) -> Unit,
+    onOpenStorage: (DeviceStorage) -> Unit,
+    onOpenSource: (StorageSource) -> Unit,
+    onGrantAccess: () -> Unit,
+    onAddFolder: () -> Unit,
+    onSettings: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary.copy(alpha = .88f))
+                        ),
+                        RoundedCornerShape(bottomStart = 34.dp, bottomEnd = 34.dp)
+                    )
+                    .padding(horizontal = 20.dp, vertical = 24.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .14f)
+                    ) {
+                        Icon(
+                            Icons.Default.Computer,
+                            null,
+                            modifier = Modifier.padding(13.dp).size(32.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Mój komputer",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Text(
+                            "Pamięć urządzenia, karty i zasoby sieciowe w jednym miejscu",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .82f)
+                        )
+                    }
+                    IconButton(onClick = onSettings) {
+                        Icon(Icons.Default.Settings, "Ustawienia", tint = MaterialTheme.colorScheme.onPrimary)
+                    }
+                }
+            }
+        }
+
+        if (!allFilesAccess) {
+            item {
+                Surface(
+                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Default.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Column(Modifier.weight(1f)) {
+                            Text("Pełny dostęp do pamięci", fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Włącz go, aby przeglądać pamięć wbudowaną i kartę SD jak w klasycznym menedżerze plików.",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Button(onClick = onGrantAccess) { Text("Włącz") }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                "Przypięte foldery",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 18.dp)
+            )
+        }
+        item {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(pinned, key = { it.id }) { folder ->
+                    val isPictures = folder.id == "pictures"
+                    Surface(
+                        onClick = { onOpenPinned(folder) },
+                        modifier = Modifier.width(168.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = if (isPictures) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = .72f)
+                            ) {
+                                Icon(
+                                    if (isPictures) Icons.Default.PhotoLibrary else Icons.Default.Download,
+                                    null,
+                                    modifier = Modifier.padding(10.dp).size(26.dp),
+                                    tint = if (isPictures) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Column {
+                                Text(folder.label, fontWeight = FontWeight.Bold)
+                                Text(
+                                    if (isPictures) "Obrazy i zdjęcia" else "Pobrane pliki",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    OutlinedCard(
+                        onClick = onAddFolder,
+                        modifier = Modifier.width(168.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Column(
+                            Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.AddLink, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text("Dodaj folder", fontWeight = FontWeight.SemiBold)
+                                Text("SAF / dostawca plików", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                "Ten komputer",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 18.dp)
+            )
+        }
+        items(storages, key = { it.id }) { storage ->
+            DeviceStorageCard(storage = storage, onClick = { onOpenStorage(storage) })
+        }
+
+        if (connectedSources.isNotEmpty()) {
+            item {
+                Text(
+                    "Połączone zasoby",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 2.dp)
+                )
+            }
+            items(connectedSources, key = { "source_${it.type.name}" }) { source ->
+                ConnectedSourceCard(source = source, onClick = { onOpenSource(source) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeviceStorageCard(storage: DeviceStorage, onClick: () -> Unit) {
+    val used = (storage.totalBytes - storage.freeBytes).coerceAtLeast(0L)
+    val fraction = if (storage.totalBytes > 0) (used.toFloat() / storage.totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    if (storage.removable) Icons.Default.SdStorage else Icons.Default.Smartphone,
+                    null,
+                    Modifier.padding(12.dp).size(28.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(storage.label, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    if (storage.removable) {
+                        AssistChip(onClick = {}, label = { Text("SD") }, leadingIcon = { Icon(Icons.Default.Memory, null, Modifier.size(15.dp)) })
+                    }
+                }
+                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(50)))
+                Text(
+                    if (storage.totalBytes > 0) "${formatSize(storage.freeBytes)} wolne z ${formatSize(storage.totalBytes)}" else storage.rootUri.path.orEmpty(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                Icon(sourceIcon(source.type), null, Modifier.padding(10.dp).size(24.dp), tint = MaterialTheme.colorScheme.secondary)
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(source.label, fontWeight = FontWeight.SemiBold)
+                Text(source.subtitle.ifBlank { "Podłączony" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
 
 @Composable
 private fun AppHero(
@@ -747,6 +1080,7 @@ private fun ClipboardCard(payload: ClipboardPayload?, onPaste: () -> Unit, onCan
 @Composable
 private fun FileRow(
     item: FileItem,
+    vm: FileManagerViewModel,
     favorite: Boolean,
     selected: Boolean,
     selectionMode: Boolean,
@@ -761,7 +1095,7 @@ private fun FileRow(
         modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            FileVisual(item, Modifier.size(54.dp), thumbnail = true)
+            FileVisual(item, Modifier.size(54.dp), thumbnail = true, vm = vm)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -787,6 +1121,7 @@ private fun FileRow(
 @Composable
 private fun FileTile(
     item: FileItem,
+    vm: FileManagerViewModel,
     favorite: Boolean,
     selected: Boolean,
     selectionMode: Boolean,
@@ -801,7 +1136,7 @@ private fun FileTile(
     ) {
         Column(Modifier.padding(10.dp)) {
             Box(Modifier.fillMaxWidth().weight(1f)) {
-                FileVisual(item, Modifier.fillMaxSize(), thumbnail = true)
+                FileVisual(item, Modifier.fillMaxSize(), thumbnail = true, vm = vm)
                 if (favorite) {
                     Surface(
                         modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
@@ -824,15 +1159,52 @@ private fun FileTile(
 }
 
 @Composable
-private fun FileVisual(item: FileItem, modifier: Modifier, thumbnail: Boolean) {
+private fun FileVisual(
+    item: FileItem,
+    modifier: Modifier,
+    thumbnail: Boolean,
+    vm: FileManagerViewModel? = null
+) {
     val tint = fileTint(item)
-    if (thumbnail && item.uri.scheme == "content" && item.mimeType.startsWith("image/") && !item.mimeType.contains("svg")) {
-        AsyncImage(
-            model = item.uri,
-            contentDescription = item.name,
-            modifier = modifier.clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentScale = ContentScale.Crop
-        )
+    val rasterImage = thumbnail && item.mimeType.startsWith("image/") && !item.name.endsWith(".svg", true) && !item.mimeType.contains("svg")
+    val svgImage = thumbnail && item.mimeType.startsWith("image/") && (item.name.endsWith(".svg", true) || item.mimeType.contains("svg"))
+
+    if (rasterImage && vm != null) {
+        var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
+        var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
+        LaunchedEffect(item.uri, item.lastModified) {
+            failed = false
+            bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 640) }
+                .onFailure { failed = true }
+                .getOrNull()
+        }
+        Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                bitmap?.let {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize().padding(4.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                if (bitmap == null && !failed) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                if (failed) Icon(Icons.Default.Image, null, Modifier.fillMaxSize(.5f), tint = tint)
+            }
+        }
+    } else if (svgImage && vm != null) {
+        var uri by remember(item.uri, item.lastModified) { mutableStateOf<Uri?>(null) }
+        LaunchedEffect(item.uri, item.lastModified) {
+            uri = runCatching { vm.prepareImageUri(item) }.getOrNull()
+        }
+        Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            AsyncImage(
+                model = uri,
+                contentDescription = item.name,
+                modifier = Modifier.fillMaxSize().padding(4.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
     } else {
         Surface(modifier = modifier, shape = RoundedCornerShape(16.dp), color = tint.copy(alpha = .13f)) {
             Box(contentAlignment = Alignment.Center) {
@@ -924,7 +1296,6 @@ private fun PreviewSheet(
     var text by remember(item.uri) { mutableStateOf<String?>(null) }
     var editing by remember(item.uri) { mutableStateOf(false) }
     var draft by remember(item.uri) { mutableStateOf("") }
-    var previewMediaUri by remember(item.uri) { mutableStateOf<Uri?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(item.uri) {
@@ -932,15 +1303,12 @@ private fun PreviewSheet(
             text = vm.readText(item.uri)
             draft = text.orEmpty()
         }
-        if (item.mimeType.startsWith("image/")) {
-            previewMediaUri = runCatching { vm.materializeUri(item) }.getOrNull() ?: item.uri
-        }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.fillMaxHeight(.96f)) {
         Column(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                FileVisual(item, Modifier.size(44.dp), thumbnail = true)
+                FileVisual(item, Modifier.size(44.dp), thumbnail = true, vm = vm)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(item.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -953,13 +1321,15 @@ private fun PreviewSheet(
             HorizontalDivider()
 
             when {
+                isPdf(item) -> {
+                    PdfPreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
+                }
                 item.mimeType.startsWith("image/") -> {
-                    AsyncImage(
-                        model = previewMediaUri ?: item.uri,
-                        contentDescription = item.name,
-                        modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                        contentScale = ContentScale.Fit
-                    )
+                    if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
+                        SvgImagePreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
+                    } else {
+                        NativeImagePreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
+                    }
                 }
                 isText(item) -> {
                     if (editing) {
@@ -1020,6 +1390,391 @@ private fun PreviewSheet(
     }
 }
 
+@Composable
+private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Modifier) {
+    var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
+    var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
+    var scale by remember(item.uri) { mutableFloatStateOf(1f) }
+    var offsetX by remember(item.uri) { mutableFloatStateOf(0f) }
+    var offsetY by remember(item.uri) { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(item.uri, item.lastModified) {
+        error = null
+        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096) }
+            .onFailure { error = it.message ?: "Nie udało się otworzyć obrazu." }
+            .getOrNull()
+    }
+
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            shape = RoundedCornerShape(22.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                bitmap?.let { image ->
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offsetX
+                                translationY = offsetY
+                            }
+                            .pointerInput(item.uri) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    val next = (scale * zoom).coerceIn(1f, 8f)
+                                    scale = next
+                                    if (next > 1.01f) {
+                                        val shift = 2200f * (next - 1f)
+                                        offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
+                                        offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
+                                    } else {
+                                        offsetX = 0f
+                                        offsetY = 0f
+                                    }
+                                }
+                            }
+                    )
+                }
+                if (bitmap == null && error == null) CircularProgressIndicator()
+                error?.let {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Icon(Icons.Default.BrokenImage, null, Modifier.size(54.dp), tint = MaterialTheme.colorScheme.error)
+                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+        Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                IconButton(onClick = {
+                    scale = (scale - .25f).coerceAtLeast(1f)
+                    if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
+                }) { Icon(Icons.Default.ZoomOut, "Pomniejsz") }
+                Text("${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
+                IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) { Icon(Icons.Default.ZoomIn, "Powiększ") }
+                IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) { Icon(Icons.Default.FitScreen, "Dopasuj") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SvgImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Modifier) {
+    var uri by remember(item.uri, item.lastModified) { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(item.uri, item.lastModified) {
+        uri = runCatching { vm.prepareImageUri(item) }.getOrNull()
+    }
+    Surface(modifier = modifier, shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        AsyncImage(
+            model = uri,
+            contentDescription = item.name,
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+@Composable
+private fun PdfPreview(
+    item: FileItem,
+    vm: FileManagerViewModel,
+    modifier: Modifier = Modifier
+) {
+    var pdfFile by remember(item.uri) { mutableStateOf<File?>(null) }
+    var pageCount by remember(item.uri) { mutableIntStateOf(0) }
+    var loading by remember(item.uri) { mutableStateOf(true) }
+    var error by remember(item.uri) { mutableStateOf<String?>(null) }
+    var zoom by remember(item.uri) { mutableFloatStateOf(1f) }
+    var jumpDialog by remember(item.uri) { mutableStateOf(false) }
+    var jumpText by remember(item.uri) { mutableStateOf("") }
+    val listState = rememberLazyListState()
+    val thumbState = rememberLazyListState()
+    val horizontal = rememberScrollState()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(item.uri) {
+        loading = true
+        error = null
+        runCatching {
+            val file = vm.preparePdf(item)
+            val count = vm.pdfPageCount(file)
+            require(count > 0) { "Dokument PDF nie zawiera stron." }
+            file to count
+        }.onSuccess { (file, count) ->
+            pdfFile = file
+            pageCount = count
+        }.onFailure { failure ->
+            error = if (failure is SecurityException) {
+                "PDF jest zabezpieczony hasłem lub używa nieobsługiwanego szyfrowania."
+            } else {
+                failure.message ?: "Nie udało się otworzyć dokumentu PDF."
+            }
+        }
+        loading = false
+    }
+
+    val currentPage = if (pageCount > 0) (listState.firstVisibleItemIndex + 1).coerceIn(1, pageCount) else 0
+
+    LaunchedEffect(currentPage, pageCount) {
+        if (pageCount > 0) {
+            val target = (currentPage - 3).coerceIn(0, (pageCount - 1).coerceAtLeast(0))
+            runCatching { thumbState.animateScrollToItem(target) }
+        }
+    }
+
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { scope.launch { listState.animateScrollToItem((currentPage - 2).coerceAtLeast(0)) } },
+                    enabled = currentPage > 1
+                ) { Icon(Icons.Default.KeyboardArrowUp, "Poprzednia strona") }
+
+                TextButton(
+                    onClick = {
+                        jumpText = if (currentPage > 0) currentPage.toString() else "1"
+                        jumpDialog = true
+                    },
+                    enabled = pageCount > 0
+                ) {
+                    Text(
+                        if (pageCount > 0) "$currentPage / $pageCount" else "PDF",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                IconButton(
+                    onClick = { scope.launch { listState.animateScrollToItem(currentPage.coerceAtMost(pageCount - 1)) } },
+                    enabled = currentPage in 1 until pageCount
+                ) { Icon(Icons.Default.KeyboardArrowDown, "Następna strona") }
+
+                Spacer(Modifier.weight(1f))
+
+                IconButton(onClick = { zoom = (zoom - .25f).coerceAtLeast(1f) }) {
+                    Icon(Icons.Default.ZoomOut, "Pomniejsz")
+                }
+                Text("${(zoom * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
+                IconButton(onClick = { zoom = (zoom + .25f).coerceAtMost(4f) }) {
+                    Icon(Icons.Default.ZoomIn, "Powiększ")
+                }
+                IconButton(onClick = { zoom = 1f; scope.launch { horizontal.animateScrollTo(0) } }) {
+                    Icon(Icons.Default.FitScreen, "Dopasuj")
+                }
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            shape = RoundedCornerShape(22.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                when {
+                    loading -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        CircularProgressIndicator()
+                        Text("Wczytywanie PDF…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    error != null -> Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Default.PictureAsPdf, null, Modifier.size(58.dp), tint = MaterialTheme.colorScheme.error)
+                        Text("Nie udało się wyświetlić PDF", fontWeight = FontWeight.SemiBold)
+                        Text(error.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    pdfFile != null && pageCount > 0 -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val documentWidth = maxWidth * zoom
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .pointerInput(item.uri) {
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        var active = true
+                                        while (active) {
+                                            val event = awaitPointerEvent()
+                                            val pressed = event.changes.count { it.pressed }
+                                            if (pressed >= 2) {
+                                                val gestureZoom = event.calculateZoom()
+                                                if (gestureZoom != 1f) {
+                                                    zoom = (zoom * gestureZoom).coerceIn(1f, 4f)
+                                                    event.changes.forEach { it.consume() }
+                                                }
+                                            }
+                                            active = event.changes.any { it.pressed }
+                                        }
+                                    }
+                                }
+                                .horizontalScroll(horizontal)
+                        ) {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.width(documentWidth).fillMaxHeight(),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(pageCount, key = { it }) { page ->
+                                    PdfPageCard(
+                                        file = pdfFile!!,
+                                        pageIndex = page,
+                                        pageCount = pageCount,
+                                        vm = vm,
+                                        targetWidth = (1500 * zoom.coerceAtMost(2f)).toInt()
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (pdfFile != null && pageCount > 0 && error == null) {
+            Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+                LazyRow(
+                    state = thumbState,
+                    modifier = Modifier.fillMaxWidth().height(92.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    items(pageCount, key = { "thumb_$it" }) { page ->
+                        PdfThumbnail(
+                            file = pdfFile!!,
+                            pageIndex = page,
+                            selected = page == currentPage - 1,
+                            vm = vm,
+                            onClick = { scope.launch { listState.animateScrollToItem(page) } }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (jumpDialog) {
+        AlertDialog(
+            onDismissRequest = { jumpDialog = false },
+            title = { Text("Przejdź do strony") },
+            text = {
+                OutlinedTextField(
+                    value = jumpText,
+                    onValueChange = { jumpText = it.filter(Char::isDigit).take(6) },
+                    singleLine = true,
+                    label = { Text("Numer strony (1–$pageCount)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val page = jumpText.toIntOrNull()?.coerceIn(1, pageCount) ?: 1
+                    jumpDialog = false
+                    scope.launch { listState.animateScrollToItem(page - 1) }
+                }) { Text("Przejdź") }
+            },
+            dismissButton = { TextButton(onClick = { jumpDialog = false }) { Text("Anuluj") } }
+        )
+    }
+}
+
+@Composable
+private fun PdfPageCard(
+    file: File,
+    pageIndex: Int,
+    pageCount: Int,
+    vm: FileManagerViewModel,
+    targetWidth: Int
+) {
+    var bitmap by remember(file.absolutePath, pageIndex, targetWidth) { mutableStateOf<Bitmap?>(null) }
+    var failed by remember(file.absolutePath, pageIndex) { mutableStateOf(false) }
+
+    LaunchedEffect(file.absolutePath, pageIndex, targetWidth) {
+        failed = false
+        bitmap = runCatching { vm.renderPdfPage(file, pageIndex, targetWidth.coerceIn(900, 3000)) }
+            .onFailure { failed = true }
+            .getOrNull()
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        shadowElevation = 2.dp,
+        color = Color.White
+    ) {
+        val rendered = bitmap
+        when {
+            rendered != null -> Image(
+                bitmap = rendered.asImageBitmap(),
+                contentDescription = "Strona ${pageIndex + 1} z $pageCount",
+                modifier = Modifier.fillMaxWidth().aspectRatio(rendered.width.toFloat() / rendered.height.toFloat()),
+                contentScale = ContentScale.FillWidth
+            )
+            failed -> Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
+                Text("Nie udało się wyrenderować strony ${pageIndex + 1}", color = MaterialTheme.colorScheme.error)
+            }
+            else -> Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PdfThumbnail(
+    file: File,
+    pageIndex: Int,
+    selected: Boolean,
+    vm: FileManagerViewModel,
+    onClick: () -> Unit
+) {
+    var bitmap by remember(file.absolutePath, pageIndex) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(file.absolutePath, pageIndex) {
+        bitmap = runCatching { vm.renderPdfPage(file, pageIndex, 220) }.getOrNull()
+    }
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.width(62.dp).fillMaxHeight(),
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            if (selected) 2.dp else 1.dp,
+            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+        ),
+        color = Color.White
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            bitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Miniatura strony ${pageIndex + 1}",
+                    modifier = Modifier.fillMaxSize().padding(2.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } ?: CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+            Surface(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp),
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = .88f)
+            ) {
+                Text("${pageIndex + 1}", modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DetailsSheet(item: FileItem, vm: FileManagerViewModel, onDismiss: () -> Unit) {
@@ -1037,7 +1792,7 @@ private fun DetailsSheet(item: FileItem, vm: FileManagerViewModel, onDismiss: ()
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                FileVisual(item, Modifier.size(58.dp), thumbnail = true)
+                FileVisual(item, Modifier.size(58.dp), thumbnail = true, vm = vm)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(item.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -1256,6 +2011,7 @@ private fun folderLabel(uri: Uri?): String {
     if (uri == null) return "Pamięć plików"
     if (uri.scheme == RemoteRepository.FTP_SCHEME) return uri.path.orEmpty().trim('/').substringAfterLast('/').ifBlank { "FTP" }
     if (uri.scheme == RemoteRepository.SMB_SCHEME) return uri.path.orEmpty().trim('/').substringAfterLast('/').ifBlank { "SMB / Samba" }
+    if (uri.scheme == "file") return uri.path?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { "Pamięć" } ?: "Pamięć"
     return runCatching {
         val id = DocumentsContract.getDocumentId(uri)
         id.substringAfterLast('/').substringAfterLast(':').ifBlank { "Katalog główny" }
@@ -1286,6 +2042,8 @@ private fun formatSize(bytes: Long): String {
     if (gb < 1024) return String.format(Locale.getDefault(), "%.1f GB", gb)
     return String.format(Locale.getDefault(), "%.1f TB", gb / 1024.0)
 }
+
+private fun isPdf(item: FileItem): Boolean = item.mimeType == "application/pdf" || item.name.endsWith(".pdf", true)
 
 private fun isZip(item: FileItem): Boolean = item.mimeType == "application/zip" || item.name.endsWith(".zip", true)
 

@@ -13,6 +13,7 @@ fun guessMime(name: String): String = when (name.substringAfterLast('.', "").low
     "webp" -> "image/webp"
     "bmp" -> "image/bmp"
     "heic", "heif" -> "image/heif"
+    "avif" -> "image/avif"
     "mp4", "m4v" -> "video/mp4"
     "mkv" -> "video/x-matroska"
     "webm" -> "video/webm"

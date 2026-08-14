@@ -22,3 +22,19 @@ data class ClipboardPayload(
     val items: List<FileItem>,
     val cut: Boolean
 )
+
+data class DeviceStorage(
+    val id: String,
+    val label: String,
+    val rootUri: Uri,
+    val totalBytes: Long,
+    val freeBytes: Long,
+    val removable: Boolean
+)
+
+data class PinnedFolder(
+    val id: String,
+    val label: String,
+    val rootUri: Uri,
+    val subtitle: String
+)

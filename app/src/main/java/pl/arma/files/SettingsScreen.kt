@@ -22,6 +22,9 @@ fun SettingsScreen(
     sources: List<StorageSource>,
     ftpConfig: FtpConfig,
     smbConfig: SmbConfig,
+    allFilesAccess: Boolean,
+    onGrantAllFilesAccess: () -> Unit,
+    onPickLocalFolder: () -> Unit,
     onEnabled: (SourceType, Boolean) -> Unit,
     onConnectCloud: (SourceType) -> Unit,
     onSaveFtp: (FtpConfig) -> Unit,
@@ -46,10 +49,11 @@ fun SettingsScreen(
 
         val local = sources.first { it.type == SourceType.LOCAL }
         item {
-            StaticSourceCard(
-                icon = Icons.Default.Smartphone,
-                title = "Pamięć urządzenia",
-                subtitle = if (local.configured) "Aktywna" else "Katalog startowy nie został jeszcze wybrany"
+            LocalAccessCard(
+                safConfigured = local.configured,
+                allFilesAccess = allFilesAccess,
+                onGrantAllFilesAccess = onGrantAllFilesAccess,
+                onPickLocalFolder = onPickLocalFolder
             )
         }
 
@@ -127,6 +131,60 @@ private fun SettingsHero() {
             Column {
                 Text("Źródła i połączenia", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
                 Text("Włączaj tylko te miejsca, których używasz", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .78f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocalAccessCard(
+    safConfigured: Boolean,
+    allFilesAccess: Boolean,
+    onGrantAllFilesAccess: () -> Unit,
+    onPickLocalFolder: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SourceIcon(Icons.Default.Smartphone)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Pamięć urządzenia", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (allFilesAccess) "Pełny dostęp aktywny" else "Tryb ograniczony / SAF",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    if (allFilesAccess) Icons.Default.CheckCircle else Icons.Default.Lock,
+                    null,
+                    tint = if (allFilesAccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            HorizontalDivider()
+            Text(
+                "Pełny dostęp pozwala używać ekranu „Mój komputer” z pamięcią wbudowaną i kartą SD. SAF pozostaje alternatywą do podpinania pojedynczych folderów.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!allFilesAccess) {
+                    Button(onClick = onGrantAllFilesAccess, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.AdminPanelSettings, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Pełny dostęp")
+                    }
+                }
+                FilledTonalButton(onClick = onPickLocalFolder, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.FolderOpen, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (safConfigured) "Zmień folder SAF" else "Folder SAF")
+                }
             }
         }
     }
