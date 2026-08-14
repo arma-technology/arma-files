@@ -55,6 +55,32 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
         else -> error("Nieznane źródło sieciowe")
     }
 
+    /**
+     * Przenosi element po stronie serwera, bez ściągania go na telefon. Możliwe
+     * tylko wtedy, gdy źródło i cel leżą na tym samym serwerze — przy jednym
+     * globalnym koncie na protokół sprowadza się to do zgodności schematu URI.
+     * Zwraca null, gdy serwer odmówił; wtedy wołający kopiuje i kasuje źródło.
+     */
+    fun move(item: FileItem, targetParent: Uri, newName: String): Uri? {
+        val scheme = item.uri.scheme ?: return null
+        if (scheme != targetParent.scheme) return null
+        val target = childUri(targetParent, newName)
+        return when (scheme) {
+            FTP_SCHEME -> {
+                val client = ftpClient()
+                try {
+                    if (client.rename(ftpPath(item.uri), ftpPath(target))) target else null
+                } finally { closeFtp(client) }
+            }
+            SMB_SCHEME -> SmbFile(smbUrl(item.uri).trimEnd('/'), smbContext()).use { source ->
+                SmbFile(smbUrl(target).trimEnd('/'), smbContext()).use { destination ->
+                    runCatching { source.renameTo(destination) }.map { target }.getOrNull()
+                }
+            }
+            else -> null
+        }
+    }
+
     fun delete(item: FileItem): Boolean = when (item.uri.scheme) {
         FTP_SCHEME -> ftpDelete(item.uri, item.isDirectory)
         SMB_SCHEME -> smbDelete(item.uri)

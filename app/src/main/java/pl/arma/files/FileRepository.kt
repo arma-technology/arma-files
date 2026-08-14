@@ -16,30 +16,56 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import pl.arma.files.ops.FileOps
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-class FileRepository(private val context: Context) {
+class FileRepository(private val context: Context) : FileOps {
     private val resolver: ContentResolver get() = context.contentResolver
     private val networkPrefs = NetworkPrefs(context)
     private val remote = RemoteRepository(networkPrefs)
 
-    suspend fun listChildren(parent: Uri): List<FileItem> = withContext(Dispatchers.IO) {
+    override suspend fun listChildren(parent: Uri): List<FileItem> = withContext(Dispatchers.IO) {
         listChildrenBlocking(parent)
     }
 
     fun treeToDocumentUri(treeUri: Uri): Uri =
         DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri))
 
-    suspend fun createFolder(parent: Uri, name: String): Uri? = withContext(Dispatchers.IO) {
+    override suspend fun createFolder(parent: Uri, name: String): Uri? = withContext(Dispatchers.IO) {
         createFolderBlocking(parent, name)
     }
 
-    suspend fun createFile(parent: Uri, name: String, mime: String = "text/plain"): Uri? = withContext(Dispatchers.IO) {
+    override suspend fun createFile(parent: Uri, name: String, mime: String): Uri? = withContext(Dispatchers.IO) {
         createFileBlocking(parent, name, mime)
     }
+
+    /**
+     * Przeniesienie bez przepisywania bajtów — udaje się, gdy źródło i cel leżą
+     * na tym samym nośniku (lokalnie) albo na tym samym serwerze (FTP/SMB).
+     * W pozostałych przypadkach zwraca null i wołający musi skopiować zawartość.
+     *
+     * Dla SAF zwraca null, bo `DocumentsContract.moveDocument` wymaga URI
+     * katalogu źródłowego, którego model danych aplikacji dziś nie przechowuje.
+     */
+    override suspend fun fastMove(item: FileItem, targetParent: Uri, newName: String): Uri? =
+        withContext(Dispatchers.IO) {
+            when {
+                remote.isRemote(item.uri) && remote.isRemote(targetParent) ->
+                    runCatching { remote.move(item, targetParent, newName) }.getOrNull()
+
+                item.uri.scheme == "file" && targetParent.scheme == "file" -> {
+                    val source = fileFor(item.uri)
+                    val target = File(fileFor(targetParent), newName)
+                    if (target.exists()) null
+                    else if (source.renameTo(target)) Uri.fromFile(target) else null
+                }
+
+                else -> null
+            }
+        }
 
     suspend fun rename(item: FileItem, newName: String): Uri? = withContext(Dispatchers.IO) {
         when {
@@ -53,7 +79,7 @@ class FileRepository(private val context: Context) {
         }
     }
 
-    suspend fun delete(item: FileItem): Boolean = withContext(Dispatchers.IO) { deleteBlocking(item) }
+    override suspend fun delete(item: FileItem): Boolean = withContext(Dispatchers.IO) { deleteBlocking(item) }
 
     suspend fun deleteAll(items: List<FileItem>): Int = withContext(Dispatchers.IO) {
         var deleted = 0
@@ -182,13 +208,13 @@ class FileRepository(private val context: Context) {
         else -> null
     }
 
-    fun openInput(uri: Uri): InputStream = when {
+    override fun openInput(uri: Uri): InputStream = when {
         remote.isRemote(uri) -> remote.openInput(uri)
         uri.scheme == "file" -> FileInputStream(fileFor(uri))
         else -> resolver.openInputStream(uri) ?: throw IOException("Nie można otworzyć pliku do odczytu.")
     }
 
-    fun openOutput(uri: Uri): OutputStream = when {
+    override fun openOutput(uri: Uri): OutputStream = when {
         remote.isRemote(uri) -> remote.openOutput(uri)
         uri.scheme == "file" -> FileOutputStream(fileFor(uri), false)
         else -> resolver.openOutputStream(uri, "w") ?: throw IOException("Nie można otworzyć pliku do zapisu.")

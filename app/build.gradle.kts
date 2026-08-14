@@ -30,6 +30,10 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -50,4 +54,10 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-nop:2.0.17")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    // Robolectric, bo silnik operacji posługuje się android.net.Uri, które poza
+    // emulatorem rzuca "not mocked". Sama logika konfliktów i kosza jest czysta.
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }
