@@ -84,6 +84,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val notice by vm.notice.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     val clipboard by vm.clipboard.collectAsStateWithLifecycle()
+    val sources by vm.sources.collectAsStateWithLifecycle()
+    val currentSource by vm.currentSource.collectAsStateWithLifecycle()
+    val ftpConfig by vm.ftpConfig.collectAsStateWithLifecycle()
+    val smbConfig by vm.smbConfig.collectAsStateWithLifecycle()
 
     var tab by remember { mutableStateOf(Tab.FILES) }
     var query by remember { mutableStateOf("") }
@@ -99,8 +103,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var archiveItems by remember { mutableStateOf<List<FileItem>>(emptyList()) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val appScope = rememberCoroutineScope()
+    var pendingCloudSource by remember { mutableStateOf<SourceType?>(null) }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let(vm::setTree)
+    }
+    val cloudFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        val type = pendingCloudSource
+        pendingCloudSource = null
+        if (uri != null && type != null) vm.setCloudTree(type, uri)
     }
 
     LaunchedEffect(initialUri) {
@@ -123,6 +134,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         Tab.FILES -> files
         Tab.RECENT -> recentFiles
         Tab.FAVORITES -> favoriteFiles
+        Tab.SETTINGS -> emptyList()
     }
 
     val visibleFiles = remember(baseFiles, query, sort, category) {
@@ -195,7 +207,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         selectedUris = emptySet()
                     },
                     onShare = {
-                        shareItems(context, selectedItems)
+                        appScope.launch { shareItems(context, selectedItems, vm) }
                         selectedUris = emptySet()
                     },
                     onDelete = {
@@ -217,6 +229,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     NavItem(Tab.FAVORITES, tab, Icons.Default.Star, "Ulubione") {
                         tab = Tab.FAVORITES; query = ""; category = FileCategory.ALL
                     }
+                    NavItem(Tab.SETTINGS, tab, Icons.Default.Tune, "Ustawienia") {
+                        tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL
+                    }
                 }
             }
         },
@@ -233,7 +248,22 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            if (tab == Tab.FILES && currentDir == null) {
+            if (tab == Tab.SETTINGS) {
+                SettingsScreen(
+                    sources = sources,
+                    ftpConfig = ftpConfig,
+                    smbConfig = smbConfig,
+                    onEnabled = vm::setSourceEnabled,
+                    onConnectCloud = { type ->
+                        pendingCloudSource = type
+                        cloudFolderPicker.launch(null)
+                    },
+                    onSaveFtp = vm::saveFtp,
+                    onTestFtp = { vm.testSource(SourceType.FTP) },
+                    onSaveSmb = vm::saveSmb,
+                    onTestSmb = { vm.testSource(SourceType.SMB) }
+                )
+            } else if (tab == Tab.FILES && currentDir == null) {
                 EmptyStorage(onPick = { folderPicker.launch(null) })
             } else {
                 Column(Modifier.fillMaxSize()) {
@@ -253,6 +283,21 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         Spacer(Modifier.height(2.dp))
 
                         if (tab == Tab.FILES) {
+                            ActiveSourcesRow(
+                                sources = sources.filter { it.type == SourceType.LOCAL || (it.enabled && it.configured) },
+                                selected = currentSource,
+                                onOpen = { source ->
+                                    when {
+                                        source.configured -> vm.openSource(source.type)
+                                        source.type == SourceType.LOCAL -> folderPicker.launch(null)
+                                        source.type in setOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX) -> {
+                                            pendingCloudSource = source.type
+                                            cloudFolderPicker.launch(null)
+                                        }
+                                        else -> tab = Tab.SETTINGS
+                                    }
+                                }
+                            )
                             LocationStrip(
                                 label = folderLabel(currentDir),
                                 atRoot = currentDir == root,
@@ -381,8 +426,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             onDismiss = { preview = null },
             onFavorite = { vm.toggleFavorite(item.uri) },
             onDetails = { preview = null; details = item },
-            onShare = { shareItems(context, listOf(item)) },
-            onOpenExternal = { openExternal(context, item) }
+            onShare = { appScope.launch { shareItems(context, listOf(item), vm) } },
+            onOpenExternal = { appScope.launch { openExternal(context, item, vm) } }
         )
     }
 
@@ -494,6 +539,7 @@ private fun AppHero(
                             Tab.FILES -> folderLabel(currentDir)
                             Tab.RECENT -> "Ostatnio otwierane"
                             Tab.FAVORITES -> "Twoje ulubione"
+                            Tab.SETTINGS -> "Ustawienia"
                         },
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .8f),
                         style = MaterialTheme.typography.bodyMedium,
@@ -533,6 +579,46 @@ private fun HeroMetric(icon: ImageVector, value: String, label: String, modifier
                 Text(value, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Text(label, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .72f), style = MaterialTheme.typography.labelSmall)
             }
+        }
+    }
+}
+
+@Composable
+private fun ActiveSourcesRow(
+    sources: List<StorageSource>,
+    selected: SourceType,
+    onOpen: (StorageSource) -> Unit
+) {
+    if (sources.isEmpty()) return
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 2.dp)
+    ) {
+        items(sources, key = { it.type.name }) { source ->
+            val active = source.type == selected
+            FilterChip(
+                selected = active,
+                onClick = { onOpen(source) },
+                label = {
+                    Column {
+                        Text(source.label, maxLines = 1)
+                        if (!source.configured) {
+                            Text(
+                                "Skonfiguruj",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                leadingIcon = {
+                    Icon(
+                        if (source.configured) sourceIcon(source.type) else Icons.Default.AddLink,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            )
         }
     }
 }
@@ -740,7 +826,7 @@ private fun FileTile(
 @Composable
 private fun FileVisual(item: FileItem, modifier: Modifier, thumbnail: Boolean) {
     val tint = fileTint(item)
-    if (thumbnail && item.mimeType.startsWith("image/") && !item.mimeType.contains("svg")) {
+    if (thumbnail && item.uri.scheme == "content" && item.mimeType.startsWith("image/") && !item.mimeType.contains("svg")) {
         AsyncImage(
             model = item.uri,
             contentDescription = item.name,
@@ -838,12 +924,16 @@ private fun PreviewSheet(
     var text by remember(item.uri) { mutableStateOf<String?>(null) }
     var editing by remember(item.uri) { mutableStateOf(false) }
     var draft by remember(item.uri) { mutableStateOf("") }
+    var previewMediaUri by remember(item.uri) { mutableStateOf<Uri?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(item.uri) {
         if (isText(item)) {
             text = vm.readText(item.uri)
             draft = text.orEmpty()
+        }
+        if (item.mimeType.startsWith("image/")) {
+            previewMediaUri = runCatching { vm.materializeUri(item) }.getOrNull() ?: item.uri
         }
     }
 
@@ -865,7 +955,7 @@ private fun PreviewSheet(
             when {
                 item.mimeType.startsWith("image/") -> {
                     AsyncImage(
-                        model = item.uri,
+                        model = previewMediaUri ?: item.uri,
                         contentDescription = item.name,
                         modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(22.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh),
                         contentScale = ContentScale.Fit
@@ -1072,11 +1162,13 @@ private fun EmptyFolder(filtered: Boolean, tab: Tab) {
                 Tab.FILES -> Icons.Default.FolderOff
                 Tab.RECENT -> Icons.Default.Schedule
                 Tab.FAVORITES -> Icons.Default.StarBorder
+                Tab.SETTINGS -> Icons.Default.Tune
             }
             val text = if (filtered) "Nic tu nie pasuje" else when (tab) {
                 Tab.FILES -> "Ten folder jest pusty"
                 Tab.RECENT -> "Brak ostatnio otwieranych plików"
                 Tab.FAVORITES -> "Nie masz jeszcze ulubionych"
+                Tab.SETTINGS -> "Brak ustawień"
             }
             Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
                 Icon(icon, null, Modifier.padding(18.dp).size(44.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1162,10 +1254,12 @@ private fun matchesCategory(item: FileItem, category: FileCategory): Boolean = w
 
 private fun folderLabel(uri: Uri?): String {
     if (uri == null) return "Pamięć plików"
+    if (uri.scheme == RemoteRepository.FTP_SCHEME) return uri.path.orEmpty().trim('/').substringAfterLast('/').ifBlank { "FTP" }
+    if (uri.scheme == RemoteRepository.SMB_SCHEME) return uri.path.orEmpty().trim('/').substringAfterLast('/').ifBlank { "SMB / Samba" }
     return runCatching {
         val id = DocumentsContract.getDocumentId(uri)
         id.substringAfterLast('/').substringAfterLast(':').ifBlank { "Katalog główny" }
-    }.getOrDefault("Katalog")
+    }.getOrDefault(uri.lastPathSegment ?: "Katalog")
 }
 
 private fun meta(item: FileItem): String {
@@ -1207,33 +1301,33 @@ private fun isText(item: FileItem): Boolean =
         item.name.endsWith(".py", true) ||
         item.name.endsWith(".sh", true)
 
-private fun shareItems(context: Context, items: List<FileItem>) {
+private suspend fun shareItems(context: Context, items: List<FileItem>, vm: FileManagerViewModel) {
     val files = items.filterNot { it.isDirectory }
     if (files.isEmpty()) return
+    val uris = files.map { vm.materializeUri(it) }
     val intent = if (files.size == 1) {
         Intent(Intent.ACTION_SEND).apply {
             type = files.first().mimeType
-            putExtra(Intent.EXTRA_STREAM, files.first().uri)
+            putExtra(Intent.EXTRA_STREAM, uris.first())
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     } else {
         Intent(Intent.ACTION_SEND_MULTIPLE).apply {
             type = "*/*"
-            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(files.map { it.uri }))
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
     runCatching { context.startActivity(Intent.createChooser(intent, "Udostępnij")) }
 }
 
-private fun openExternal(context: Context, item: FileItem) {
+private suspend fun openExternal(context: Context, item: FileItem, vm: FileManagerViewModel) {
     if (item.isDirectory) return
+    val uri = vm.materializeUri(item)
     val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(item.uri, item.mimeType)
+        setDataAndType(uri, item.mimeType)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
     }
     runCatching { context.startActivity(intent) }
-        .onFailure {
-            runCatching { context.startActivity(Intent.createChooser(intent, "Otwórz ${item.name}")) }
-        }
+        .onFailure { runCatching { context.startActivity(Intent.createChooser(intent, "Otwórz ${item.name}")) } }
 }

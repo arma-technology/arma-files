@@ -15,7 +15,7 @@ data class FileItem(
 
 enum class SortMode { NAME, DATE, SIZE, TYPE }
 enum class ViewMode { LIST, GRID }
-enum class Tab { FILES, RECENT, FAVORITES }
+enum class Tab { FILES, RECENT, FAVORITES, SETTINGS }
 enum class FileCategory { ALL, FOLDERS, IMAGES, VIDEO, AUDIO, DOCUMENTS, ARCHIVES }
 
 data class ClipboardPayload(

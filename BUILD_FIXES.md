@@ -1,8 +1,9 @@
 # Build fixes applied locally
 
-**Status: fixes #1 and #2 below have now been needed in both v0.1.0 and
-v0.2.0 independently.** Worth applying at the source that generates these
-zips. v0.2.0 also needed a new, unrelated fix (#3).
+**Status: fixes #1 and #2 below have now been needed in v0.1.0, v0.2.0, and
+v0.3.0 independently -- three releases in a row.** Fix #3
+(`Icons.Default.InfoOutline`) has now recurred too, in v0.2.0 and v0.3.0.
+Worth applying all three at the source that generates these zips.
 
 ARMA Files v0.1.0 as received didn't compile. Two fixes were needed:
 

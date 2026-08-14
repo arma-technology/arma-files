@@ -12,8 +12,8 @@ android {
         applicationId = "pl.arma.files"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     buildFeatures { compose = true }
@@ -45,5 +45,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-svg:3.2.0")
+    implementation("commons-net:commons-net:3.13.0")
+    implementation("eu.agno3.jcifs:jcifs-ng:2.1.9")
+    implementation("org.slf4j:slf4j-api:2.0.17")
+    implementation("org.slf4j:slf4j-nop:2.0.17")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
