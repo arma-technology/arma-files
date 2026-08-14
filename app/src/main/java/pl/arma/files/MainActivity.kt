@@ -51,10 +51,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
@@ -1306,7 +1313,10 @@ private fun PreviewSheet(
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.fillMaxHeight(.96f)) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier.fillMaxSize().padding(horizontal = 16.dp).navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 FileVisual(item, Modifier.size(44.dp), thumbnail = true, vm = vm)
                 Spacer(Modifier.width(10.dp))
@@ -1397,6 +1407,7 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
     var scale by remember(item.uri) { mutableFloatStateOf(1f) }
     var offsetX by remember(item.uri) { mutableFloatStateOf(0f) }
     var offsetY by remember(item.uri) { mutableFloatStateOf(0f) }
+    var fullscreen by remember(item.uri) { mutableStateOf(false) }
 
     LaunchedEffect(item.uri, item.lastModified) {
         error = null
@@ -1411,12 +1422,15 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
             shape = RoundedCornerShape(22.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // W podglądzie arkuszowym obraz jest kotwiczony do górnej krawędzi.
+            // Dzięki temu pionowe obrazy/dokumenty nie zaczynają się w połowie popupu.
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 bitmap?.let { image ->
                     Image(
                         bitmap = image.asImageBitmap(),
                         contentDescription = item.name,
                         contentScale = ContentScale.Fit,
+                        alignment = Alignment.TopCenter,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(4.dp)
@@ -1442,11 +1456,13 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
                             }
                     )
                 }
-                if (bitmap == null && error == null) CircularProgressIndicator()
+                if (bitmap == null && error == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 error?.let {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Default.BrokenImage, null, Modifier.size(54.dp), tint = MaterialTheme.colorScheme.error)
-                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Default.BrokenImage, null, Modifier.size(54.dp), tint = MaterialTheme.colorScheme.error)
+                            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -1464,7 +1480,16 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
                 Text("${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
                 IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) { Icon(Icons.Default.ZoomIn, "Powiększ") }
                 IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) { Icon(Icons.Default.FitScreen, "Dopasuj") }
+                IconButton(onClick = { fullscreen = true }, enabled = bitmap != null) {
+                    Icon(Icons.Default.Fullscreen, "Pełny ekran")
+                }
             }
+        }
+    }
+
+    if (fullscreen) {
+        bitmap?.let { image ->
+            FullscreenBitmapViewer(image = image, name = item.name, onDismiss = { fullscreen = false })
         }
     }
 }
@@ -1472,16 +1497,222 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
 @Composable
 private fun SvgImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Modifier) {
     var uri by remember(item.uri, item.lastModified) { mutableStateOf<Uri?>(null) }
+    var fullscreen by remember(item.uri) { mutableStateOf(false) }
     LaunchedEffect(item.uri, item.lastModified) {
         uri = runCatching { vm.prepareImageUri(item) }.getOrNull()
     }
-    Surface(modifier = modifier, shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-        AsyncImage(
-            model = uri,
-            contentDescription = item.name,
-            modifier = Modifier.fillMaxSize().padding(8.dp),
-            contentScale = ContentScale.Fit
-        )
+
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            shape = RoundedCornerShape(22.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                AsyncImage(
+                    model = uri,
+                    contentDescription = item.name,
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.TopCenter
+                )
+            }
+        }
+        Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                IconButton(onClick = { fullscreen = true }, enabled = uri != null) {
+                    Icon(Icons.Default.Fullscreen, "Pełny ekran")
+                }
+            }
+        }
+    }
+
+    if (fullscreen) {
+        uri?.let { imageUri ->
+            FullscreenSvgViewer(uri = imageUri, name = item.name, onDismiss = { fullscreen = false })
+        }
+    }
+}
+
+@Composable
+private fun ImmersiveDialogSystemBars() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val window = ((view.parent as? DialogWindowProvider) ?: (view as? DialogWindowProvider))?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+}
+
+@Composable
+private fun FullscreenBitmapViewer(image: Bitmap, name: String, onDismiss: () -> Unit) {
+    var scale by remember(name) { mutableFloatStateOf(1f) }
+    var offsetX by remember(name) { mutableFloatStateOf(0f) }
+    var offsetY by remember(name) { mutableFloatStateOf(0f) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        ImmersiveDialogSystemBars()
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                Image(
+                    bitmap = image.asImageBitmap(),
+                    contentDescription = name,
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offsetX
+                            translationY = offsetY
+                        }
+                        .pointerInput(name) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                val next = (scale * zoom).coerceIn(1f, 8f)
+                                scale = next
+                                if (next > 1.01f) {
+                                    val shift = 3200f * (next - 1f)
+                                    offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
+                                    offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
+                                } else {
+                                    offsetX = 0f
+                                    offsetY = 0f
+                                }
+                            }
+                        }
+                )
+
+                Surface(
+                    modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.Black.copy(alpha = .58f)
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, "Zamknij pełny ekran", tint = Color.White)
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.Black.copy(alpha = .62f)
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        IconButton(onClick = {
+                            scale = (scale - .25f).coerceAtLeast(1f)
+                            if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
+                        }) { Icon(Icons.Default.ZoomOut, "Pomniejsz", tint = Color.White) }
+                        Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                        IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
+                            Icon(Icons.Default.ZoomIn, "Powiększ", tint = Color.White)
+                        }
+                        IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
+                            Icon(Icons.Default.FitScreen, "Dopasuj", tint = Color.White)
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.FullscreenExit, "Wyjdź z pełnego ekranu", tint = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullscreenSvgViewer(uri: Uri, name: String, onDismiss: () -> Unit) {
+    var scale by remember(name) { mutableFloatStateOf(1f) }
+    var offsetX by remember(name) { mutableFloatStateOf(0f) }
+    var offsetY by remember(name) { mutableFloatStateOf(0f) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        ImmersiveDialogSystemBars()
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                AsyncImage(
+                    model = uri,
+                    contentDescription = name,
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offsetX
+                            translationY = offsetY
+                        }
+                        .pointerInput(name) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                val next = (scale * zoom).coerceIn(1f, 8f)
+                                scale = next
+                                if (next > 1.01f) {
+                                    val shift = 3200f * (next - 1f)
+                                    offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
+                                    offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
+                                } else {
+                                    offsetX = 0f
+                                    offsetY = 0f
+                                }
+                            }
+                        }
+                )
+
+                Surface(
+                    modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.Black.copy(alpha = .58f)
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, "Zamknij pełny ekran", tint = Color.White)
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.Black.copy(alpha = .62f)
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        IconButton(onClick = {
+                            scale = (scale - .25f).coerceAtLeast(1f)
+                            if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
+                        }) { Icon(Icons.Default.ZoomOut, "Pomniejsz", tint = Color.White) }
+                        Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                        IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
+                            Icon(Icons.Default.ZoomIn, "Powiększ", tint = Color.White)
+                        }
+                        IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
+                            Icon(Icons.Default.FitScreen, "Dopasuj", tint = Color.White)
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.FullscreenExit, "Wyjdź z pełnego ekranu", tint = Color.White)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

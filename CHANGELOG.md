@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.1
+
+- poprawiono pozycjonowanie obrazu w podglądzie: obraz jest kotwiczony do góry zamiast centrowany w pionie
+- dodano działający tryb pełnoekranowy dla obrazów rastrowych
+- dodano pełny ekran również dla SVG
+- pełny ekran działa jako osobny bezramkowy dialog i ukrywa paski systemowe
+- zachowano zoom, pinch-to-zoom, przesuwanie i dopasowanie w trybie pełnoekranowym
+- dodano czytelne wyjście z pełnego ekranu przez X, FullscreenExit i Back
+- dodano `navigationBarsPadding()` do arkusza podglądu, aby kontrolki obrazu nie chowały się pod systemowym paskiem Androida
+
 ## 0.4.0
 
 - przebudowano ekran główny na widok „Mój komputer”

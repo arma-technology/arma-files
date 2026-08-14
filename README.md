@@ -1,8 +1,19 @@
-# ARMA Files v0.4.0
+# ARMA Files v0.4.1
 
 ARMA Files to nowoczesny menedżer plików dla Androida z lokalną pamięcią urządzenia, kartami SD, zasobami chmurowymi i sieciowymi oraz wbudowanymi podglądami plików.
 
-## Najważniejsze zmiany w v0.4.0
+## Poprawki w v0.4.1
+
+- podgląd obrazów w dolnym arkuszu jest kotwiczony do górnej krawędzi zamiast centrowany w pionie,
+- pionowe obrazy zaczynają się bezpośrednio pod paskiem informacji o pliku,
+- dodano rzeczywisty przycisk **Pełny ekran** dla obrazów rastrowych oraz SVG,
+- pełny ekran działa w osobnym, bezramkowym widoku zamiast wewnątrz `ModalBottomSheet`,
+- podczas pełnego ekranu paski systemowe są ukrywane i mogą zostać chwilowo pokazane gestem od krawędzi,
+- pełny ekran zachowuje pinch-to-zoom, przesuwanie, przyciski zoomu i dopasowanie obrazu,
+- wyjście z pełnego ekranu działa przez przycisk zamknięcia, ikonę `FullscreenExit` oraz systemowy Back,
+- dolny pasek kontrolek podglądu respektuje pasek nawigacyjny Androida i nie powinien być przez niego zasłaniany.
+
+## Najważniejsze zmiany z v0.4.0
 
 ### Ekran „Mój komputer”
 Główny ekran został przebudowany na wzór klasycznego widoku „Mój komputer” z PC:

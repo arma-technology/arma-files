@@ -1,10 +1,22 @@
 # Build fixes applied locally
 
-**Status: fixes #1 and #2 below have now been needed in v0.1.0, v0.2.0,
-v0.3.0, and v0.4.0 independently -- four releases in a row.** Fix #3
-(`Icons.Default.InfoOutline`) has now recurred in v0.2.0, v0.3.0, and
-v0.4.0 -- three releases in a row. Worth applying all three at the source
-that generates these zips.
+**As of v0.4.1 this repository is the source of truth for the project.**
+Development continues here; there are no further incoming zips to merge,
+so the fixes below are now simply part of the codebase rather than patches
+to reapply.
+
+Historical record of how often they had to be reapplied:
+
+| Fix | Releases affected |
+|-----|-------------------|
+| #1 JVM target | v0.1.0, v0.2.0, v0.3.0, v0.4.0, v0.4.1 — five in a row |
+| #2 `setContent` import | v0.1.0, v0.2.0, v0.3.0, v0.4.0, v0.4.1 — five in a row |
+| #3 `Icons.Default.InfoOutline` | v0.2.0, v0.3.0, v0.4.0, v0.4.1 — four in a row |
+| #4 path traversal | introduced v0.4.0, regressed in v0.4.1 |
+
+Note that #4 -- a security fix -- was silently reverted by the v0.4.1 zip,
+which is the clearest argument for the handover: fixes made here were not
+surviving the round trip.
 
 ARMA Files v0.1.0 as received didn't compile. Two fixes were needed:
 
