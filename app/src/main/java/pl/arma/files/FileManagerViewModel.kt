@@ -22,6 +22,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _favoriteFiles = MutableStateFlow<List<FileItem>>(emptyList())
     val favoriteFiles: StateFlow<List<FileItem>> = _favoriteFiles.asStateFlow()
 
+    private val _favoriteUris = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteUris: StateFlow<Set<String>> = _favoriteUris.asStateFlow()
+
     private val _currentDir = MutableStateFlow<Uri?>(null)
     val currentDir: StateFlow<Uri?> = _currentDir.asStateFlow()
 
@@ -31,8 +34,14 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    var clipboard: ClipboardItem? = null
-        private set
+    private val _notice = MutableStateFlow<String?>(null)
+    val notice: StateFlow<String?> = _notice.asStateFlow()
+
+    private val _busy = MutableStateFlow(false)
+    val busy: StateFlow<Boolean> = _busy.asStateFlow()
+
+    private val _clipboard = MutableStateFlow<ClipboardPayload?>(null)
+    val clipboard: StateFlow<ClipboardPayload?> = _clipboard.asStateFlow()
 
     private val navStack = ArrayDeque<Uri>()
 
@@ -92,67 +101,81 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun createFolder(name: String) {
         val parent = _currentDir.value ?: return
-        viewModelScope.launch {
-            runCatching { repo.createFolder(parent, name.trim()) }
-                .onSuccess { refresh() }
-                .onFailure { _error.value = "Nie udało się utworzyć folderu." }
+        launchOperation(success = "Utworzono folder") {
+            repo.createFolder(parent, name.trim()) ?: error("Nie udało się utworzyć folderu.")
+            refresh()
         }
     }
 
     fun createFile(name: String) {
         val parent = _currentDir.value ?: return
-        val mime = guessMime(name)
-        viewModelScope.launch {
-            runCatching { repo.createFile(parent, name.trim(), mime) }
-                .onSuccess { refresh() }
-                .onFailure { _error.value = "Nie udało się utworzyć pliku." }
+        launchOperation(success = "Utworzono plik") {
+            repo.createFile(parent, name.trim(), guessMime(name)) ?: error("Nie udało się utworzyć pliku.")
+            refresh()
         }
     }
 
     fun rename(item: FileItem, name: String) {
-        viewModelScope.launch {
-            runCatching { repo.rename(item, name.trim()) }
-                .onSuccess { newUri ->
-                    if (newUri != null) prefs.replaceUri(item.uri, newUri)
-                    refresh()
-                    loadSavedCollections()
-                }
-                .onFailure { _error.value = "Nie udało się zmienić nazwy." }
+        launchOperation(success = "Zmieniono nazwę") {
+            val newUri = repo.rename(item, name.trim())
+            if (newUri != null) prefs.replaceUri(item.uri, newUri)
+            refresh()
+            loadSavedCollections()
         }
     }
 
-    fun delete(item: FileItem) {
-        viewModelScope.launch {
-            runCatching { repo.delete(item) }
-                .onSuccess {
-                    refresh()
-                    loadSavedCollections()
-                }
-                .onFailure { _error.value = "Nie udało się usunąć elementu." }
+    fun delete(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        launchOperation(success = if (items.size == 1) "Usunięto element" else "Usunięto ${items.size} elementów") {
+            val deleted = repo.deleteAll(items)
+            refresh()
+            loadSavedCollections()
+            if (deleted != items.size) error("Usunięto $deleted z ${items.size} elementów.")
         }
     }
 
-    fun setClipboard(item: FileItem, cut: Boolean) {
-        clipboard = ClipboardItem(item, cut)
+    fun setClipboard(items: List<FileItem>, cut: Boolean) {
+        if (items.isNotEmpty()) {
+            _clipboard.value = ClipboardPayload(items.distinctBy { it.uri.toString() }, cut)
+            _notice.value = if (cut) "Wybrano do przeniesienia: ${items.size}" else "Skopiowano do schowka: ${items.size}"
+        }
+    }
+
+    fun clearClipboard() {
+        _clipboard.value = null
     }
 
     fun paste() {
-        val clip = clipboard ?: return
+        val clip = _clipboard.value ?: return
         val target = _currentDir.value ?: return
-        viewModelScope.launch {
-            runCatching {
-                val copied = repo.copyRecursively(clip.item, target)
-                    ?: error("Nie udało się utworzyć kopii docelowej.")
-                if (clip.cut) {
-                    if (!repo.delete(clip.item)) error("Kopia powstała, ale nie udało się usunąć źródła.")
-                    prefs.replaceUri(clip.item.uri, copied)
+        launchOperation(success = if (clip.cut) "Przeniesiono ${clip.items.size} elementów" else "Wklejono ${clip.items.size} elementów") {
+            val copied = repo.copyAll(clip.items, target)
+            if (clip.cut) {
+                clip.items.zip(copied).forEach { (source, destination) ->
+                    if (!repo.delete(source)) error("Kopia powstała, ale nie udało się usunąć: ${source.name}")
+                    prefs.replaceUri(source.uri, destination)
                 }
-                copied
-            }.onSuccess {
-                if (clip.cut) clipboard = null
-                refresh()
-                loadSavedCollections()
-            }.onFailure { _error.value = "Nie udało się wkleić elementu: ${it.message}" }
+                _clipboard.value = null
+            }
+            refresh()
+            loadSavedCollections()
+        }
+    }
+
+    fun createArchive(items: List<FileItem>, name: String) {
+        val parent = _currentDir.value ?: return
+        if (items.isEmpty()) return
+        launchOperation(success = "Utworzono archiwum ZIP") {
+            repo.createZip(items, parent, name)
+            refresh()
+        }
+    }
+
+    fun extractArchive(item: FileItem) {
+        val parent = _currentDir.value ?: return
+        launchOperation(success = "Rozpakowano ${item.name}") {
+            repo.extractZip(item, parent)
+            refresh()
         }
     }
 
@@ -166,14 +189,17 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         loadSavedCollections()
     }
 
-    fun favorites(): Set<String> = prefs.favorites()
+    fun toggleFavorites(items: List<FileItem>) {
+        items.forEach { prefs.toggleFavorite(it.uri) }
+        loadSavedCollections()
+    }
 
     suspend fun readText(uri: Uri) = repo.readText(uri)
     suspend fun writeText(uri: Uri, text: String) = repo.writeText(uri, text)
+    suspend fun sha256(uri: Uri) = repo.sha256(uri)
 
-    fun clearError() {
-        _error.value = null
-    }
+    fun clearError() { _error.value = null }
+    fun clearNotice() { _notice.value = null }
 
     fun itemFromUri(uri: Uri): FileItem? {
         val name = repo.displayName(uri) ?: uri.lastPathSegment ?: "plik"
@@ -182,23 +208,43 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun loadSavedCollections() {
+        _favoriteUris.value = prefs.favorites()
         viewModelScope.launch {
             _recentFiles.value = prefs.recents().mapNotNull { runCatching { repo.itemInfo(it) }.getOrNull() }
             _favoriteFiles.value = prefs.favorites().map(Uri::parse).mapNotNull { runCatching { repo.itemInfo(it) }.getOrNull() }
         }
     }
 
+    private fun launchOperation(success: String? = null, block: suspend () -> Unit) {
+        viewModelScope.launch {
+            _busy.value = true
+            try {
+                block()
+                if (success != null) _notice.value = success
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Operacja nie powiodła się."
+            } finally {
+                _busy.value = false
+            }
+        }
+    }
+
     private fun guessMime(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {
-        "txt", "log", "ini", "cfg", "conf" -> "text/plain"
+        "txt", "log", "ini", "cfg", "conf", "kt", "kts", "java", "c", "cpp", "h", "hpp", "py", "sh" -> "text/plain"
         "md", "markdown" -> "text/markdown"
         "json" -> "application/json"
         "yaml", "yml" -> "application/yaml"
         "xml" -> "application/xml"
         "svg" -> "image/svg+xml"
+        "jpg", "jpeg" -> "image/jpeg"
+        "png" -> "image/png"
+        "gif" -> "image/gif"
+        "webp" -> "image/webp"
+        "pdf" -> "application/pdf"
+        "zip" -> "application/zip"
         "html", "htm" -> "text/html"
         "css" -> "text/css"
         "js" -> "text/javascript"
-        "kt", "kts", "java", "c", "cpp", "h", "hpp", "py", "sh" -> "text/plain"
         else -> "application/octet-stream"
     }
 }

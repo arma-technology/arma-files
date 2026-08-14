@@ -1,5 +1,9 @@
 # Build fixes applied locally
 
+**Status: fixes #1 and #2 below have now been needed in both v0.1.0 and
+v0.2.0 independently.** Worth applying at the source that generates these
+zips. v0.2.0 also needed a new, unrelated fix (#3).
+
 ARMA Files v0.1.0 as received didn't compile. Two fixes were needed:
 
 ## 1. Inconsistent JVM target between Java and Kotlin compilation
@@ -34,13 +38,25 @@ Same JVM 17 target used in the sibling `TextForge` project.
 `MainActivity.kt` called `setContent { ... }` (line 54) without
 `import androidx.activity.compose.setContent`. Added the import.
 
+## 3. (v0.2.0 only) `Icons.Default.InfoOutline` doesn't exist
+
+No such icon in `material-icons-core` or `material-icons-extended`
+(confirmed by listing the actual `.aar` contents) — likely confused with
+`Icons.Outlined.Info` / `Icons.Filled.Info`, the only "Info" icons that
+actually exist. Fixed by using `Icons.Default.Info`, consistent with the
+other `Icons.Default.*` icons already used alongside it (Star, Share).
+
 ## Verification
 
 - `./gradlew clean assembleDebug` — `BUILD SUCCESSFUL`, only pre-existing
   deprecation warnings remain (non-`AutoMirrored` icon variants —
   cosmetic).
+- v0.2.0: cross-checked every `Icons.Default.*`/`Icons.Filled.*` reference
+  in `MainActivity.kt` against the actual icon classes shipped in
+  `material-icons-core`/`material-icons-extended` before rebuilding — only
+  `InfoOutline` was invalid.
 - APK verified with `aapt dump badging`: `pl.arma.files`, versionName
-  `0.1.0`, minSdk 26, targetSdk 35.
+  matches release, minSdk 26, targetSdk 35.
 
 ## Note on the custom `gradlew`
 

@@ -16,4 +16,9 @@ data class FileItem(
 enum class SortMode { NAME, DATE, SIZE, TYPE }
 enum class ViewMode { LIST, GRID }
 enum class Tab { FILES, RECENT, FAVORITES }
-data class ClipboardItem(val item: FileItem, val cut: Boolean)
+enum class FileCategory { ALL, FOLDERS, IMAGES, VIDEO, AUDIO, DOCUMENTS, ARCHIVES }
+
+data class ClipboardPayload(
+    val items: List<FileItem>,
+    val cut: Boolean
+)

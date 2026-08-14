@@ -1,32 +1,57 @@
-# ARMA Files v0.1.0
+# ARMA Files v0.2.0
 
-Nowoczesny menedżer plików na Androida napisany w Kotlinie i Jetpack Compose.
+Druga wersja lekkiego, nowoczesnego menedżera plików na Androida. Projekt jest napisany w Kotlinie i Jetpack Compose i korzysta z Android Storage Access Framework zamiast żądania pełnego dostępu do całej pamięci.
 
-## Najważniejsze funkcje
-- Material 3, tryb ciemny i dynamiczne kolory
-- Storage Access Framework z trwałym uprawnieniem do wybranego drzewa katalogów
-- lista i responsywna siatka plików
-- wyszukiwanie i sortowanie po nazwie, dacie, rozmiarze i typie
-- tworzenie folderów i plików
-- zmiana nazwy i usuwanie
-- kopiowanie, wycinanie i wklejanie, także folderów rekurencyjnie
-- bezpieczne przenoszenie: źródło jest usuwane dopiero po utworzeniu kopii
-- globalna lista ostatnio otwieranych plików
-- globalne ulubione
-- podgląd grafik, także SVG przez Coil
-- podgląd i prosta edycja TXT/MD/JSON/YAML/XML oraz popularnych plików kodu
-- udostępnianie i otwieranie plików w innych aplikacjach przez `content://`
-- obsługa `ACTION_VIEW`, więc ARMA Files może być aplikacją otwierającą pliki
-- `WindowInsets.safeDrawing`, dzięki czemu przyciski nie chowają się pod paskiem systemowym Androida
-- własna adaptacyjna ikona aplikacji
+## Co nowego w v0.2
+
+### Nowy wygląd
+- własny nagłówek ARMA Files z podsumowaniem bieżącej lokalizacji
+- odświeżona paleta jasna i ciemna zamiast przypadkowych kolorów dynamicznych systemu
+- nowocześniejsze karty plików, większe promienie, lepsza hierarchia tekstu
+- kolorystyczne rozróżnienie typów plików
+- miniatury zdjęć bezpośrednio na liście i w siatce
+- przebudowane wyszukiwanie, sortowanie i przełącznik lista/siatka
+- atrakcyjniejszy ekran pierwszego uruchomienia i puste stany
+- bezpieczne `WindowInsets.safeDrawing` — elementy aplikacji nie powinny chować się pod paskami systemowymi
+
+### Organizacja
+- filtry: Wszystko / Foldery / Obrazy / Wideo / Audio / Dokumenty / Archiwa
+- liczba elementów i łączny rozmiar plików bieżącego widoku
+- Ostatnie i Ulubione nadal działają globalnie
+- zapamiętany katalog główny przez trwałe uprawnienie SAF
+
+### Operacje na plikach
+- wielokrotny wybór
+- zaznacz wszystko
+- kopiowanie wielu elementów
+- przenoszenie wielu elementów
+- usuwanie wielu elementów
+- udostępnianie wielu plików
+- tworzenie plików i folderów
+- zmiana nazwy
+- schowek z widocznym stanem i przyciskiem Wklej / Anuluj
+
+### ZIP
+- tworzenie archiwum `.zip` z jednego lub wielu plików/folderów
+- rekurencyjne pakowanie folderów
+- rozpakowywanie ZIP do nowego katalogu
+- ochrona przed klasycznym ZIP Slip (`../` w nazwach wpisów archiwum)
+
+### Podgląd i właściwości
+- obrazy i SVG przez Coil
+- przewijalny podgląd plików tekstowych
+- edycja TXT/MD/JSON/YAML/XML i popularnych plików kodu
+- otwieranie pozostałych formatów w zewnętrznych aplikacjach
+- panel właściwości: MIME, rozmiar, data modyfikacji, URI
+- automatyczne obliczanie SHA-256 dla plików
 
 ## Dostęp do pamięci
-Aplikacja celowo korzysta z Android Storage Access Framework zamiast `MANAGE_EXTERNAL_STORAGE`. Przy pierwszym uruchomieniu wybierasz katalog startowy, a aplikacja zachowuje przyznany dostęp za pomocą `takePersistableUriPermission()`.
 
-To rozwiązuje problem typowy dla listy „Ostatnie”: pliki znajdujące się w zapamiętanym drzewie katalogów nadal mają dostęp po ponownym uruchomieniu aplikacji.
+ARMA Files używa Storage Access Framework. Przy pierwszym uruchomieniu wybierz katalog, którym aplikacja ma zarządzać. Uprawnienie jest utrwalane za pomocą `takePersistableUriPermission()`, więc po restarcie aplikacja może wrócić do wybranej lokalizacji bez ponownego pytania o dostęp.
+
+To podejście jest zgodne z nowoczesnym modelem bezpieczeństwa Androida i nie wymaga `MANAGE_EXTERNAL_STORAGE`.
 
 ## Budowanie na Linuxie
-Projekt ma wrapper Gradle 8.11.1. W paczce skrypt `gradlew` potrafi sam pobrać brakujący oficjalny `gradle-wrapper.jar`, zweryfikować SHA-256 i dopiero wtedy go uruchomić.
 
 ```bash
 chmod +x gradlew
@@ -39,7 +64,7 @@ APK po poprawnym buildzie:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Możesz też po prostu otworzyć katalog projektu w Android Studio i wykonać Gradle Sync.
+Możesz również otworzyć projekt w Android Studio i wykonać Gradle Sync / Build APK.
 
 ## Stos
 - Kotlin 2.1.21
@@ -50,13 +75,13 @@ Możesz też po prostu otworzyć katalog projektu w Android Studio i wykonać Gr
 - targetSdk / compileSdk 35
 - Coil 3 + SVG
 
-## Następne sensowne rozszerzenia
-- pasek postępu i WorkManager dla dużych operacji kopiowania
-- multi-select
-- ZIP: kompresja i rozpakowywanie
-- miniatury zdjęć i filmów bezpośrednio na liście
-- zakładki do wielu katalogów startowych
-- MediaStore: szybkie sekcje Obrazy / Wideo / Audio / Dokumenty
-- opcjonalny tryb pełnego dostępu do pamięci dla instalacji poza Google Play
+## Kandydaci do v0.3
+- historia kilku katalogów startowych / zakładki lokalizacji
+- MediaStore i szybkie kolekcje całego urządzenia
+- miniatury filmów
+- odtwarzacz audio/wideo
+- EXIF dla zdjęć
+- pasek postępu i anulowanie długich operacji
+- przeniesienie dużych operacji do WorkManager
 - SMB / SFTP / WebDAV
-- panel właściwości pliku, checksumy i szczegóły EXIF
+- opcjonalne szyfrowane „Sejf” i zabezpieczenie biometrią
