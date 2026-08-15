@@ -47,11 +47,9 @@ Zrobione poza planem, bo dotykało tego samego ekranu: własne przypięte
 foldery z przeciąganiem kolejności oraz miejsce zajęte na kartach nośników.
 Zostaje z „Mój komputer": wykres zajętości bogatszy niż pasek postępu.
 
-Nie udało się domknąć: dla folderów podpiętych przez SAF nie da się wskazać
-nośnika, więc kosz tam nie działa i usuwanie jest trwałe. Do naprawy przy
-Fazie 2, która i tak przebudowuje warstwę backendów.
+Kosz dla folderów SAF został domknięty w Fazie 2.
 
-### Faza 2 — konta i backendy
+### Faza 2 — konta i backendy — ZROBIONE
 
 Odblokowuje cztery punkty roadmapy.
 
@@ -61,8 +59,14 @@ Odblokowuje cztery punkty roadmapy.
 - wiele połączeń tego samego typu (NAS Dom, NAS Firma, Proxmox…)
 - SFTP i WebDAV jako nowe backendy
 - pula połączeń — koniec z łączeniem od nowa przy każdej miniaturze
-- autowykrywanie SMB w LAN (mDNS/NetBIOS) zakładające konta jednym
-  kliknięciem
+- autowykrywanie SMB w LAN zakładające konta jednym kliknięciem
+
+Zrealizowane bez mDNS/NetBIOS: rozgłoszenia bywają odfiltrowane, więc
+skanujemy podsieć po porcie 445. Sieci większe niż /22 pomijamy, bo
+skanowanie trwałoby zbyt długo.
+
+Domknięte przy okazji: kosz dla folderów SAF — korzeniem jest katalog
+drzewa, którego identyfikator niesie samo URI dokumentu.
 
 ### Faza 3 — nawigacja i duży ekran
 

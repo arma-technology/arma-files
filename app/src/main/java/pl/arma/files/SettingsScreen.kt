@@ -16,21 +16,21 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import pl.arma.files.net.RemoteAccount
 
 @Composable
 fun SettingsScreen(
     sources: List<StorageSource>,
-    ftpConfig: FtpConfig,
-    smbConfig: SmbConfig,
+    accounts: List<RemoteAccount>,
     allFilesAccess: Boolean,
     onGrantAllFilesAccess: () -> Unit,
     onPickLocalFolder: () -> Unit,
     onEnabled: (SourceType, Boolean) -> Unit,
     onConnectCloud: (SourceType) -> Unit,
-    onSaveFtp: (FtpConfig) -> Unit,
-    onTestFtp: () -> Unit,
-    onSaveSmb: (SmbConfig) -> Unit,
-    onTestSmb: () -> Unit
+    onEditAccount: (RemoteAccount) -> Unit,
+    onAccountEnabled: (RemoteAccount, Boolean) -> Unit,
+    onAddAccount: () -> Unit,
+    onDiscover: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -70,20 +70,12 @@ fun SettingsScreen(
         }
 
         item {
-            FtpSettingsCard(
-                config = ftpConfig,
-                onEnabled = { onEnabled(SourceType.FTP, it) },
-                onSave = onSaveFtp,
-                onTest = onTestFtp
-            )
-        }
-
-        item {
-            SmbSettingsCard(
-                config = smbConfig,
-                onEnabled = { onEnabled(SourceType.SMB, it) },
-                onSave = onSaveSmb,
-                onTest = onTestSmb
+            AccountList(
+                accounts = accounts,
+                onEdit = onEditAccount,
+                onEnabled = onAccountEnabled,
+                onAdd = onAddAccount,
+                onDiscover = onDiscover
             )
         }
 
@@ -262,90 +254,7 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
     }
 }
 
-@Composable
-private fun FtpSettingsCard(config: FtpConfig, onEnabled: (Boolean) -> Unit, onSave: (FtpConfig) -> Unit, onTest: () -> Unit) {
-    var host by remember(config.host) { mutableStateOf(config.host) }
-    var port by remember(config.port) { mutableStateOf(config.port.toString()) }
-    var user by remember(config.username) { mutableStateOf(config.username) }
-    var pass by remember(config.password) { mutableStateOf(config.password) }
-    var root by remember(config.rootPath) { mutableStateOf(config.rootPath) }
-    var ftps by remember(config.ftps) { mutableStateOf(config.ftps) }
 
-    ExpandableNetworkCard(
-        icon = Icons.Default.Language,
-        title = "FTP / FTPS",
-        subtitle = if (config.enabled && config.host.isNotBlank()) "${config.host}:${config.port}" else if (config.enabled) "Włączone • wymaga konfiguracji" else "Wyłączone",
-        enabled = config.enabled,
-        onEnabled = onEnabled
-    ) {
-        SettingField("Serwer", host, { host = it }, "np. 192.168.1.10")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(.38f)) { SettingField("Port", port, { port = it.filter(Char::isDigit).take(5) }, "21") }
-            Box(Modifier.weight(.62f)) { SettingField("Katalog startowy", root, { root = it }, "/") }
-        }
-        SettingField("Użytkownik", user, { user = it }, "login")
-        SettingField("Hasło", pass, { pass = it }, "hasło", password = true)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("FTPS (TLS)", fontWeight = FontWeight.Medium)
-                Text("Szyfrowane połączenie FTP", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Switch(checked = ftps, onCheckedChange = { ftps = it })
-        }
-        val currentConfig = {
-            FtpConfig(true, host.trim(), port.toIntOrNull() ?: 21, user, pass, root.ifBlank { "/" }, ftps)
-        }
-        NetworkButtons(
-            canSave = host.isNotBlank(),
-            onSave = { onSave(currentConfig()) },
-            onTest = {
-                onSave(currentConfig())
-                onTest()
-            }
-        )
-    }
-}
-
-@Composable
-private fun SmbSettingsCard(config: SmbConfig, onEnabled: (Boolean) -> Unit, onSave: (SmbConfig) -> Unit, onTest: () -> Unit) {
-    var host by remember(config.host) { mutableStateOf(config.host) }
-    var port by remember(config.port) { mutableStateOf(config.port.toString()) }
-    var share by remember(config.share) { mutableStateOf(config.share) }
-    var root by remember(config.rootPath) { mutableStateOf(config.rootPath) }
-    var domain by remember(config.domain) { mutableStateOf(config.domain) }
-    var user by remember(config.username) { mutableStateOf(config.username) }
-    var pass by remember(config.password) { mutableStateOf(config.password) }
-
-    ExpandableNetworkCard(
-        icon = Icons.Default.Storage,
-        title = "SMB / Samba",
-        subtitle = if (config.enabled && config.host.isNotBlank()) "${config.host}/${config.share}" else if (config.enabled) "Włączone • wymaga konfiguracji" else "Wyłączone",
-        enabled = config.enabled,
-        onEnabled = onEnabled
-    ) {
-        SettingField("Serwer", host, { host = it }, "NAS, nazwa hosta lub IP")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(.35f)) { SettingField("Port", port, { port = it.filter(Char::isDigit).take(5) }, "445") }
-            Box(Modifier.weight(.65f)) { SettingField("Udział", share, { share = it }, "np. Dokumenty") }
-        }
-        SettingField("Katalog startowy", root, { root = it }, "opcjonalnie")
-        SettingField("Domena", domain, { domain = it }, "opcjonalnie")
-        SettingField("Użytkownik", user, { user = it }, "login")
-        SettingField("Hasło", pass, { pass = it }, "hasło", password = true)
-        Text("Połączenie wymusza SMB2 lub nowszy protokół.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        val currentConfig = {
-            SmbConfig(true, host.trim(), port.toIntOrNull() ?: 445, share.trim(), root.trim(), domain.trim(), user, pass)
-        }
-        NetworkButtons(
-            canSave = host.isNotBlank() && share.isNotBlank(),
-            onSave = { onSave(currentConfig()) },
-            onTest = {
-                onSave(currentConfig())
-                onTest()
-            }
-        )
-    }
-}
 
 @Composable
 private fun ExpandableNetworkCard(

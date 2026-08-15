@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0-alpha1
+
+- połączeń każdego typu może być wiele: „NAS Dom" obok „NAS Firma" i kopii
+  zapasowych, każde z własną nazwą i własnym przełącznikiem
+- dodano SFTP — szyfrowany i działający przez jedno połączenie, więc nie
+  wymaga trybu pasywnego ani otwierania portów jak FTP
+- dodano WebDAV (Nextcloud, ownCloud, Apache mod_dav), z HTTP i HTTPS
+- dodano wyszukiwanie serwerów SMB w sieci lokalnej — adresu nie trzeba już
+  przepisywać ręcznie
+- połączenia są utrzymywane i wykorzystywane ponownie zamiast logować się od
+  nowa przy każdej operacji; katalog ze zdjęciami na FTP nie oznacza już
+  jednego logowania na miniaturę
+- nowy ekran połączeń: dodawanie, edycja, test połączenia i usuwanie
+- kosz działa też dla folderów podpiętych przez SAF
+- kosz zasobu sieciowego zostaje na właściwym serwerze
+- nazwy plików i katalogów na serwerze nie mogą już przemycić ścieżki w górę
+  drzewa
+
 ## 0.5.0-alpha3
 
 - podgląd pliku otwiera się od razu rozwinięty do góry, zamiast startować w

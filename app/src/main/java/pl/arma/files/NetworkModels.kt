@@ -19,23 +19,4 @@ data class StorageSource(
     val accountId: String? = null
 )
 
-data class FtpConfig(
-    val enabled: Boolean = false,
-    val host: String = "",
-    val port: Int = 21,
-    val username: String = "",
-    val password: String = "",
-    val rootPath: String = "/",
-    val ftps: Boolean = false
-)
 
-data class SmbConfig(
-    val enabled: Boolean = false,
-    val host: String = "",
-    val port: Int = 445,
-    val share: String = "",
-    val rootPath: String = "",
-    val domain: String = "",
-    val username: String = "",
-    val password: String = ""
-)

@@ -218,6 +218,17 @@ class FileRepository(private val context: Context) : FileOps {
 
     fun remoteRoot(account: RemoteAccount): Uri = RemoteRepository.rootOf(account)
 
+    fun disconnectRemote(account: RemoteAccount) = remote.disconnect(account)
+
+    /**
+     * Sprawdza podane dane logowania, nie zapisując konta — wymaga więc
+     * przekazania konta wprost, zamiast szukania go po URI.
+     */
+    fun probeAccount(account: RemoteAccount): Int =
+        RemoteRepository { id -> account.takeIf { it.id == id } }
+            .listChildren(RemoteRepository.rootOf(account))
+            .size
+
     override fun openInput(uri: Uri): InputStream = when {
         remote.isRemote(uri) -> remote.openInput(uri)
         uri.scheme == "file" -> FileInputStream(fileFor(uri))

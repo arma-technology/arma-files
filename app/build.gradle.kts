@@ -12,8 +12,8 @@ android {
         applicationId = "pl.arma.files"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.5.0-alpha3"
+        versionCode = 10
+        versionName = "0.6.0-alpha1"
     }
 
     buildFeatures { compose = true }
@@ -50,7 +50,13 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-svg:3.2.0")
     implementation("commons-net:commons-net:3.13.0")
-    implementation("eu.agno3.jcifs:jcifs-ng:2.1.9")
+    // jcifs-ng ciagnie bcprov-jdk15on, sshj bcprov-jdk18on -- te same klasy w
+    // dwoch artefaktach. Zostawiamy nowszy, ktory jest nadzbiorem starego.
+    implementation("eu.agno3.jcifs:jcifs-ng:2.1.9") {
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
+    }
+    implementation("com.hierynomus:sshj:0.38.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-nop:2.0.17")
     debugImplementation("androidx.compose.ui:ui-tooling")

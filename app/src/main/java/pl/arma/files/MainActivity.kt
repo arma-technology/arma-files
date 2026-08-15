@@ -66,6 +66,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import pl.arma.files.net.RemoteAccount
+import pl.arma.files.net.RemoteType
 import pl.arma.files.ui.theme.ArmaFilesTheme
 import java.io.File
 import java.text.DateFormat
@@ -111,8 +113,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val clipboard by vm.clipboard.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val currentSource by vm.currentSource.collectAsStateWithLifecycle()
-    val ftpConfig by vm.ftpConfig.collectAsStateWithLifecycle()
-    val smbConfig by vm.smbConfig.collectAsStateWithLifecycle()
     val deviceStorages by vm.deviceStorages.collectAsStateWithLifecycle()
     val pinnedFolders by vm.pinnedFolders.collectAsStateWithLifecycle()
     val allFilesAccess by vm.allFilesAccess.collectAsStateWithLifecycle()
@@ -120,6 +120,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val pendingConflict by vm.pendingConflict.collectAsStateWithLifecycle()
     val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
     val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
+    val remoteAccounts by vm.remoteAccounts.collectAsStateWithLifecycle()
+    val accountTestResult by vm.accountTestResult.collectAsStateWithLifecycle()
+    val testingAccount by vm.testingAccount.collectAsStateWithLifecycle()
+    val discovered by vm.discovered.collectAsStateWithLifecycle()
+    val scanning by vm.scanning.collectAsStateWithLifecycle()
 
     var tab by remember { mutableStateOf(Tab.FILES) }
     var query by remember { mutableStateOf("") }
@@ -139,6 +144,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var showTrash by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
     var apkToInstall by remember { mutableStateOf<FileItem?>(null) }
+    var editedAccount by remember { mutableStateOf<Pair<RemoteAccount, Boolean>?>(null) }
+    var showDiscovery by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -349,8 +356,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 tab == Tab.SETTINGS -> {
                     SettingsScreen(
                         sources = sources,
-                        ftpConfig = ftpConfig,
-                        smbConfig = smbConfig,
+                        accounts = remoteAccounts,
                         allFilesAccess = allFilesAccess,
                         onGrantAllFilesAccess = ::requestBroadStorageAccess,
                         onPickLocalFolder = { folderPicker.launch(null) },
@@ -359,10 +365,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             pendingCloudSource = type
                             cloudFolderPicker.launch(null)
                         },
-                        onSaveFtp = vm::saveFtp,
-                        onTestFtp = { vm.testSource(SourceType.FTP) },
-                        onSaveSmb = vm::saveSmb,
-                        onTestSmb = { vm.testSource(SourceType.SMB) }
+                        onEditAccount = { editedAccount = it to false },
+                        onAccountEnabled = { account, on -> vm.setAccountEnabled(account.id, on) },
+                        onAddAccount = { editedAccount = vm.newAccountDraft() to true },
+                        onDiscover = { showDiscovery = true; vm.discoverLan() }
                     )
                 }
 
@@ -626,8 +632,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             text = {
                 Text(
                     "Elementy trafią do kosza na tym samym nośniku, więc nie zwolnią miejsca " +
-                        "od razu — za to można je przywrócić. Tam, gdzie kosza nie da się " +
-                        "założyć (np. folder podpięty przez SAF), usunięcie jest trwałe."
+                        "od razu — za to można je przywrócić."
                 )
             },
             confirmButton = {
@@ -691,6 +696,34 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             onUndo = { vm.undo(it); showHistory = false },
             onClear = vm::clearOperationHistory,
             onDismiss = { showHistory = false }
+        )
+    }
+
+    editedAccount?.let { (account, isNew) ->
+        AccountEditorSheet(
+            initial = account,
+            isNew = isNew,
+            testResult = accountTestResult,
+            testing = testingAccount,
+            onTest = vm::testAccount,
+            onSave = vm::saveAccount,
+            onDelete = vm::deleteAccount,
+            onDismiss = { editedAccount = null; vm.clearAccountTest() }
+        )
+    }
+
+    if (showDiscovery) {
+        DiscoverySheet(
+            scanning = scanning,
+            hosts = discovered,
+            onUse = { host ->
+                showDiscovery = false
+                editedAccount = vm.newAccountDraft(RemoteType.SMB).copy(
+                    label = host.name ?: host.address,
+                    host = host.address
+                ) to true
+            },
+            onDismiss = { showDiscovery = false }
         )
     }
 

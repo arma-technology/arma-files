@@ -26,6 +26,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import pl.arma.files.net.AccountStore
+import pl.arma.files.net.DiscoveredHost
+import pl.arma.files.net.LanScanner
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
 import pl.arma.files.ops.ConflictDecision
@@ -47,6 +49,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _remoteAccounts = MutableStateFlow<List<RemoteAccount>>(emptyList())
     val remoteAccounts: StateFlow<List<RemoteAccount>> = _remoteAccounts.asStateFlow()
+
+    private val _accountTestResult = MutableStateFlow<String?>(null)
+    val accountTestResult: StateFlow<String?> = _accountTestResult.asStateFlow()
+
+    private val _testingAccount = MutableStateFlow(false)
+    val testingAccount: StateFlow<Boolean> = _testingAccount.asStateFlow()
+
+    private val _discovered = MutableStateFlow<List<DiscoveredHost>>(emptyList())
+    val discovered: StateFlow<List<DiscoveredHost>> = _discovered.asStateFlow()
+
+    private val _scanning = MutableStateFlow(false)
+    val scanning: StateFlow<Boolean> = _scanning.asStateFlow()
 
     /** Kolejka i historia pochodzą z silnika żyjącego w procesie aplikacji. */
     val operations: StateFlow<List<Operation>> = engine.operations
@@ -79,12 +93,6 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _sources = MutableStateFlow<List<StorageSource>>(emptyList())
     val sources: StateFlow<List<StorageSource>> = _sources.asStateFlow()
-
-    private val _ftpConfig = MutableStateFlow(FtpConfig())
-    val ftpConfig: StateFlow<FtpConfig> = _ftpConfig.asStateFlow()
-
-    private val _smbConfig = MutableStateFlow(SmbConfig())
-    val smbConfig: StateFlow<SmbConfig> = _smbConfig.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -137,30 +145,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setSourceEnabled(type: SourceType, enabled: Boolean) {
+        // Zostaje tylko dla źródeł chmurowych podpiętych przez SAF —
+        // FTP, SFTP, SMB i WebDAV są kontami i mają własny przełącznik.
         if (type == SourceType.LOCAL) return
-        // FTP i SMB są teraz kontami, a nie jedną globalną konfiguracją. Ekran
-        // ustawień przełącza je nadal po typie, więc kierujemy to na konto
-        // odziedziczone po poprzednich wersjach.
-        val legacyId = when (type) {
-            SourceType.FTP -> RemoteAccount.LEGACY_FTP_ID
-            SourceType.SMB -> RemoteAccount.LEGACY_SMB_ID
-            else -> null
-        }
-        if (legacyId != null) {
-            if (accounts.get(legacyId) == null) {
-                // Konto jeszcze nie istnieje — zakładamy je z bieżącej, być może
-                // pustej konfiguracji, żeby przełącznik działał tak jak dawniej,
-                // zanim użytkownik wpisze adres serwera.
-                if (type == SourceType.FTP) {
-                    saveFtp(_ftpConfig.value.copy(enabled = enabled))
-                } else {
-                    saveSmb(_smbConfig.value.copy(enabled = enabled))
-                }
-                return
-            }
-            setAccountEnabled(legacyId, enabled)
-            return
-        }
         networkPrefs.setEnabled(type, enabled)
         afterSourceDisabled(enabled) { it.type == type }
     }
@@ -194,52 +181,61 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun saveFtp(config: FtpConfig) {
-        val existing = accounts.get(RemoteAccount.LEGACY_FTP_ID)
-        accounts.save(
-            RemoteAccount(
-                id = RemoteAccount.LEGACY_FTP_ID,
-                type = RemoteType.FTP,
-                label = existing?.label?.takeIf { it.isNotBlank() } ?: if (config.ftps) "FTPS" else "FTP",
-                host = config.host.trim(),
-                port = config.port,
-                username = config.username,
-                password = config.password,
-                rootPath = config.rootPath.ifBlank { "/" },
-                secure = config.ftps,
-                enabled = config.enabled
-            )
-        )
-        updateSources()
-    }
 
-    fun saveSmb(config: SmbConfig) {
-        val existing = accounts.get(RemoteAccount.LEGACY_SMB_ID)
-        accounts.save(
-            RemoteAccount(
-                id = RemoteAccount.LEGACY_SMB_ID,
-                type = RemoteType.SMB,
-                label = existing?.label?.takeIf { it.isNotBlank() } ?: "SMB",
-                host = config.host.trim(),
-                port = config.port,
-                username = config.username,
-                password = config.password,
-                rootPath = config.rootPath.trim().trim('/'),
-                domain = config.domain.trim(),
-                share = config.share.trim().trim('/'),
-                enabled = config.enabled
-            )
-        )
-        updateSources()
-    }
 
     /** Zapisuje dowolne konto sieciowe — także nowe, spoza pary FTP/SMB. */
     fun saveAccount(account: RemoteAccount) {
+        // Zmiana adresu albo hasła unieważnia otwarte sesje, więc zamykamy je,
+        // zanim ktokolwiek sięgnie po nie z puli.
+        accounts.get(account.id)?.let(repo::disconnectRemote)
         accounts.save(account)
         updateSources()
     }
 
+    fun newAccountDraft(type: RemoteType = RemoteType.SMB): RemoteAccount = RemoteAccount(
+        id = RemoteAccount.newId(),
+        type = type,
+        label = "",
+        host = "",
+        port = RemoteAccount.defaultPort(type, secure = false),
+        username = ""
+    )
+
+    /** Sprawdza połączenie bez zapisywania konta. */
+    fun testAccount(account: RemoteAccount) {
+        _testingAccount.value = true
+        _accountTestResult.value = null
+        viewModelScope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) { repo.probeAccount(account) }
+            }
+            _testingAccount.value = false
+            _accountTestResult.value = result.fold(
+                onSuccess = { count -> "Połączenie działa • $count elementów w katalogu startowym" },
+                onFailure = { it.message ?: "Nie udało się połączyć." }
+            )
+        }
+    }
+
+    fun clearAccountTest() {
+        _accountTestResult.value = null
+        _testingAccount.value = false
+    }
+
+    /** Szuka serwerów SMB w sieci lokalnej. */
+    fun discoverLan() {
+        _scanning.value = true
+        _discovered.value = emptyList()
+        viewModelScope.launch {
+            val found = runCatching { LanScanner.findSmbHosts() }.getOrDefault(emptyList())
+            _discovered.value = found
+            _scanning.value = false
+            if (found.isEmpty()) _notice.value = "Nie znaleziono serwerów SMB w tej sieci"
+        }
+    }
+
     fun deleteAccount(id: String) {
+        accounts.get(id)?.let(repo::disconnectRemote)
         accounts.delete(id)
         if (_currentSource.value != SourceType.LOCAL && _root.value?.authority == id) {
             _files.value = emptyList()
@@ -399,7 +395,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun delete(items: List<FileItem>) {
         if (items.isEmpty()) return
         viewModelScope.launch {
-            val groups = items.groupBy { TrashStore.volumeRootFor(it.uri)?.toString() }
+            val groups = items.groupBy { trashRootFor(it.uri)?.toString() }
             groups.forEach { (rootUri, group) ->
                 val trashDir = rootUri?.let { root ->
                     runCatching { repo.ensureFolder(Uri.parse(root), TrashStore.TRASH_DIR) }.getOrNull()
@@ -411,6 +407,22 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    /**
+     * Korzeń, w którym powstanie kosz dla danego elementu. Dla pamięci i
+     * zasobów sieciowych wskazuje go [TrashStore]; dla folderów podpiętych
+     * przez SAF korzeniem jest katalog samego drzewa, którego identyfikator
+     * niesie w sobie URI dokumentu.
+     */
+    private fun trashRootFor(uri: Uri): Uri? =
+        TrashStore.volumeRootFor(uri) ?: safTreeRoot(uri)
+
+    private fun safTreeRoot(uri: Uri): Uri? {
+        if (uri.scheme != "content") return null
+        return runCatching {
+            DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
+        }.getOrNull()
     }
 
     /** Usuwa bezpowrotnie, z pominięciem kosza. */
@@ -879,34 +891,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun updateSources() {
-        val remoteAccounts = accounts.all().also { list ->
-            _remoteAccounts.value = list
-            // Ekran ustawień wciąż operuje na pojedynczej konfiguracji FTP i SMB;
-            // pokazujemy w nim konta odziedziczone po poprzednich wersjach.
-            list.firstOrNull { it.id == RemoteAccount.LEGACY_FTP_ID }?.let { account ->
-                _ftpConfig.value = FtpConfig(
-                    enabled = account.enabled,
-                    host = account.host,
-                    port = account.port,
-                    username = account.username,
-                    password = account.password,
-                    rootPath = account.rootPath,
-                    ftps = account.secure
-                )
-            }
-            list.firstOrNull { it.id == RemoteAccount.LEGACY_SMB_ID }?.let { account ->
-                _smbConfig.value = SmbConfig(
-                    enabled = account.enabled,
-                    host = account.host,
-                    port = account.port,
-                    share = account.share,
-                    rootPath = account.rootPath,
-                    domain = account.domain,
-                    username = account.username,
-                    password = account.password
-                )
-            }
-        }
+        val remoteAccounts = accounts.all().also { _remoteAccounts.value = it }
         val localTree = prefs.treeUri
         val googleTree = networkPrefs.cloudTree(SourceType.GOOGLE_DRIVE)
         val oneDriveTree = networkPrefs.cloudTree(SourceType.ONEDRIVE)
