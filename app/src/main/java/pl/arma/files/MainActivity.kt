@@ -138,6 +138,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var showQueue by remember { mutableStateOf(false) }
     var showTrash by remember { mutableStateOf(false) }
     var showHistory by remember { mutableStateOf(false) }
+    var apkToInstall by remember { mutableStateOf<FileItem?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -496,7 +497,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                                 onClick = {
                                                     if (selectionMode) selectedUris = toggleSelection(selectedUris, item)
                                                     else {
-                                                        openItem(vm, item, onOpenFile = { preview = it })
+                                                        openItem(
+                                                            vm,
+                                                            item,
+                                                            onOpenFile = { preview = it },
+                                                            onInstallApk = { apkToInstall = it }
+                                                        )
                                                         if (item.isDirectory) {
                                                             tab = Tab.FILES; query = ""; category = FileCategory.ALL
                                                         }
@@ -524,7 +530,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                                 onClick = {
                                                     if (selectionMode) selectedUris = toggleSelection(selectedUris, item)
                                                     else {
-                                                        openItem(vm, item, onOpenFile = { preview = it })
+                                                        openItem(
+                                                            vm,
+                                                            item,
+                                                            onOpenFile = { preview = it },
+                                                            onInstallApk = { apkToInstall = it }
+                                                        )
                                                         if (item.isDirectory) {
                                                             tab = Tab.FILES; query = ""; category = FileCategory.ALL
                                                         }
@@ -644,6 +655,18 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             vm.createArchive(itemsToArchive, name)
             archiveItems = emptyList()
             selectedUris = emptySet()
+        }
+    }
+
+    // Instalator jest osobnym procesem, wiec plik musi najpierw trafic do
+    // naszego cache'u i zostac wystawiony przez FileProvidera -- dotyczy to
+    // takze plikow z FTP, SMB i chmury.
+    apkToInstall?.let { apk ->
+        LaunchedEffect(apk.uri) {
+            val problem = runCatching { installApk(context, vm.materializeUri(apk)) }
+                .getOrElse { it.message ?: "Nie udało się przygotować pliku APK." }
+            problem?.let { snackbarHostState.showSnackbar(it) }
+            apkToInstall = null
         }
     }
 
@@ -1377,7 +1400,15 @@ private fun PreviewSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.fillMaxHeight(.96f)) {
+    // Podgląd otwiera się od razu rozwinięty do góry. Bez tego arkusz startuje
+    // w połowie ekranu i trzeba go dociągać palcem, żeby zobaczyć zawartość.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.fillMaxHeight(.96f)
+    ) {
         Column(
             Modifier.fillMaxSize().padding(horizontal = 16.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -2239,12 +2270,24 @@ private fun RowScope.NavItem(value: Tab, selected: Tab, icon: ImageVector, label
     )
 }
 
-private fun openItem(vm: FileManagerViewModel, item: FileItem, onOpenFile: (FileItem) -> Unit) {
-    if (item.isDirectory) {
-        vm.openDirectory(item)
-    } else {
-        vm.addRecent(item.uri)
-        onOpenFile(item)
+private fun openItem(
+    vm: FileManagerViewModel,
+    item: FileItem,
+    onOpenFile: (FileItem) -> Unit,
+    onInstallApk: (FileItem) -> Unit = {}
+) {
+    when {
+        item.isDirectory -> vm.openDirectory(item)
+        // APK nie ma sensownego podglądu — kliknięcie ma po prostu instalować,
+        // tak jak w systemowym menedżerze plików.
+        isApk(item) -> {
+            vm.addRecent(item.uri)
+            onInstallApk(item)
+        }
+        else -> {
+            vm.addRecent(item.uri)
+            onOpenFile(item)
+        }
     }
 }
 

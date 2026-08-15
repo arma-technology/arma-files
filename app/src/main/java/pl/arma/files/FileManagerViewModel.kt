@@ -672,9 +672,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun loadPinned() {
-        val stored = prefs.pinned() ?: defaultPinned().also { defaults ->
-            prefs.setPinned(defaults.map { it.rootUri.toString() to it.label })
-        }.map { it.rootUri.toString() to it.label }
+        val stored = migratePicturesToCamera(
+            prefs.pinned() ?: defaultPinned().also { defaults ->
+                prefs.setPinned(defaults.map { it.rootUri.toString() to it.label })
+            }.map { it.rootUri.toString() to it.label }
+        )
 
         _pinnedFolders.value = stored.map { (uri, label) ->
             val parsed = Uri.parse(uri)
@@ -687,12 +689,41 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Kafelek „Zdjęcia" wskazywał wcześniej katalog Pictures. Użytkownicy z
+     * poprzednich wersji mają go zapisanego, więc przestawiamy go raz na
+     * zdjęcia z aparatu — ale tylko wtedy, gdy nadal wskazuje stare miejsce
+     * i nie został przez nich świadomie zmieniony.
+     */
+    private fun migratePicturesToCamera(stored: List<Pair<String, String>>): List<Pair<String, String>> {
+        val pictures = Uri.fromFile(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        ).toString()
+        if (stored.none { it.first == pictures && it.second == "Zdjęcia" }) return stored
+
+        val camera = defaultPinned().first { it.label == "Zdjęcia" }
+        val migrated = stored.map { entry ->
+            if (entry.first == pictures && entry.second == "Zdjęcia") {
+                camera.rootUri.toString() to camera.label
+            } else {
+                entry
+            }
+        }
+        prefs.setPinned(migrated)
+        return migrated
+    }
+
     private fun defaultPinned(): List<PinnedFolder> {
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val pictures = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        // „Zdjęcia" to zdjęcia z aparatu, czyli DCIM/Camera. Katalog Pictures
+        // zbiera głównie obrazy zapisane przez inne aplikacje, więc jako
+        // domyślne miejsce po kliknięciu był mylący. Gdy producent nie tworzy
+        // podkatalogu Camera, wracamy do samego DCIM.
+        val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+        val camera = File(dcim, "Camera").takeIf { it.isDirectory } ?: dcim
         return listOf(
             PinnedFolder(downloads.absolutePath, "Pobrane", Uri.fromFile(downloads), downloads.absolutePath),
-            PinnedFolder(pictures.absolutePath, "Zdjęcia", Uri.fromFile(pictures), pictures.absolutePath)
+            PinnedFolder(camera.absolutePath, "Zdjęcia", Uri.fromFile(camera), camera.absolutePath)
         )
     }
 
@@ -751,12 +782,24 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         fun doc(tree: Uri?): Uri? = tree?.let { runCatching { repo.treeToDocumentUri(it) }.getOrNull() }
         _sources.value = listOf(
             StorageSource(SourceType.LOCAL, "Folder lokalny", true, localTree != null, doc(localTree), "Dostęp przez Android SAF"),
-            StorageSource(SourceType.GOOGLE_DRIVE, "Google Drive", networkPrefs.isEnabled(SourceType.GOOGLE_DRIVE), googleTree != null, doc(googleTree), if (googleTree != null) "Podłączony" else "Wymaga wybrania folderu"),
-            StorageSource(SourceType.ONEDRIVE, "OneDrive", networkPrefs.isEnabled(SourceType.ONEDRIVE), oneDriveTree != null, doc(oneDriveTree), if (oneDriveTree != null) "Podłączony" else "Wymaga wybrania folderu"),
-            StorageSource(SourceType.DROPBOX, "Dropbox", networkPrefs.isEnabled(SourceType.DROPBOX), dropboxTree != null, doc(dropboxTree), if (dropboxTree != null) "Podłączony" else "Wymaga wybrania folderu"),
+            StorageSource(SourceType.GOOGLE_DRIVE, "Google Drive", networkPrefs.isEnabled(SourceType.GOOGLE_DRIVE), googleTree != null, doc(googleTree), attachedLabel(googleTree)),
+            StorageSource(SourceType.ONEDRIVE, "OneDrive", networkPrefs.isEnabled(SourceType.ONEDRIVE), oneDriveTree != null, doc(oneDriveTree), attachedLabel(oneDriveTree)),
+            StorageSource(SourceType.DROPBOX, "Dropbox", networkPrefs.isEnabled(SourceType.DROPBOX), dropboxTree != null, doc(dropboxTree), attachedLabel(dropboxTree)),
             StorageSource(SourceType.FTP, if (ftp.ftps) "FTPS" else "FTP", ftp.enabled, ftp.host.isNotBlank(), repo.remoteRoot(SourceType.FTP), if (ftp.host.isBlank()) "Brak konfiguracji" else "${ftp.host}:${ftp.port}"),
             StorageSource(SourceType.SMB, "SMB / Samba", smb.enabled, smb.host.isNotBlank() && smb.share.isNotBlank(), repo.remoteRoot(SourceType.SMB), if (smb.host.isBlank()) "Brak konfiguracji" else "${smb.host}/${smb.share}")
         )
+    }
+
+    /**
+     * Nazwa faktycznie podpiętego katalogu zamiast samego „Podłączony" —
+     * dzięki temu widać, czy wybrano cały dysk („Mój dysk"), czy jeden
+     * podfolder. Sam SAF nie pozwala zapytać dostawcy o listę korzeni, więc
+     * to, co da się podpiąć, zależy od aplikacji dostawcy.
+     */
+    private fun attachedLabel(tree: Uri?): String {
+        if (tree == null) return "Wymaga wybrania folderu"
+        val name = runCatching { repo.displayName(repo.treeToDocumentUri(tree)) }.getOrNull()
+        return name?.takeIf { it.isNotBlank() } ?: "Podłączony"
     }
 
     private fun loadSavedCollections() {

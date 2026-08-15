@@ -12,8 +12,8 @@ android {
         applicationId = "pl.arma.files"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.5.0-alpha2"
+        versionCode = 9
+        versionName = "0.5.0-alpha3"
     }
 
     buildFeatures { compose = true }

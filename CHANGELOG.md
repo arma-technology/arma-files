@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0-alpha3
+
+- podgląd pliku otwiera się od razu rozwinięty do góry, zamiast startować w
+  połowie ekranu i wymagać dociągnięcia palcem
+- kliknięcie pliku APK uruchamia systemowy instalator; działa też dla plików
+  z FTP, SMB i chmury, bo APK jest najpierw pobierany do prywatnego cache
+- kafelek „Zdjęcia” prowadzi do zdjęć z aparatu (DCIM/Camera) zamiast do
+  katalogu Pictures; istniejące podpięcie jest przestawiane jednorazowo
+- karty źródeł chmurowych pokazują nazwę faktycznie podpiętego katalogu, a
+  nie samo „Podłączony”, więc widać, czy podpięto cały dysk czy podfolder
+- podpowiedź przy podłączaniu chmury: aby podpiąć cały dysk, trzeba zaznaczyć
+  najwyższy poziom, a nie wchodzić do podfolderu
+
 ## 0.5.0-alpha2
 
 - operacje na plikach wykonuje kolejka działająca w tle; kopiowanie nie

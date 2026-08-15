@@ -239,7 +239,13 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
                         Icon(if (source.configured) Icons.Default.Link else Icons.Default.LinkOff, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(9.dp))
                         Text(
-                            if (source.configured) "Folder jest podłączony i gotowy." else "Wybierz folder tego dostawcy w systemowym oknie Androida.",
+                            if (source.configured) {
+                                "Podłączone: ${source.subtitle}"
+                            } else {
+                                "Wybierz folder tego dostawcy w systemowym oknie Androida. " +
+                                    "Aby podpiąć cały dysk, zaznacz najwyższy poziom (np. „Mój dysk”) " +
+                                    "i potwierdź, zamiast wchodzić do podfolderu."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.weight(1f)
                         )
