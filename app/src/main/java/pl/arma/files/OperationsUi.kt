@@ -45,6 +45,7 @@ import pl.arma.files.ops.ConflictAction
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
 import pl.arma.files.ops.OperationStatus
+import pl.arma.files.ops.OperationRecord
 import pl.arma.files.ops.PendingConflict
 import pl.arma.files.ops.TrashEntry
 
@@ -318,6 +319,95 @@ fun TrashSheet(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OperationHistorySheet(
+    history: List<OperationRecord>,
+    onUndo: (OperationRecord) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Historia operacji",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                if (history.isNotEmpty()) {
+                    TextButton(onClick = onClear) { Text("Wyczyść") }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            if (history.isEmpty()) {
+                Text(
+                    "Tu pojawią się zakończone operacje. Kopiowanie, przeniesienie i kosz można stąd cofnąć.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                return@Column
+            }
+            LazyColumn(Modifier.heightIn(max = 440.dp)) {
+                items(history, key = { it.id }) { record ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "${recordLabel(record)} · ${record.itemCount}",
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                recordDetails(record),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (record.status == OperationStatus.FAILED) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (record.undoable) {
+                            TextButton(onClick = { onUndo(record) }) { Text("Cofnij") }
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
+}
+
+private fun recordLabel(record: OperationRecord): String = when (record.kind) {
+    pl.arma.files.ops.OperationKind.COPY -> "Kopiowanie"
+    pl.arma.files.ops.OperationKind.MOVE -> "Przenoszenie"
+    pl.arma.files.ops.OperationKind.TRASH -> "Do kosza"
+    pl.arma.files.ops.OperationKind.DELETE -> "Usunięcie"
+    pl.arma.files.ops.OperationKind.RESTORE -> "Przywrócenie"
+}
+
+private fun recordDetails(record: OperationRecord): String {
+    val status = when (record.status) {
+        OperationStatus.COMPLETED -> "gotowe"
+        OperationStatus.FAILED -> record.error ?: "błąd"
+        OperationStatus.CANCELLED -> "anulowane"
+        else -> "—"
+    }
+    return listOfNotNull(
+        status,
+        if (record.bytes > 0L) formatSize(record.bytes) else null,
+        if (record.skipped > 0) "pominięto ${record.skipped}" else null,
+        formatClock(record.finishedAt)
+    ).joinToString(" · ")
+}
+
+private fun formatClock(timestamp: Long): String =
+    java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
 
 /** Ikona kosza z licznikiem — wpinana w ekran „Mój komputer". */
 @Composable

@@ -29,7 +29,7 @@ w całości.
 
 ## Fazy
 
-### Faza 1 — silnik operacji (rdzeń v0.5)
+### Faza 1 — silnik operacji (rdzeń v0.5) — ZROBIONE
 
 Fundament pod sześć punktów roadmapy naraz: kosz, cofanie, historia,
 pasek postępu, kolejka w tle, konflikty nazw.
@@ -42,6 +42,14 @@ pasek postępu, kolejka w tle, konflikty nazw.
 - atomowy `cut`: kasowanie źródła dopiero po potwierdzonej kopii, per plik
 - kosz jako `.armafiles_trash` w obrębie nośnika + dziennik metadanych
 - cofanie ostatniej operacji i historia operacji
+
+Zrobione poza planem, bo dotykało tego samego ekranu: własne przypięte
+foldery z przeciąganiem kolejności oraz miejsce zajęte na kartach nośników.
+Zostaje z „Mój komputer": wykres zajętości bogatszy niż pasek postępu.
+
+Nie udało się domknąć: dla folderów podpiętych przez SAF nie da się wskazać
+nośnika, więc kosz tam nie działa i usuwanie jest trwałe. Do naprawy przy
+Fazie 2, która i tak przebudowuje warstwę backendów.
 
 ### Faza 2 — konta i backendy
 

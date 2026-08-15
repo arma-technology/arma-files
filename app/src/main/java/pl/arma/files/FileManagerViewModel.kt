@@ -31,6 +31,7 @@ import pl.arma.files.ops.OperationKind
 import pl.arma.files.ops.OperationRecord
 import pl.arma.files.ops.OperationStatus
 import pl.arma.files.ops.PendingConflict
+import pl.arma.files.ops.Reorder
 import pl.arma.files.ops.TrashEntry
 
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
@@ -465,6 +466,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun resumeOperation(id: String) = engine.resume(id)
     fun cancelOperation(id: String) = engine.cancel(id)
     fun clearFinishedOperations() = engine.clearFinished()
+    fun clearOperationHistory() = engine.clearHistory()
     fun resolveConflict(decision: ConflictDecision) = engine.resolveConflict(decision)
 
     fun createArchive(items: List<FileItem>, name: String) {
@@ -666,12 +668,59 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
         _deviceStorages.value = roots.values.toList()
 
+        loadPinned()
+    }
+
+    private fun loadPinned() {
+        val stored = prefs.pinned() ?: defaultPinned().also { defaults ->
+            prefs.setPinned(defaults.map { it.rootUri.toString() to it.label })
+        }.map { it.rootUri.toString() to it.label }
+
+        _pinnedFolders.value = stored.map { (uri, label) ->
+            val parsed = Uri.parse(uri)
+            PinnedFolder(
+                id = uri,
+                label = label,
+                rootUri = parsed,
+                subtitle = parsed.path ?: label
+            )
+        }
+    }
+
+    private fun defaultPinned(): List<PinnedFolder> {
         val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val pictures = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-        _pinnedFolders.value = listOf(
-            PinnedFolder("downloads", "Pobrane", Uri.fromFile(downloads), downloads.absolutePath),
-            PinnedFolder("pictures", "Zdjęcia", Uri.fromFile(pictures), pictures.absolutePath)
+        return listOf(
+            PinnedFolder(downloads.absolutePath, "Pobrane", Uri.fromFile(downloads), downloads.absolutePath),
+            PinnedFolder(pictures.absolutePath, "Zdjęcia", Uri.fromFile(pictures), pictures.absolutePath)
         )
+    }
+
+    /** Przypina bieżący katalog albo wskazany folder do ekranu „Mój komputer". */
+    fun pinFolder(item: FileItem) {
+        val current = prefs.pinned().orEmpty()
+        val uri = item.uri.toString()
+        if (current.any { it.first == uri }) {
+            _notice.value = "Ten folder jest już przypięty"
+            return
+        }
+        prefs.setPinned(current + (uri to item.name))
+        loadPinned()
+        _notice.value = "Przypięto ${item.name}"
+    }
+
+    fun unpinFolder(id: String) {
+        prefs.setPinned(prefs.pinned().orEmpty().filterNot { it.first == id })
+        loadPinned()
+    }
+
+    /** Zmiana kolejności przypiętych kafelków po przeciągnięciu. */
+    fun movePinned(fromIndex: Int, toIndex: Int) {
+        val current = prefs.pinned().orEmpty()
+        val reordered = Reorder.move(current, fromIndex, toIndex)
+        if (reordered === current) return
+        prefs.setPinned(reordered)
+        loadPinned()
     }
 
     private fun hasBroadStorageAccess(): Boolean {

@@ -137,6 +137,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var dragX by remember { mutableFloatStateOf(0f) }
     var showQueue by remember { mutableStateOf(false) }
     var showTrash by remember { mutableStateOf(false) }
+    var showHistory by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -295,7 +296,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
                     onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
                     onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
-                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() }
+                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() },
+                    canPin = selectedItems.size == 1 && selectedItems.first().isDirectory,
+                    onPin = {
+                        selectedItems.firstOrNull()?.let(vm::pinFolder); selectedUris = emptySet()
+                    }
                 )
             }
         },
@@ -376,7 +381,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onAddFolder = { folderPicker.launch(null) },
                         onSettings = { tab = Tab.SETTINGS },
                         trashCount = trashEntries.size,
-                        onOpenTrash = { showTrash = true }
+                        onOpenTrash = { showTrash = true },
+                        onUnpin = vm::unpinFolder,
+                        onMovePinned = vm::movePinned,
+                        onOpenHistory = { showHistory = true }
                     )
                 }
 
@@ -654,6 +662,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         )
     }
 
+    if (showHistory) {
+        OperationHistorySheet(
+            history = operationHistory,
+            onUndo = { vm.undo(it); showHistory = false },
+            onClear = vm::clearOperationHistory,
+            onDismiss = { showHistory = false }
+        )
+    }
+
     if (showTrash) {
         TrashSheet(
             entries = trashEntries,
@@ -677,7 +694,10 @@ private fun ComputerHome(
     onAddFolder: () -> Unit,
     onSettings: () -> Unit,
     trashCount: Int,
-    onOpenTrash: () -> Unit
+    onOpenTrash: () -> Unit,
+    onUnpin: (String) -> Unit,
+    onMovePinned: (Int, Int) -> Unit,
+    onOpenHistory: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -766,64 +786,18 @@ private fun ComputerHome(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
+                TextButton(onClick = onOpenHistory) { Text("Historia") }
                 TrashButton(count = trashCount, onClick = onOpenTrash)
             }
         }
         item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(pinned, key = { it.id }) { folder ->
-                    val isPictures = folder.id == "pictures"
-                    Surface(
-                        onClick = { onOpenPinned(folder) },
-                        modifier = Modifier.width(168.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        color = if (isPictures) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = .72f)
-                            ) {
-                                Icon(
-                                    if (isPictures) Icons.Default.PhotoLibrary else Icons.Default.Download,
-                                    null,
-                                    modifier = Modifier.padding(10.dp).size(26.dp),
-                                    tint = if (isPictures) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Column {
-                                Text(folder.label, fontWeight = FontWeight.Bold)
-                                Text(
-                                    if (isPictures) "Obrazy i zdjęcia" else "Pobrane pliki",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-                item {
-                    OutlinedCard(
-                        onClick = onAddFolder,
-                        modifier = Modifier.width(168.dp),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Column(
-                            Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(Icons.Default.AddLink, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
-                            Column {
-                                Text("Dodaj folder", fontWeight = FontWeight.SemiBold)
-                                Text("SAF / dostawca plików", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                }
-            }
+            PinnedFolderRow(
+                pinned = pinned,
+                onOpen = onOpenPinned,
+                onUnpin = onUnpin,
+                onMove = onMovePinned,
+                onAddFolder = onAddFolder
+            )
         }
 
         item {
@@ -881,12 +855,18 @@ private fun DeviceStorageCard(storage: DeviceStorage, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(storage.label, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     if (storage.removable) {
-                        AssistChip(onClick = {}, label = { Text("SD") }, leadingIcon = { Icon(Icons.Default.Memory, null, Modifier.size(15.dp)) })
+                        // Etykieta nośnika pochodzi z opisu systemowego, więc karta SD
+                        // i pendrive USB same się nazywają; chip mówi tylko tyle, ile
+                        // wiemy na pewno — że nośnik jest wymienny.
+                        AssistChip(onClick = {}, label = { Text("Wymienna") }, leadingIcon = { Icon(Icons.Default.Memory, null, Modifier.size(15.dp)) })
                     }
                 }
                 LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(50)))
                 Text(
-                    if (storage.totalBytes > 0) "${formatSize(storage.freeBytes)} wolne z ${formatSize(storage.totalBytes)}" else storage.rootUri.path.orEmpty(),
+                    if (storage.totalBytes > 0) {
+                        "Zajęte ${formatSize(storage.totalBytes - storage.freeBytes)} · " +
+                            "${formatSize(storage.freeBytes)} wolne z ${formatSize(storage.totalBytes)}"
+                    } else storage.rootUri.path.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1343,7 +1323,9 @@ private fun MultiSelectionTopBar(
     onRename: () -> Unit,
     onDetails: () -> Unit,
     onShare: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    canPin: Boolean,
+    onPin: () -> Unit
 ) {
     var more by remember { mutableStateOf(false) }
     TopAppBar(
@@ -1361,6 +1343,7 @@ private fun MultiSelectionTopBar(
                     if (canExtract) DropdownMenuItem(text = { Text("Rozpakuj tutaj") }, leadingIcon = { Icon(Icons.Default.Unarchive, null) }, onClick = { more = false; onExtract() })
                     if (canRename) DropdownMenuItem(text = { Text("Zmień nazwę") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { more = false; onRename() })
                     if (canRename) DropdownMenuItem(text = { Text("Właściwości") }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { more = false; onDetails() })
+                    if (canPin) DropdownMenuItem(text = { Text("Przypnij do „Mój komputer”") }, leadingIcon = { Icon(Icons.Default.PushPin, null) }, onClick = { more = false; onPin() })
                     DropdownMenuItem(text = { Text("Udostępnij") }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { more = false; onShare() })
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Usuń") }, leadingIcon = { Icon(Icons.Default.DeleteOutline, null) }, onClick = { more = false; onDelete() })

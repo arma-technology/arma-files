@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0-alpha1
+## 0.5.0-alpha2
 
 - operacje na plikach wykonuje kolejka działająca w tle; kopiowanie nie
   przerywa się po wyjściu z aplikacji
@@ -19,7 +19,15 @@
   przez zmianę nazwy zamiast przepisywania bajtów — przeniesienie kilku
   gigabajtów na tej samej karcie jest teraz natychmiastowe
 - przerwane przenoszenie nie kasuje już źródła bez potwierdzonej kopii
-- pierwsze testy jednostkowe w projekcie (26)
+- historia operacji jako osobny ekran, z cofaniem także po zniknięciu paska
+- własne przypięte foldery: dowolny katalog można przypiąć z menu zaznaczenia
+  i odpiąć jednym tapnięciem
+- kolejność przypiętych kafelków zmienia się przeciągnięciem po dłuższym
+  przytrzymaniu
+- karty nośników pokazują też miejsce zajęte, a nośniki wymienne nie są już
+  wszystkie podpisywane jako karta SD — pendrive USB przedstawia się nazwą
+  z systemu
+- pierwsze testy jednostkowe w projekcie (38)
 
 ## 0.4.1
 

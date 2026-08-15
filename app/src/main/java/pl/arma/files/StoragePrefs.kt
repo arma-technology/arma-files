@@ -28,6 +28,28 @@ class StoragePrefs(context: Context) {
         prefs.edit().putStringSet("favorites", set).apply()
     }
 
+    /**
+     * Przypięte foldery jako pary „URI\tetykieta", w kolejności ustawionej
+     * przez użytkownika. Brak klucza oznacza, że listy jeszcze nie tknięto —
+     * wtedy ViewModel zasiewa ją domyślnymi folderami.
+     */
+    fun pinned(): List<Pair<String, String>>? {
+        val raw = prefs.getString("pinned_folders", null) ?: return null
+        return raw.lineSequence()
+            .filter { it.isNotBlank() }
+            .mapNotNull { line ->
+                val parts = line.split('\t')
+                if (parts.size == 2) parts[0] to parts[1] else null
+            }
+            .toList()
+    }
+
+    fun setPinned(entries: List<Pair<String, String>>) {
+        prefs.edit()
+            .putString("pinned_folders", entries.joinToString("\n") { "${it.first}\t${it.second}" })
+            .apply()
+    }
+
     fun replaceUri(old: Uri, new: Uri) {
         val oldValue = old.toString()
         val newValue = new.toString()
