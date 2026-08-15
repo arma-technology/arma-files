@@ -222,6 +222,28 @@ class OperationEngineTest {
     }
 
     @Test
+    fun `historia zapisuje tylko elementy najwyzszego poziomu`() = runTest {
+        val ops = FakeOps().also { it.addDir("file:///cel") }
+        val folder = dir(ops, "file:///zrodlo/projekt")
+        ops.addFile("file:///zrodlo/projekt/a.txt", "aaa")
+        ops.addDir("file:///zrodlo/projekt/pod")
+        ops.addFile("file:///zrodlo/projekt/pod/b.txt", "bb")
+        val engine = OperationEngine(ops, CoroutineScope(StandardTestDispatcher(testScheduler) + Job()))
+
+        engine.enqueue(OperationKind.COPY, listOf(folder), target)
+        advanceUntilIdle()
+
+        // Cofanie ma operowac na przeniesionym katalogu, a nie na kazdym pliku
+        // w srodku z osobna -- inaczej odtwarzanie struktury byloby niemozliwe.
+        val record = engine.history.value.single()
+        assertEquals(1, record.pairs.size)
+        assertEquals(
+            "file:///zrodlo/projekt" to "file:///cel/projekt",
+            record.pairs.single()
+        )
+    }
+
+    @Test
     fun `trwale usuniecie nie jest cofalne`() = runTest {
         val ops = FakeOps()
         val source = file(ops, "file:///zrodlo/raport.pdf", "tresc")

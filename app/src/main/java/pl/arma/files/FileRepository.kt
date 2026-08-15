@@ -43,6 +43,18 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     /**
+     * Zwraca istniejący katalog o tej nazwie albo tworzy nowy. Potrzebne dla
+     * kosza: zwykłe [createFolder] dla ścieżek lokalnych omija kolizje nazw,
+     * więc przy każdym usunięciu powstałby kolejny `.armafiles_trash (2)`.
+     */
+    suspend fun ensureFolder(parent: Uri, name: String): Uri? = withContext(Dispatchers.IO) {
+        listChildrenBlocking(parent)
+            .firstOrNull { it.isDirectory && it.name.equals(name, ignoreCase = true) }
+            ?.uri
+            ?: createFolderBlocking(parent, name)
+    }
+
+    /**
      * Przeniesienie bez przepisywania bajtów — udaje się, gdy źródło i cel leżą
      * na tym samym nośniku (lokalnie) albo na tym samym serwerze (FTP/SMB).
      * W pozostałych przypadkach zwraca null i wołający musi skopiować zawartość.

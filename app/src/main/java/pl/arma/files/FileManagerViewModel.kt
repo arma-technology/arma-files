@@ -21,14 +21,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import pl.arma.files.ops.ConflictDecision
+import pl.arma.files.ops.Operation
+import pl.arma.files.ops.OperationKind
+import pl.arma.files.ops.OperationRecord
+import pl.arma.files.ops.OperationStatus
+import pl.arma.files.ops.PendingConflict
+import pl.arma.files.ops.TrashEntry
 
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = FileRepository(app)
     private val prefs = StoragePrefs(app)
     private val networkPrefs = NetworkPrefs(app)
+    private val engine = (app as ArmaFilesApp).engine
+    private val trash = (app as ArmaFilesApp).trash
+
+    /** Kolejka i historia pochodzą z silnika żyjącego w procesie aplikacji. */
+    val operations: StateFlow<List<Operation>> = engine.operations
+    val pendingConflict: StateFlow<PendingConflict?> = engine.pendingConflict
+    val operationHistory: StateFlow<List<OperationRecord>> = engine.history
+
+    private val _trashEntries = MutableStateFlow<List<TrashEntry>>(emptyList())
+    val trashEntries: StateFlow<List<TrashEntry>> = _trashEntries.asStateFlow()
 
     private val _files = MutableStateFlow<List<FileItem>>(emptyList())
     val files: StateFlow<List<FileItem>> = _files.asStateFlow()
@@ -87,6 +105,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         loadSavedCollections()
         updateSources()
         refreshDeviceLocations()
+        loadTrash()
     }
 
     fun setTree(tree: Uri) {
@@ -264,15 +283,163 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         return trimmed
     }
 
+    /**
+     * Przenosi do kosza, a gdy dla danego elementu kosza nie da się wskazać
+     * (np. drzewo SAF bez zapisywalnego korzenia) — usuwa trwale.
+     * Elementy grupowane są po nośniku, bo kosz musi leżeć na tym samym co plik.
+     */
     fun delete(items: List<FileItem>) {
         if (items.isEmpty()) return
-        launchOperation(success = if (items.size == 1) "Usunięto element" else "Usunięto ${items.size} elementów") {
-            val deleted = repo.deleteAll(items)
-            refresh()
-            loadSavedCollections()
-            if (deleted != items.size) error("Usunięto $deleted z ${items.size} elementów.")
+        viewModelScope.launch {
+            val groups = items.groupBy { TrashStore.volumeRootFor(it.uri)?.toString() }
+            groups.forEach { (rootUri, group) ->
+                val trashDir = rootUri?.let { root ->
+                    runCatching { repo.ensureFolder(Uri.parse(root), TrashStore.TRASH_DIR) }.getOrNull()
+                }
+                if (trashDir == null) {
+                    enqueue(OperationKind.DELETE, group, null)
+                } else {
+                    enqueue(OperationKind.TRASH, group, trashDir, group)
+                }
+            }
         }
     }
+
+    /** Usuwa bezpowrotnie, z pominięciem kosza. */
+    fun deleteForever(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        enqueue(OperationKind.DELETE, items, null)
+    }
+
+    fun emptyTrash() {
+        viewModelScope.launch {
+            val entries = trash.entries()
+            if (entries.isEmpty()) {
+                _notice.value = "Kosz jest pusty"
+                return@launch
+            }
+            val items = entries.mapNotNull { entry ->
+                runCatching { repo.itemInfo(Uri.parse(entry.trashUri)) }.getOrNull()
+            }
+            if (items.isEmpty()) {
+                trash.clear()
+                loadTrash()
+                return@launch
+            }
+            // Dziennik czyścimy dopiero po potwierdzonym usunięciu — inaczej
+            // nieudane opróżnianie zostawiłoby pliki w koszu bez wpisów, czyli
+            // niewidoczne i niemożliwe do przywrócenia.
+            val id = enqueue(OperationKind.DELETE, items, null)
+            if (awaitRecord(id)?.status == OperationStatus.COMPLETED) {
+                trash.clear()
+                loadTrash()
+            }
+        }
+    }
+
+    /** Przywraca elementy z kosza do katalogów, z których pochodziły. */
+    fun restoreFromTrash(entries: List<TrashEntry>) {
+        if (entries.isEmpty()) return
+        viewModelScope.launch {
+            entries.groupBy { it.originalParent }.forEach { (parent, group) ->
+                val items = group.mapNotNull { entry ->
+                    runCatching { repo.itemInfo(Uri.parse(entry.trashUri)) }.getOrNull()
+                }
+                if (items.isEmpty()) return@forEach
+                val id = enqueue(OperationKind.RESTORE, items, Uri.parse(parent))
+                awaitRecord(id)?.let { record ->
+                    if (record.status == OperationStatus.COMPLETED) {
+                        trash.remove(group.map { it.id })
+                        loadTrash()
+                    }
+                }
+            }
+        }
+    }
+
+    fun loadTrash() {
+        _trashEntries.value = trash.entries().sortedByDescending { it.deletedAt }
+    }
+
+    /**
+     * Cofa ostatnią operację: kopiowanie przez usunięcie kopii, przeniesienie
+     * przez odwrotne przeniesienie, kosz przez przywrócenie.
+     */
+    fun undo(record: OperationRecord) {
+        if (!record.undoable) return
+        viewModelScope.launch {
+            when (record.kind) {
+                OperationKind.COPY -> {
+                    val copies = record.pairs.mapNotNull { (_, destination) ->
+                        runCatching { repo.itemInfo(Uri.parse(destination)) }.getOrNull()
+                    }
+                    if (copies.isNotEmpty()) enqueue(OperationKind.DELETE, copies, null)
+                }
+                OperationKind.MOVE, OperationKind.TRASH -> {
+                    record.pairs.groupBy { (source, _) -> source.substringBeforeLast('/') }
+                        .forEach { (parent, pairs) ->
+                            val moved = pairs.mapNotNull { (_, destination) ->
+                                runCatching { repo.itemInfo(Uri.parse(destination)) }.getOrNull()
+                            }
+                            if (moved.isNotEmpty()) {
+                                enqueue(OperationKind.RESTORE, moved, Uri.parse(parent))
+                            }
+                        }
+                    if (record.kind == OperationKind.TRASH) {
+                        trash.remove(trash.entries().filter { entry ->
+                            record.pairs.any { it.second == entry.trashUri }
+                        }.map { it.id })
+                        loadTrash()
+                    }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    /**
+     * Dodaje zadanie do kolejki i pilnuje, żeby po jego zakończeniu odświeżyć
+     * widok. [trashSources] podane tylko dla operacji kosza — z nich powstają
+     * wpisy dziennika po potwierdzonym przeniesieniu.
+     */
+    private fun enqueue(
+        kind: OperationKind,
+        items: List<FileItem>,
+        target: Uri?,
+        trashSources: List<FileItem>? = null
+    ): String {
+        val id = engine.enqueue(kind, items, target)
+        // Start z widocznego ekranu, bo tylko wtedy Android 12+ pozwala
+        // podnieść usługę pierwszoplanową.
+        FileOperationService.start(getApplication())
+        viewModelScope.launch {
+            val record = awaitRecord(id) ?: return@launch
+            if (kind == OperationKind.TRASH && record.status == OperationStatus.COMPLETED) {
+                val byUri = trashSources.orEmpty().associateBy { it.uri.toString() }
+                trash.add(record.pairs.mapNotNull { (source, destination) ->
+                    val item = byUri[source] ?: return@mapNotNull null
+                    TrashEntry(
+                        id = java.util.UUID.randomUUID().toString(),
+                        name = item.name,
+                        trashUri = destination,
+                        originalUri = source,
+                        originalParent = source.substringBeforeLast('/'),
+                        size = item.size,
+                        isDirectory = item.isDirectory,
+                        deletedAt = System.currentTimeMillis()
+                    )
+                })
+                loadTrash()
+            }
+            record.error?.let { _error.value = it }
+            refresh()
+            loadSavedCollections()
+        }
+        return id
+    }
+
+    private suspend fun awaitRecord(id: String): OperationRecord? =
+        engine.history.first { history -> history.any { it.id == id } }.firstOrNull { it.id == id }
 
     fun setClipboard(items: List<FileItem>, cut: Boolean) {
         if (items.isNotEmpty()) {
@@ -286,19 +453,19 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun paste() {
         val clip = _clipboard.value ?: return
         val target = _currentDir.value ?: return
-        launchOperation(success = if (clip.cut) "Przeniesiono ${clip.items.size} elementów" else "Wklejono ${clip.items.size} elementów") {
-            val copied = repo.copyAll(clip.items, target)
-            if (clip.cut) {
-                clip.items.zip(copied).forEach { (source, destination) ->
-                    if (!repo.delete(source)) error("Kopia powstała, ale nie udało się usunąć: ${source.name}")
-                    prefs.replaceUri(source.uri, destination)
-                }
-                _clipboard.value = null
-            }
-            refresh()
-            loadSavedCollections()
-        }
+        enqueue(
+            kind = if (clip.cut) OperationKind.MOVE else OperationKind.COPY,
+            items = clip.items,
+            target = target
+        )
+        if (clip.cut) _clipboard.value = null
     }
+
+    fun pauseOperation(id: String) = engine.pause(id)
+    fun resumeOperation(id: String) = engine.resume(id)
+    fun cancelOperation(id: String) = engine.cancel(id)
+    fun clearFinishedOperations() = engine.clearFinished()
+    fun resolveConflict(decision: ConflictDecision) = engine.resolveConflict(decision)
 
     fun createArchive(items: List<FileItem>, name: String) {
         val parent = _currentDir.value ?: return

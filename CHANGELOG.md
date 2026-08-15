@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.0-alpha1
+
+- operacje na plikach wykonuje kolejka działająca w tle; kopiowanie nie
+  przerywa się po wyjściu z aplikacji
+- pasek postępu z liczbą plików, przerobionymi bajtami, prędkością i
+  szacowanym czasem pozostałym
+- wstrzymywanie, wznawianie i anulowanie operacji — z aplikacji i z
+  powiadomienia
+- ekran kolejki z podglądem wszystkich zadań i ich stanu
+- konflikty nazw: zamień / pomiń / zachowaj oba, z opcją zastosowania do
+  wszystkich; porównanie nazw ignoruje wielkość liter, tak jak robią to
+  SMB i FAT
+- kosz: usunięte elementy trafiają do `.armafiles_trash` na tym samym
+  nośniku i można je przywrócić do katalogu źródłowego
+- cofanie ostatniej operacji z paska w aplikacji
+- przenoszenie w obrębie jednego nośnika lub jednego serwera odbywa się
+  przez zmianę nazwy zamiast przepisywania bajtów — przeniesienie kilku
+  gigabajtów na tej samej karcie jest teraz natychmiastowe
+- przerwane przenoszenie nie kasuje już źródła bez potwierdzonej kopii
+- pierwsze testy jednostkowe w projekcie (26)
+
 ## 0.4.1
 
 - poprawiono pozycjonowanie obrazu w podglądzie: obraz jest kotwiczony do góry zamiast centrowany w pionie

@@ -116,6 +116,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val deviceStorages by vm.deviceStorages.collectAsStateWithLifecycle()
     val pinnedFolders by vm.pinnedFolders.collectAsStateWithLifecycle()
     val allFilesAccess by vm.allFilesAccess.collectAsStateWithLifecycle()
+    val operations by vm.operations.collectAsStateWithLifecycle()
+    val pendingConflict by vm.pendingConflict.collectAsStateWithLifecycle()
+    val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
+    val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
 
     var tab by remember { mutableStateOf(Tab.FILES) }
     var query by remember { mutableStateOf("") }
@@ -131,6 +135,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var deleteItems by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var archiveItems by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var dragX by remember { mutableFloatStateOf(0f) }
+    var showQueue by remember { mutableStateOf(false) }
+    var showTrash by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -205,6 +211,26 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         }
     }
 
+    // Po zakończonej operacji proponujemy cofnięcie. Snackbar jest jedynym
+    // miejscem, w którym „Cofnij" ma sens czasowo — potem zostaje historia.
+    LaunchedEffect(operationHistory.firstOrNull()?.id) {
+        val record = operationHistory.firstOrNull() ?: return@LaunchedEffect
+        if (!record.undoable) return@LaunchedEffect
+        val what = when (record.kind) {
+            pl.arma.files.ops.OperationKind.COPY -> "Skopiowano"
+            pl.arma.files.ops.OperationKind.MOVE -> "Przeniesiono"
+            pl.arma.files.ops.OperationKind.TRASH -> "Przeniesiono do kosza"
+            else -> "Gotowe"
+        }
+        val skipped = if (record.skipped > 0) ", pominięto ${record.skipped}" else ""
+        val result = snackbarHostState.showSnackbar(
+            message = "$what ${record.itemCount}$skipped",
+            actionLabel = "Cofnij",
+            duration = SnackbarDuration.Long
+        )
+        if (result == SnackbarResult.ActionPerformed) vm.undo(record)
+    }
+
     val baseFiles = when (tab) {
         Tab.FILES -> files
         Tab.RECENT -> recentFiles
@@ -274,8 +300,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             }
         },
         bottomBar = {
-            if (!selectionMode) {
-                NavigationBar(tonalElevation = 0.dp) {
+            Column {
+                OperationBar(
+                    operations = operations,
+                    onPause = vm::pauseOperation,
+                    onResume = vm::resumeOperation,
+                    onCancel = vm::cancelOperation,
+                    onOpenQueue = { showQueue = true }
+                )
+                if (!selectionMode) {
+                    NavigationBar(tonalElevation = 0.dp) {
                     NavItem(Tab.FILES, tab, Icons.Default.Computer, "Mój komputer") {
                         tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
                     }
@@ -285,8 +319,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     NavItem(Tab.FAVORITES, tab, Icons.Default.Star, "Ulubione") {
                         tab = Tab.FAVORITES; query = ""; category = FileCategory.ALL
                     }
-                    NavItem(Tab.SETTINGS, tab, Icons.Default.Tune, "Ustawienia") {
-                        tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL
+                        NavItem(Tab.SETTINGS, tab, Icons.Default.Tune, "Ustawienia") {
+                            tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL
+                        }
                     }
                 }
             }
@@ -339,7 +374,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenSource = { vm.openSource(it.type) },
                         onGrantAccess = ::requestBroadStorageAccess,
                         onAddFolder = { folderPicker.launch(null) },
-                        onSettings = { tab = Tab.SETTINGS }
+                        onSettings = { tab = Tab.SETTINGS },
+                        trashCount = trashEntries.size,
+                        onOpenTrash = { showTrash = true }
                     )
                 }
 
@@ -567,11 +604,24 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             onDismissRequest = { deleteItems = emptyList() },
             icon = { Icon(Icons.Default.DeleteOutline, null) },
             title = { Text(if (itemsToDelete.size == 1) "Usunąć ${itemsToDelete.first().name}?" else "Usunąć ${itemsToDelete.size} elementów?") },
-            text = { Text("Tej operacji nie można cofnąć.") },
-            confirmButton = {
-                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text("Usuń") }
+            text = {
+                Text(
+                    "Elementy trafią do kosza na tym samym nośniku, więc nie zwolnią miejsca " +
+                        "od razu — za to można je przywrócić. Tam, gdzie kosza nie da się " +
+                        "założyć (np. folder podpięty przez SAF), usunięcie jest trwałe."
+                )
             },
-            dismissButton = { TextButton(onClick = { deleteItems = emptyList() }) { Text("Anuluj") } }
+            confirmButton = {
+                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text("Do kosza") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { deleteItems = emptyList() }) { Text("Anuluj") }
+                    TextButton(onClick = {
+                        vm.deleteForever(itemsToDelete); deleteItems = emptyList()
+                    }) { Text("Usuń trwale") }
+                }
+            }
         )
     }
 
@@ -588,6 +638,30 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             selectedUris = emptySet()
         }
     }
+
+    pendingConflict?.let { conflict ->
+        ConflictDialog(conflict) { vm.resolveConflict(it) }
+    }
+
+    if (showQueue) {
+        OperationQueueSheet(
+            operations = operations,
+            onPause = vm::pauseOperation,
+            onResume = vm::resumeOperation,
+            onCancel = vm::cancelOperation,
+            onClearFinished = vm::clearFinishedOperations,
+            onDismiss = { showQueue = false }
+        )
+    }
+
+    if (showTrash) {
+        TrashSheet(
+            entries = trashEntries,
+            onRestore = vm::restoreFromTrash,
+            onEmpty = { vm.emptyTrash() },
+            onDismiss = { showTrash = false }
+        )
+    }
 }
 
 @Composable
@@ -601,7 +675,9 @@ private fun ComputerHome(
     onOpenSource: (StorageSource) -> Unit,
     onGrantAccess: () -> Unit,
     onAddFolder: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    trashCount: Int,
+    onOpenTrash: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -680,12 +756,18 @@ private fun ComputerHome(
         }
 
         item {
-            Text(
-                "Przypięte foldery",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 18.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Przypięte foldery",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                TrashButton(count = trashCount, onClick = onOpenTrash)
+            }
         }
         item {
             LazyRow(
@@ -2261,17 +2343,6 @@ private fun meta(item: FileItem): String {
 private fun formatDate(timestamp: Long): String {
     if (timestamp <= 0) return ""
     return DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(timestamp))
-}
-
-private fun formatSize(bytes: Long): String {
-    if (bytes < 1024) return "$bytes B"
-    val kb = bytes / 1024.0
-    if (kb < 1024) return String.format(Locale.getDefault(), "%.1f KB", kb)
-    val mb = kb / 1024.0
-    if (mb < 1024) return String.format(Locale.getDefault(), "%.1f MB", mb)
-    val gb = mb / 1024.0
-    if (gb < 1024) return String.format(Locale.getDefault(), "%.1f GB", gb)
-    return String.format(Locale.getDefault(), "%.1f TB", gb / 1024.0)
 }
 
 private fun isPdf(item: FileItem): Boolean = item.mimeType == "application/pdf" || item.name.endsWith(".pdf", true)

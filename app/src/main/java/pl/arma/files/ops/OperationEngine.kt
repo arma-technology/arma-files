@@ -190,7 +190,8 @@ class OperationEngine(
         item: FileItem,
         targetParent: Uri,
         context: RunContext,
-        startedAt: Long
+        startedAt: Long,
+        topLevel: Boolean = true
     ) {
         val existing = context.namesIn(targetParent)
         var name = item.name
@@ -219,7 +220,7 @@ class OperationEngine(
             val fast = ops.fastMove(item, targetParent, name)
             if (fast != null) {
                 context.remember(targetParent, name, item.copy(uri = fast, name = name))
-                context.pairs += item.uri.toString() to fast.toString()
+                if (topLevel) context.pairs += item.uri.toString() to fast.toString()
                 advance(context.operationId, item.size, name, startedAt)
                 return
             }
@@ -232,12 +233,12 @@ class OperationEngine(
             ops.listChildren(item.uri).forEach { child ->
                 coroutineContext.ensureActive()
                 awaitResume()
-                transfer(child, created, context, startedAt)
+                transfer(child, created, context, startedAt, topLevel = false)
             }
             if (moving && !ops.delete(item)) {
                 throw IOException("Nie udało się usunąć katalogu źródłowego: ${item.name}")
             }
-            context.pairs += item.uri.toString() to created.toString()
+            if (topLevel) context.pairs += item.uri.toString() to created.toString()
         } else {
             val mime = if (item.mimeType == DIRECTORY_MIME) "application/octet-stream" else item.mimeType
             val created = ops.createFile(targetParent, name, mime)
@@ -247,7 +248,7 @@ class OperationEngine(
             if (moving && !ops.delete(item)) {
                 throw IOException("Kopia powstała, ale nie udało się usunąć źródła: ${item.name}")
             }
-            context.pairs += item.uri.toString() to created.toString()
+            if (topLevel) context.pairs += item.uri.toString() to created.toString()
         }
     }
 
