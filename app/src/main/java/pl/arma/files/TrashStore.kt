@@ -45,14 +45,17 @@ class TrashStore(private val context: Context) {
          * albo `/storage/XXXX-XXXX`. Dla zasobów sieciowych korzeń udziału.
          * Null oznacza, że kosza nie da się wskazać i trzeba usunąć trwale.
          */
-        fun volumeRootFor(uri: Uri): Uri? = when (uri.scheme) {
-            "file" -> {
+        fun volumeRootFor(uri: Uri): Uri? = when {
+            uri.scheme == "file" -> {
                 val path = uri.path.orEmpty()
                 val match = Regex("^(/storage/emulated/\\d+|/storage/[^/]+)").find(path)
                 match?.let { Uri.fromFile(File(it.value)) }
             }
-            RemoteRepository.FTP_SCHEME -> RemoteRepository.ftpRoot()
-            RemoteRepository.SMB_SCHEME -> RemoteRepository.smbRoot()
+            // Dla zasobów sieciowych korzeniem jest samo konto, a jego
+            // identyfikator siedzi w autorytecie URI — nie trzeba pytać o nic
+            // listy połączeń.
+            RemoteRepository.isRemoteScheme(uri.scheme) && !uri.authority.isNullOrBlank() ->
+                Uri.Builder().scheme(uri.scheme).authority(uri.authority).path("/").build()
             else -> null
         }
     }

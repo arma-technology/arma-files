@@ -1,6 +1,9 @@
 package pl.arma.files
 
 import android.net.Uri
+import pl.arma.files.net.AccountStore
+import pl.arma.files.net.RemoteAccount
+import pl.arma.files.net.RemoteType
 import jcifs.CIFSContext
 import jcifs.config.PropertyConfiguration
 import jcifs.context.BaseContext
@@ -20,16 +23,36 @@ import java.net.URLEncoder
 import java.time.Duration
 import java.util.Properties
 
-class RemoteRepository(private val prefs: NetworkPrefs) {
+class RemoteRepository(private val accounts: AccountStore) {
     companion object {
         const val FTP_SCHEME = "armaftp"
         const val SMB_SCHEME = "armasmb"
 
-        fun ftpRoot(): Uri = Uri.Builder().scheme(FTP_SCHEME).authority("ftp").path("/").build()
-        fun smbRoot(): Uri = Uri.Builder().scheme(SMB_SCHEME).authority("smb").path("/").build()
+        /** Korzeń danego konta. Autorytet URI to identyfikator konta. */
+        fun rootOf(account: RemoteAccount): Uri = Uri.Builder()
+            .scheme(schemeFor(account.type))
+            .authority(account.id)
+            .path("/")
+            .build()
+
+        fun schemeFor(type: RemoteType): String = when (type) {
+            RemoteType.FTP, RemoteType.SFTP -> FTP_SCHEME
+            RemoteType.SMB -> SMB_SCHEME
+            RemoteType.WEBDAV -> SMB_SCHEME
+        }
+
+        fun isRemoteScheme(scheme: String?): Boolean = scheme == FTP_SCHEME || scheme == SMB_SCHEME
     }
 
-    fun isRemote(uri: Uri): Boolean = uri.scheme == FTP_SCHEME || uri.scheme == SMB_SCHEME
+    fun isRemote(uri: Uri): Boolean = isRemoteScheme(uri.scheme)
+
+    /**
+     * Konto wskazane przez autorytet URI. Brak konta oznacza, że użytkownik
+     * usunął połączenie, a w Ulubionych albo Ostatnich został po nim wpis.
+     */
+    private fun accountFor(uri: Uri): RemoteAccount =
+        accounts.get(uri.authority)
+            ?: throw IOException("Połączenie nie istnieje lub zostało usunięte.")
 
     fun listChildren(parent: Uri): List<FileItem> = when (parent.scheme) {
         FTP_SCHEME -> ftpList(parent)
@@ -67,13 +90,13 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
         val target = childUri(targetParent, newName)
         return when (scheme) {
             FTP_SCHEME -> {
-                val client = ftpClient()
+                val client = ftpClient(accountFor(item.uri))
                 try {
                     if (client.rename(ftpPath(item.uri), ftpPath(target))) target else null
                 } finally { closeFtp(client) }
             }
-            SMB_SCHEME -> SmbFile(smbUrl(item.uri).trimEnd('/'), smbContext()).use { source ->
-                SmbFile(smbUrl(target).trimEnd('/'), smbContext()).use { destination ->
+            SMB_SCHEME -> SmbFile(smbUrl(item.uri).trimEnd('/'), smbContext(item.uri)).use { source ->
+                SmbFile(smbUrl(target).trimEnd('/'), smbContext(target)).use { destination ->
                     runCatching { source.renameTo(destination) }.map { target }.getOrNull()
                 }
             }
@@ -105,10 +128,10 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
         else -> null
     }
 
-    private fun ftpClient(): FTPClient {
-        val config = prefs.ftp()
+    private fun ftpClient(account: RemoteAccount): FTPClient {
+        val config = account
         if (config.host.isBlank()) throw IOException("FTP: brak adresu serwera.")
-        val client: FTPClient = if (config.ftps) {
+        val client: FTPClient = if (config.secure) {
             FTPSClient(false).apply { setEndpointCheckingEnabled(true) }
         } else FTPClient()
         client.setConnectTimeout(10_000)
@@ -131,7 +154,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpPath(uri: Uri): String {
-        val cfg = prefs.ftp()
+        val cfg = accountFor(uri)
         val base = normalizeFtpPath(cfg.rootPath)
         val relative = uri.path.orEmpty().trim('/')
         return when {
@@ -158,7 +181,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpList(parent: Uri): List<FileItem> {
-        val client = ftpClient()
+        val client = ftpClient(accountFor(parent))
         return try {
             client.listFiles(ftpPath(parent))
                 .asSequence()
@@ -187,7 +210,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpCreateFolder(parent: Uri, name: String): Uri {
-        val client = ftpClient()
+        val client = ftpClient(accountFor(parent))
         val uri = childUri(parent, name)
         try {
             if (!client.makeDirectory(ftpPath(uri))) throw IOException("FTP: nie udało się utworzyć folderu.")
@@ -202,7 +225,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpRename(uri: Uri, newName: String): Uri {
-        val client = ftpClient()
+        val client = ftpClient(accountFor(uri))
         val target = childUri(parentUri(uri), newName)
         try {
             if (!client.rename(ftpPath(uri), ftpPath(target))) throw IOException("FTP: zmiana nazwy nie powiodła się.")
@@ -211,7 +234,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpDelete(uri: Uri, directory: Boolean): Boolean {
-        val client = ftpClient()
+        val client = ftpClient(accountFor(uri))
         return try {
             if (directory) {
                 ftpDeleteDirectory(client, ftpPath(uri))
@@ -231,7 +254,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpInput(uri: Uri): InputStream {
-        val client = ftpClient()
+        val client = ftpClient(accountFor(uri))
         val stream = client.retrieveFileStream(ftpPath(uri)) ?: run {
             closeFtp(client)
             throw IOException("FTP: nie można otworzyć pliku.")
@@ -248,7 +271,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun ftpOutput(uri: Uri): OutputStream {
-        val client = ftpClient()
+        val client = ftpClient(accountFor(uri))
         val stream = client.storeFileStream(ftpPath(uri)) ?: run {
             closeFtp(client)
             throw IOException("FTP: nie można zapisać pliku.")
@@ -269,8 +292,8 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
         runCatching { if (client.isConnected) client.disconnect() }
     }
 
-    private fun smbContext(): CIFSContext {
-        val cfg = prefs.smb()
+    private fun smbContext(uri: Uri): CIFSContext {
+        val cfg = accountFor(uri)
         val properties = Properties().apply {
             setProperty("jcifs.smb.client.minVersion", "SMB202")
             setProperty("jcifs.smb.client.maxVersion", "SMB311")
@@ -282,7 +305,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun smbUrl(uri: Uri): String {
-        val cfg = prefs.smb()
+        val cfg = accountFor(uri)
         if (cfg.host.isBlank() || cfg.share.isBlank()) throw IOException("SMB: podaj serwer i nazwę udziału.")
         val host = if (cfg.port == 445) cfg.host else "${cfg.host}:${cfg.port}"
         val baseParts = cfg.rootPath.trim('/').split('/').filter { it.isNotBlank() }
@@ -295,7 +318,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     private fun encodeSegment(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name()).replace("+", "%20")
 
     private fun smbList(parent: Uri): List<FileItem> {
-        SmbFile(smbUrl(parent), smbContext()).use { dir ->
+        SmbFile(smbUrl(parent), smbContext(parent)).use { dir ->
             if (!dir.exists()) throw IOException("SMB: udział lub katalog nie istnieje.")
             return dir.listFiles().map { child ->
                 child.use {
@@ -316,7 +339,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
 
     private fun smbInfo(uri: Uri): FileItem? {
         if (uri.path.orEmpty().trim('/').isBlank()) return FileItem(uri, "SMB", DIRECTORY_MIME, 0, 0, true)
-        SmbFile(smbUrl(uri).trimEnd('/'), smbContext()).use { file ->
+        SmbFile(smbUrl(uri).trimEnd('/'), smbContext(uri)).use { file ->
             if (!file.exists()) return null
             val dir = file.isDirectory
             val name = uri.lastPathSegment ?: file.name.trimEnd('/')
@@ -326,26 +349,26 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
 
     private fun smbCreateFolder(parent: Uri, name: String): Uri {
         val uri = childUri(parent, name)
-        SmbFile(smbUrl(uri), smbContext()).use { it.mkdir() }
+        SmbFile(smbUrl(uri), smbContext(uri)).use { it.mkdir() }
         return uri
     }
 
     private fun smbCreateFile(parent: Uri, name: String): Uri {
         val uri = childUri(parent, name)
-        SmbFile(smbUrl(uri).trimEnd('/'), smbContext()).use { it.createNewFile() }
+        SmbFile(smbUrl(uri).trimEnd('/'), smbContext(uri)).use { it.createNewFile() }
         return uri
     }
 
     private fun smbRename(uri: Uri, newName: String): Uri {
         val target = childUri(parentUri(uri), newName)
-        SmbFile(smbUrl(uri).trimEnd('/'), smbContext()).use { src ->
-            SmbFile(smbUrl(target).trimEnd('/'), smbContext()).use { dst -> src.renameTo(dst) }
+        SmbFile(smbUrl(uri).trimEnd('/'), smbContext(uri)).use { src ->
+            SmbFile(smbUrl(target).trimEnd('/'), smbContext(target)).use { dst -> src.renameTo(dst) }
         }
         return target
     }
 
     private fun smbDelete(uri: Uri): Boolean {
-        SmbFile(smbUrl(uri).trimEnd('/'), smbContext()).use { file ->
+        SmbFile(smbUrl(uri).trimEnd('/'), smbContext(uri)).use { file ->
             if (!file.exists()) return false
             smbDeleteRecursively(file)
             return true
@@ -362,7 +385,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun smbInput(uri: Uri): InputStream {
-        val file = SmbFile(smbUrl(uri).trimEnd('/'), smbContext())
+        val file = SmbFile(smbUrl(uri).trimEnd('/'), smbContext(uri))
         val input = SmbFileInputStream(file)
         return object : FilterInputStream(input) {
             override fun close() { try { super.close() } finally { file.close() } }
@@ -370,7 +393,7 @@ class RemoteRepository(private val prefs: NetworkPrefs) {
     }
 
     private fun smbOutput(uri: Uri): OutputStream {
-        val file = SmbFile(smbUrl(uri).trimEnd('/'), smbContext())
+        val file = SmbFile(smbUrl(uri).trimEnd('/'), smbContext(uri))
         val output = SmbFileOutputStream(file, false)
         return object : FilterOutputStream(output) {
             override fun close() { try { super.close() } finally { file.close() } }

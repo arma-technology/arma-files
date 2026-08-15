@@ -42,7 +42,7 @@ object TrashJournal {
                     entry.size.toString(),
                     entry.isDirectory.toString(),
                     entry.deletedAt.toString()
-                ).joinToString(SEPARATOR.toString()) { escape(it) }
+                ).joinToString(SEPARATOR.toString()) { Escaping.escape(it) }
             )
             append('\n')
         }
@@ -57,44 +57,17 @@ object TrashJournal {
             if (parts.size != 8) return@mapNotNull null
             runCatching {
                 TrashEntry(
-                    id = unescape(parts[0]),
-                    name = unescape(parts[1]),
-                    trashUri = unescape(parts[2]),
-                    originalUri = unescape(parts[3]),
-                    originalParent = unescape(parts[4]),
-                    size = unescape(parts[5]).toLong(),
-                    isDirectory = unescape(parts[6]).toBooleanStrict(),
-                    deletedAt = unescape(parts[7]).toLong()
+                    id = Escaping.unescape(parts[0]),
+                    name = Escaping.unescape(parts[1]),
+                    trashUri = Escaping.unescape(parts[2]),
+                    originalUri = Escaping.unescape(parts[3]),
+                    originalParent = Escaping.unescape(parts[4]),
+                    size = Escaping.unescape(parts[5]).toLong(),
+                    isDirectory = Escaping.unescape(parts[6]).toBooleanStrict(),
+                    deletedAt = Escaping.unescape(parts[7]).toLong()
                 )
             }.getOrNull()
         }
         .toList()
 
-    private fun escape(value: String): String = value
-        .replace("\\", "\\\\")
-        .replace("\t", "\\t")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-
-    private fun unescape(value: String): String {
-        val out = StringBuilder(value.length)
-        var index = 0
-        while (index < value.length) {
-            val c = value[index]
-            if (c == '\\' && index + 1 < value.length) {
-                when (val next = value[index + 1]) {
-                    '\\' -> out.append('\\')
-                    't' -> out.append('\t')
-                    'n' -> out.append('\n')
-                    'r' -> out.append('\r')
-                    else -> out.append(next)
-                }
-                index += 2
-            } else {
-                out.append(c)
-                index++
-            }
-        }
-        return out.toString()
-    }
 }

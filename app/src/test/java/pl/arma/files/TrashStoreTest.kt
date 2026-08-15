@@ -45,13 +45,19 @@ class TrashStoreTest {
     }
 
     @Test
-    fun `zasoby sieciowe maja korzen udzialu`() {
+    fun `zasob sieciowy ma korzen wlasnego konta`() {
+        // Autorytet URI to identyfikator konta, wiec kosz kazdego serwera
+        // zostaje na tym serwerze, a nie laduje w jednym wspolnym miejscu.
         assertEquals(
-            RemoteRepository.smbRoot().toString(),
-            root("${RemoteRepository.SMB_SCHEME}://smb/kopie/2026/plik.txt")
+            "${RemoteRepository.SMB_SCHEME}://nasdom/",
+            root("${RemoteRepository.SMB_SCHEME}://nasdom/kopie/2026/plik.txt")
         )
         assertEquals(
-            RemoteRepository.ftpRoot().toString(),
+            "${RemoteRepository.SMB_SCHEME}://nasfirma/",
+            root("${RemoteRepository.SMB_SCHEME}://nasfirma/kopie/plik.txt")
+        )
+        assertEquals(
+            "${RemoteRepository.FTP_SCHEME}://ftp/",
             root("${RemoteRepository.FTP_SCHEME}://ftp/pub/plik.txt")
         )
     }

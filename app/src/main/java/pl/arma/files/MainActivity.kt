@@ -377,7 +377,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         allFilesAccess = allFilesAccess,
                         onOpenPinned = { openLocal(it.rootUri) },
                         onOpenStorage = { openLocal(it.rootUri) },
-                        onOpenSource = { vm.openSource(it.type) },
+                        onOpenSource = { vm.openSource(it) },
                         onGrantAccess = ::requestBroadStorageAccess,
                         onAddFolder = { folderPicker.launch(null) },
                         onSettings = { tab = Tab.SETTINGS },

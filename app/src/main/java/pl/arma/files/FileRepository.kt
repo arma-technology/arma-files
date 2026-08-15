@@ -16,6 +16,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import pl.arma.files.net.AccountStore
+import pl.arma.files.net.RemoteAccount
 import pl.arma.files.ops.FileOps
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
@@ -24,8 +26,8 @@ import java.util.zip.ZipOutputStream
 
 class FileRepository(private val context: Context) : FileOps {
     private val resolver: ContentResolver get() = context.contentResolver
-    private val networkPrefs = NetworkPrefs(context)
-    private val remote = RemoteRepository(networkPrefs)
+    private val accounts = AccountStore(context)
+    private val remote = RemoteRepository(accounts)
 
     override suspend fun listChildren(parent: Uri): List<FileItem> = withContext(Dispatchers.IO) {
         listChildrenBlocking(parent)
@@ -214,11 +216,7 @@ class FileRepository(private val context: Context) : FileOps {
         }
     }
 
-    fun remoteRoot(type: SourceType): Uri? = when (type) {
-        SourceType.FTP -> RemoteRepository.ftpRoot()
-        SourceType.SMB -> RemoteRepository.smbRoot()
-        else -> null
-    }
+    fun remoteRoot(account: RemoteAccount): Uri = RemoteRepository.rootOf(account)
 
     override fun openInput(uri: Uri): InputStream = when {
         remote.isRemote(uri) -> remote.openInput(uri)

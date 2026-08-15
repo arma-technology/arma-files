@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import pl.arma.files.net.AccountStore
+import pl.arma.files.net.RemoteAccount
+import pl.arma.files.net.RemoteType
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
 import pl.arma.files.ops.OperationKind
@@ -40,6 +43,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val networkPrefs = NetworkPrefs(app)
     private val engine = (app as ArmaFilesApp).engine
     private val trash = (app as ArmaFilesApp).trash
+    private val accounts = AccountStore(app)
+
+    private val _remoteAccounts = MutableStateFlow<List<RemoteAccount>>(emptyList())
+    val remoteAccounts: StateFlow<List<RemoteAccount>> = _remoteAccounts.asStateFlow()
 
     /** Kolejka i historia pochodzą z silnika żyjącego w procesie aplikacji. */
     val operations: StateFlow<List<Operation>> = engine.operations
@@ -73,10 +80,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _sources = MutableStateFlow<List<StorageSource>>(emptyList())
     val sources: StateFlow<List<StorageSource>> = _sources.asStateFlow()
 
-    private val _ftpConfig = MutableStateFlow(networkPrefs.ftp())
+    private val _ftpConfig = MutableStateFlow(FtpConfig())
     val ftpConfig: StateFlow<FtpConfig> = _ftpConfig.asStateFlow()
 
-    private val _smbConfig = MutableStateFlow(networkPrefs.smb())
+    private val _smbConfig = MutableStateFlow(SmbConfig())
     val smbConfig: StateFlow<SmbConfig> = _smbConfig.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
@@ -131,30 +138,130 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setSourceEnabled(type: SourceType, enabled: Boolean) {
         if (type == SourceType.LOCAL) return
+        // FTP i SMB są teraz kontami, a nie jedną globalną konfiguracją. Ekran
+        // ustawień przełącza je nadal po typie, więc kierujemy to na konto
+        // odziedziczone po poprzednich wersjach.
+        val legacyId = when (type) {
+            SourceType.FTP -> RemoteAccount.LEGACY_FTP_ID
+            SourceType.SMB -> RemoteAccount.LEGACY_SMB_ID
+            else -> null
+        }
+        if (legacyId != null) {
+            if (accounts.get(legacyId) == null) {
+                // Konto jeszcze nie istnieje — zakładamy je z bieżącej, być może
+                // pustej konfiguracji, żeby przełącznik działał tak jak dawniej,
+                // zanim użytkownik wpisze adres serwera.
+                if (type == SourceType.FTP) {
+                    saveFtp(_ftpConfig.value.copy(enabled = enabled))
+                } else {
+                    saveSmb(_smbConfig.value.copy(enabled = enabled))
+                }
+                return
+            }
+            setAccountEnabled(legacyId, enabled)
+            return
+        }
         networkPrefs.setEnabled(type, enabled)
+        afterSourceDisabled(enabled) { it.type == type }
+    }
+
+    /** Włącza lub wyłącza jedno konkretne połączenie sieciowe. */
+    fun setAccountEnabled(id: String, enabled: Boolean) {
+        val account = accounts.get(id) ?: return
+        accounts.save(account.copy(enabled = enabled))
+        afterSourceDisabled(enabled) { it.accountId == id }
+    }
+
+    /**
+     * Po wyłączeniu źródła trzeba uciec z jego katalogu, jeśli akurat w nim
+     * jesteśmy — inaczej lista pokazywałaby zawartość zasobu, który dla
+     * aplikacji już nie istnieje.
+     */
+    private fun afterSourceDisabled(enabled: Boolean, matches: (StorageSource) -> Boolean) {
         updateSources()
         loadSavedCollections()
-        if (!enabled && _currentSource.value == type) {
-            val fallback = _sources.value.firstOrNull { it.type == SourceType.LOCAL && it.configured }
-                ?: _sources.value.firstOrNull { it.enabled && it.configured }
-            if (fallback != null) openSource(fallback.type) else {
-                _files.value = emptyList()
-                _currentDir.value = null
-                _root.value = null
-            }
+        if (enabled) return
+        val current = _root.value
+        val leaving = _sources.value.firstOrNull(matches)?.rootUri
+        if (current == null || leaving == null || current != leaving) return
+
+        val fallback = _sources.value.firstOrNull { it.type == SourceType.LOCAL && it.configured }
+            ?: _sources.value.firstOrNull { it.enabled && it.configured }
+        if (fallback != null) openSource(fallback) else {
+            _files.value = emptyList()
+            _currentDir.value = null
+            _root.value = null
         }
     }
 
     fun saveFtp(config: FtpConfig) {
-        networkPrefs.saveFtp(config)
-        _ftpConfig.value = networkPrefs.ftp()
+        val existing = accounts.get(RemoteAccount.LEGACY_FTP_ID)
+        accounts.save(
+            RemoteAccount(
+                id = RemoteAccount.LEGACY_FTP_ID,
+                type = RemoteType.FTP,
+                label = existing?.label?.takeIf { it.isNotBlank() } ?: if (config.ftps) "FTPS" else "FTP",
+                host = config.host.trim(),
+                port = config.port,
+                username = config.username,
+                password = config.password,
+                rootPath = config.rootPath.ifBlank { "/" },
+                secure = config.ftps,
+                enabled = config.enabled
+            )
+        )
         updateSources()
     }
 
     fun saveSmb(config: SmbConfig) {
-        networkPrefs.saveSmb(config)
-        _smbConfig.value = networkPrefs.smb()
+        val existing = accounts.get(RemoteAccount.LEGACY_SMB_ID)
+        accounts.save(
+            RemoteAccount(
+                id = RemoteAccount.LEGACY_SMB_ID,
+                type = RemoteType.SMB,
+                label = existing?.label?.takeIf { it.isNotBlank() } ?: "SMB",
+                host = config.host.trim(),
+                port = config.port,
+                username = config.username,
+                password = config.password,
+                rootPath = config.rootPath.trim().trim('/'),
+                domain = config.domain.trim(),
+                share = config.share.trim().trim('/'),
+                enabled = config.enabled
+            )
+        )
         updateSources()
+    }
+
+    /** Zapisuje dowolne konto sieciowe — także nowe, spoza pary FTP/SMB. */
+    fun saveAccount(account: RemoteAccount) {
+        accounts.save(account)
+        updateSources()
+    }
+
+    fun deleteAccount(id: String) {
+        accounts.delete(id)
+        if (_currentSource.value != SourceType.LOCAL && _root.value?.authority == id) {
+            _files.value = emptyList()
+            _currentDir.value = null
+            _root.value = null
+        }
+        updateSources()
+        loadSavedCollections()
+    }
+
+    /** Otwiera konkretne źródło — istotne, gdy jest kilka połączeń tego typu. */
+    fun openSource(source: StorageSource) {
+        val rootUri = source.rootUri
+        if (!source.configured || rootUri == null) {
+            _error.value = "To połączenie wymaga jeszcze konfiguracji."
+            return
+        }
+        _currentSource.value = source.type
+        _root.value = rootUri
+        _currentDir.value = rootUri
+        navStack.clear()
+        refresh()
     }
 
     fun testSource(type: SourceType) {
@@ -772,8 +879,34 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun updateSources() {
-        val ftp = networkPrefs.ftp().also { _ftpConfig.value = it }
-        val smb = networkPrefs.smb().also { _smbConfig.value = it }
+        val remoteAccounts = accounts.all().also { list ->
+            _remoteAccounts.value = list
+            // Ekran ustawień wciąż operuje na pojedynczej konfiguracji FTP i SMB;
+            // pokazujemy w nim konta odziedziczone po poprzednich wersjach.
+            list.firstOrNull { it.id == RemoteAccount.LEGACY_FTP_ID }?.let { account ->
+                _ftpConfig.value = FtpConfig(
+                    enabled = account.enabled,
+                    host = account.host,
+                    port = account.port,
+                    username = account.username,
+                    password = account.password,
+                    rootPath = account.rootPath,
+                    ftps = account.secure
+                )
+            }
+            list.firstOrNull { it.id == RemoteAccount.LEGACY_SMB_ID }?.let { account ->
+                _smbConfig.value = SmbConfig(
+                    enabled = account.enabled,
+                    host = account.host,
+                    port = account.port,
+                    share = account.share,
+                    rootPath = account.rootPath,
+                    domain = account.domain,
+                    username = account.username,
+                    password = account.password
+                )
+            }
+        }
         val localTree = prefs.treeUri
         val googleTree = networkPrefs.cloudTree(SourceType.GOOGLE_DRIVE)
         val oneDriveTree = networkPrefs.cloudTree(SourceType.ONEDRIVE)
@@ -785,9 +918,17 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             StorageSource(SourceType.GOOGLE_DRIVE, "Google Drive", networkPrefs.isEnabled(SourceType.GOOGLE_DRIVE), googleTree != null, doc(googleTree), attachedLabel(googleTree)),
             StorageSource(SourceType.ONEDRIVE, "OneDrive", networkPrefs.isEnabled(SourceType.ONEDRIVE), oneDriveTree != null, doc(oneDriveTree), attachedLabel(oneDriveTree)),
             StorageSource(SourceType.DROPBOX, "Dropbox", networkPrefs.isEnabled(SourceType.DROPBOX), dropboxTree != null, doc(dropboxTree), attachedLabel(dropboxTree)),
-            StorageSource(SourceType.FTP, if (ftp.ftps) "FTPS" else "FTP", ftp.enabled, ftp.host.isNotBlank(), repo.remoteRoot(SourceType.FTP), if (ftp.host.isBlank()) "Brak konfiguracji" else "${ftp.host}:${ftp.port}"),
-            StorageSource(SourceType.SMB, "SMB / Samba", smb.enabled, smb.host.isNotBlank() && smb.share.isNotBlank(), repo.remoteRoot(SourceType.SMB), if (smb.host.isBlank()) "Brak konfiguracji" else "${smb.host}/${smb.share}")
-        )
+        ) + remoteAccounts.map { account ->
+            StorageSource(
+                type = if (account.type == RemoteType.SMB) SourceType.SMB else SourceType.FTP,
+                label = account.label.ifBlank { account.type.name },
+                enabled = account.enabled,
+                configured = account.configured,
+                rootUri = repo.remoteRoot(account),
+                subtitle = if (account.configured) account.summary else "Brak konfiguracji",
+                accountId = account.id
+            )
+        }
     }
 
     /**
@@ -816,8 +957,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun isSavedUriSourceEnabled(uri: Uri): Boolean {
-        if (uri.scheme == RemoteRepository.FTP_SCHEME) return networkPrefs.isEnabled(SourceType.FTP)
-        if (uri.scheme == RemoteRepository.SMB_SCHEME) return networkPrefs.isEnabled(SourceType.SMB)
+        // Wpis w Ostatnich/Ulubionych należy do konkretnego konta, więc pytamy
+        // o to konto, a nie o „czy FTP jest w ogóle włączony". Konto usunięte
+        // oznacza wpis do ukrycia.
+        if (RemoteRepository.isRemoteScheme(uri.scheme)) {
+            return accounts.get(uri.authority)?.enabled == true
+        }
         if (uri.scheme != "content") return true
 
         val cloudTypes = listOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX)

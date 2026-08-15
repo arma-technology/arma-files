@@ -10,7 +10,13 @@ data class StorageSource(
     val enabled: Boolean,
     val configured: Boolean,
     val rootUri: Uri?,
-    val subtitle: String = ""
+    val subtitle: String = "",
+    /**
+     * Konto sieciowe, z którego pochodzi to źródło. Null dla pamięci lokalnej
+     * i dysków chmurowych podpiętych przez SAF. Dzięki niemu na liście może
+     * stać kilka połączeń tego samego typu — „NAS Dom" obok „NAS Firma".
+     */
+    val accountId: String? = null
 )
 
 data class FtpConfig(
