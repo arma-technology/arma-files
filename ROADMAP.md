@@ -68,12 +68,16 @@ skanowanie trwałoby zbyt długo.
 Domknięte przy okazji: kosz dla folderów SAF — korzeniem jest katalog
 drzewa, którego identyfikator niesie samo URI dokumentu.
 
-### Faza 3 — nawigacja i duży ekran
+### Faza 3 — nawigacja i duży ekran — ZROBIONE
 
 - prawdziwe zakładki katalogów
 - tryb dwóch paneli na tablecie i w poziomie, przeciąganie między panelami
-- lepszy „Mój komputer”: własne przypięte foldery, kolejność, wolne
-  miejsce, wykres zajętości, USB OTG, aktywne udziały
+- lepszy „Mój komputer”: zrobione już w Fazie 1
+
+Przenoszenie między panelami działa przez zaznaczenie i przyciski
+„Kopiuj tu" / „Przenieś tu", a nie przez przeciąganie palcem. Przyciski są
+jednoznaczne i działają tak samo na telefonie, gdzie paneli nie ma;
+przeciąganie można dołożyć później jako skrót, nie jako jedyną drogę.
 
 ### Faza 4 — indeks i porządki
 

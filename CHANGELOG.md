@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0-alpha2
+
+- zakładki katalogów: kilka miejsc otwartych naraz, przełączanie bez cofania
+  się po drzewie, „Otwórz w nowej karcie" w menu zaznaczenia
+- tryb dwóch paneli na tablecie i w poziomie, z kopiowaniem i przenoszeniem
+  między panelami oraz zamianą stron
+- drugi panel startuje w katalogu lewego, więc od razu jest co przenosić
+- pasek kart pojawia się dopiero przy drugiej karcie, żeby nie zabierać
+  miejsca przy zwykłym przeglądaniu
+
 ## 0.6.0-alpha1
 
 - połączeń każdego typu może być wiele: „NAS Dom" obok „NAS Firma" i kopii

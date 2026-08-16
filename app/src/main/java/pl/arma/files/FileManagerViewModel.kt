@@ -32,6 +32,7 @@ import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
+import pl.arma.files.ops.PaneRules
 import pl.arma.files.ops.OperationKind
 import pl.arma.files.ops.OperationRecord
 import pl.arma.files.ops.OperationStatus
@@ -115,9 +116,165 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _allFilesAccess = MutableStateFlow(hasBroadStorageAccess())
     val allFilesAccess: StateFlow<Boolean> = _allFilesAccess.asStateFlow()
 
-    private val navStack = ArrayDeque<Uri>()
+    /**
+     * Jeden panel: własny katalog, własna historia cofania i własna lista
+     * plików. Zakładki i tryb dwupanelowy to ten sam mechanizm — karta widoczna
+     * po lewej jest aktywna, a druga (opcjonalnie) pokazywana obok.
+     */
+    private class Pane(val id: String) {
+        var root: Uri? = null
+        var currentDir: Uri? = null
+        var source: SourceType = SourceType.LOCAL
+        var files: List<FileItem> = emptyList()
+        val navStack = ArrayDeque<Uri>()
+    }
+
+    private val panes = mutableListOf(Pane(java.util.UUID.randomUUID().toString()))
+    private var activePaneId: String = panes.first().id
+    private var secondaryPaneId: String? = null
+
+    private val _tabs = MutableStateFlow<List<TabInfo>>(emptyList())
+    val tabs: StateFlow<List<TabInfo>> = _tabs.asStateFlow()
+
+    private val _secondaryFiles = MutableStateFlow<List<FileItem>>(emptyList())
+    val secondaryFiles: StateFlow<List<FileItem>> = _secondaryFiles.asStateFlow()
+
+    private val _secondaryDir = MutableStateFlow<Uri?>(null)
+    val secondaryDir: StateFlow<Uri?> = _secondaryDir.asStateFlow()
+
+    private val _dualPane = MutableStateFlow(false)
+    val dualPane: StateFlow<Boolean> = _dualPane.asStateFlow()
+
+    private fun active(): Pane = panes.first { it.id == activePaneId }
+
+    private fun secondary(): Pane? = secondaryPaneId?.let { id -> panes.firstOrNull { it.id == id } }
+
+    private fun paneTitle(pane: Pane): String = PaneRules.tabTitle(pane.currentDir?.path)
+
+    /** Przepisuje stan aktywnego panelu do przepływów, z których czyta ekran. */
+    private fun syncPanes() {
+        val current = active()
+        _currentDir.value = current.currentDir
+        _root.value = current.root
+        _currentSource.value = current.source
+        _files.value = current.files
+
+        val other = secondary()
+        _secondaryFiles.value = other?.files.orEmpty()
+        _secondaryDir.value = other?.currentDir
+        _dualPane.value = other != null
+
+        _tabs.value = panes.map { pane ->
+            TabInfo(
+                id = pane.id,
+                title = paneTitle(pane),
+                active = pane.id == activePaneId,
+                secondary = pane.id == secondaryPaneId
+            )
+        }
+    }
+
+    /** Otwiera nową kartę na ekranie „Mój komputer" i przełącza się na nią. */
+    fun openTab() {
+        val pane = Pane(java.util.UUID.randomUUID().toString())
+        panes += pane
+        activePaneId = pane.id
+        syncPanes()
+    }
+
+    /** Otwiera wskazany katalog w nowej karcie, nie ruszając bieżącej. */
+    fun openInNewTab(item: FileItem) {
+        if (!item.isDirectory) return
+        val source = active()
+        val pane = Pane(java.util.UUID.randomUUID().toString())
+        pane.root = source.root
+        pane.source = source.source
+        pane.currentDir = item.uri
+        panes += pane
+        activePaneId = pane.id
+        refreshPane(pane)
+    }
+
+    fun closeTab(id: String) {
+        val nextActive = PaneRules.activeAfterClose(panes.map { it.id }, activePaneId, id) ?: return
+        panes.removeAll { it.id == id }
+        if (secondaryPaneId == id) secondaryPaneId = null
+        activePaneId = nextActive
+        syncPanes()
+    }
+
+    fun selectTab(id: String) {
+        if (panes.none { it.id == id }) return
+        if (secondaryPaneId == id) {
+            // Karta stoi już w drugim panelu — zamieniamy strony zamiast gasić
+            // podział, bo zniknięcie panelu po tapnięciu byłoby zaskoczeniem.
+            swapPanes()
+            return
+        }
+        activePaneId = id
+        syncPanes()
+        if (active().files.isEmpty() && active().currentDir != null) refresh()
+    }
+
+    /**
+     * Włącza drugi panel. Gdy nie ma innej karty, tworzy ją — dzięki temu tryb
+     * dwupanelowy działa od razu, bez ręcznego zakładania zakładek.
+     */
+    fun setDualPane(enabled: Boolean) {
+        if (!enabled) {
+            secondaryPaneId = null
+            syncPanes()
+            return
+        }
+        val candidate = panes.firstOrNull { it.id != activePaneId }
+            ?: Pane(java.util.UUID.randomUUID().toString()).also { pane ->
+                // Świeży panel dostaje katalog z lewej strony, żeby od razu
+                // było co przeciągać — pusty panel wymuszałby szukanie karty.
+                val current = active()
+                pane.root = current.root
+                pane.source = current.source
+                pane.currentDir = current.currentDir
+                panes += pane
+            }
+        secondaryPaneId = candidate.id
+        syncPanes()
+        refreshPane(candidate)
+    }
+
+    fun swapPanes() {
+        val other = secondaryPaneId ?: return
+        secondaryPaneId = activePaneId
+        activePaneId = other
+        syncPanes()
+    }
+
+    /** Kopiuje lub przenosi zaznaczone elementy do katalogu drugiego panelu. */
+    fun sendToOtherPane(items: List<FileItem>, move: Boolean) {
+        val target = secondary()?.currentDir
+        if (target == null) {
+            _error.value = "Drugi panel nie ma otwartego katalogu."
+            return
+        }
+        if (items.isEmpty()) return
+        enqueue(if (move) OperationKind.MOVE else OperationKind.COPY, items, target)
+    }
+
+    fun openDirectoryInSecondary(item: FileItem) {
+        val pane = secondary() ?: return
+        pane.currentDir?.let(pane.navStack::addLast)
+        pane.currentDir = item.uri
+        refreshPane(pane)
+    }
+
+    fun secondaryGoBack() {
+        val pane = secondary() ?: return
+        val previous = pane.navStack.removeLastOrNull() ?: return
+        pane.currentDir = previous
+        refreshPane(pane)
+    }
 
     init {
+        syncPanes()
         loadSavedCollections()
         updateSources()
         refreshDeviceLocations()
@@ -174,11 +331,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
         val fallback = _sources.value.firstOrNull { it.type == SourceType.LOCAL && it.configured }
             ?: _sources.value.firstOrNull { it.enabled && it.configured }
-        if (fallback != null) openSource(fallback) else {
-            _files.value = emptyList()
-            _currentDir.value = null
-            _root.value = null
-        }
+        if (fallback != null) openSource(fallback) else goComputerHome()
     }
 
 
@@ -237,11 +390,15 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteAccount(id: String) {
         accounts.get(id)?.let(repo::disconnectRemote)
         accounts.delete(id)
-        if (_currentSource.value != SourceType.LOCAL && _root.value?.authority == id) {
-            _files.value = emptyList()
-            _currentDir.value = null
-            _root.value = null
+        // Usunięte konto może być otwarte w kilku kartach naraz.
+        panes.filter { it.root?.authority == id }.forEach { pane ->
+            pane.navStack.clear()
+            pane.files = emptyList()
+            pane.currentDir = null
+            pane.root = null
+            pane.source = SourceType.LOCAL
         }
+        syncPanes()
         updateSources()
         loadSavedCollections()
     }
@@ -253,11 +410,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             _error.value = "To połączenie wymaga jeszcze konfiguracji."
             return
         }
-        _currentSource.value = source.type
-        _root.value = rootUri
-        _currentDir.value = rootUri
-        navStack.clear()
-        refresh()
+        val pane = active()
+        pane.source = source.type
+        pane.root = rootUri
+        pane.currentDir = rootUri
+        pane.navStack.clear()
+        refreshPane(pane)
     }
 
     fun testSource(type: SourceType) {
@@ -286,38 +444,47 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             }
             return
         }
-        _currentSource.value = type
-        _root.value = rootUri
-        _currentDir.value = rootUri
-        navStack.clear()
-        refresh()
+        val pane = active()
+        pane.source = type
+        pane.root = rootUri
+        pane.currentDir = rootUri
+        pane.navStack.clear()
+        refreshPane(pane)
     }
 
     fun refresh() {
-        val dir = _currentDir.value ?: return
+        refreshPane(active())
+        secondary()?.let(::refreshPane)
+    }
+
+    private fun refreshPane(pane: Pane) {
+        val dir = pane.currentDir ?: run { syncPanes(); return }
         viewModelScope.launch {
             _busy.value = true
             runCatching { repo.listChildren(dir) }
-                .onSuccess { _files.value = it }
+                .onSuccess { pane.files = it }
                 .onFailure { _error.value = "Nie można odczytać katalogu: ${it.message}" }
             _busy.value = false
+            syncPanes()
         }
     }
 
     fun openDirectory(item: FileItem) {
-        _currentDir.value?.let(navStack::addLast)
-        _currentDir.value = item.uri
-        refresh()
+        val pane = active()
+        pane.currentDir?.let(pane.navStack::addLast)
+        pane.currentDir = item.uri
+        refreshPane(pane)
     }
 
     fun goBack(): Boolean {
-        val previous = navStack.removeLastOrNull()
+        val pane = active()
+        val previous = pane.navStack.removeLastOrNull()
         if (previous != null) {
-            _currentDir.value = previous
-            refresh()
+            pane.currentDir = previous
+            refreshPane(pane)
             return true
         }
-        if (_currentDir.value != null) {
+        if (pane.currentDir != null) {
             goComputerHome()
             return true
         }
@@ -325,11 +492,13 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun goComputerHome() {
-        navStack.clear()
-        _files.value = emptyList()
-        _currentDir.value = null
-        _root.value = null
-        _currentSource.value = SourceType.LOCAL
+        val pane = active()
+        pane.navStack.clear()
+        pane.files = emptyList()
+        pane.currentDir = null
+        pane.root = null
+        pane.source = SourceType.LOCAL
+        syncPanes()
         refreshDeviceLocations()
     }
 
@@ -338,18 +507,20 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             _error.value = "ARMA Files potrzebuje dostępu do wszystkich plików, aby otworzyć pamięć urządzenia lub kartę SD."
             return
         }
-        _currentSource.value = SourceType.LOCAL
-        _root.value = uri
-        _currentDir.value = uri
-        navStack.clear()
-        refresh()
+        val pane = active()
+        pane.source = SourceType.LOCAL
+        pane.root = uri
+        pane.currentDir = uri
+        pane.navStack.clear()
+        refreshPane(pane)
     }
 
     fun goRoot() {
-        _root.value?.let {
-            _currentDir.value = it
-            navStack.clear()
-            refresh()
+        val pane = active()
+        pane.root?.let {
+            pane.currentDir = it
+            pane.navStack.clear()
+            refreshPane(pane)
         }
     }
 

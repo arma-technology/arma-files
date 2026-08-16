@@ -18,6 +18,15 @@ enum class ViewMode { LIST, GRID }
 enum class Tab { FILES, RECENT, FAVORITES, SETTINGS }
 enum class FileCategory { ALL, FOLDERS, IMAGES, VIDEO, AUDIO, DOCUMENTS, ARCHIVES }
 
+/** Jedna zakładka katalogu w pasku kart. */
+data class TabInfo(
+    val id: String,
+    val title: String,
+    val active: Boolean,
+    /** Karta pokazywana w drugim panelu w trybie dwupanelowym. */
+    val secondary: Boolean = false
+)
+
 data class ClipboardPayload(
     val items: List<FileItem>,
     val cut: Boolean

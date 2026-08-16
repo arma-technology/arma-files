@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -121,6 +122,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
     val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
     val remoteAccounts by vm.remoteAccounts.collectAsStateWithLifecycle()
+    val tabs by vm.tabs.collectAsStateWithLifecycle()
+    val dualPane by vm.dualPane.collectAsStateWithLifecycle()
+    val secondaryFiles by vm.secondaryFiles.collectAsStateWithLifecycle()
+    val secondaryDir by vm.secondaryDir.collectAsStateWithLifecycle()
     val accountTestResult by vm.accountTestResult.collectAsStateWithLifecycle()
     val testingAccount by vm.testingAccount.collectAsStateWithLifecycle()
     val discovered by vm.discovered.collectAsStateWithLifecycle()
@@ -308,6 +313,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     canPin = selectedItems.size == 1 && selectedItems.first().isDirectory,
                     onPin = {
                         selectedItems.firstOrNull()?.let(vm::pinFolder); selectedUris = emptySet()
+                    },
+                    onOpenInNewTab = {
+                        selectedItems.firstOrNull()?.let(vm::openInNewTab); selectedUris = emptySet()
                     }
                 )
             }
@@ -351,7 +359,22 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             }
         }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Row(Modifier.fillMaxSize().padding(padding)) {
+        Column(Modifier.weight(1f).fillMaxHeight()) {
+        if (tab == Tab.FILES && !selectionMode) {
+            TabStrip(
+                tabs = tabs,
+                dualPane = dualPane,
+                // Dwa panele mają sens dopiero wtedy, gdy każdy dostanie
+                // realną szerokość — na wąskim telefonie byłyby nieczytelne.
+                canSplit = LocalConfiguration.current.screenWidthDp >= 600,
+                onSelect = vm::selectTab,
+                onClose = vm::closeTab,
+                onNew = { vm.openTab(); query = ""; category = FileCategory.ALL },
+                onToggleDual = { vm.setDualPane(!dualPane) }
+            )
+        }
+        Box(Modifier.fillMaxSize()) {
             when {
                 tab == Tab.SETTINGS -> {
                     SettingsScreen(
@@ -575,6 +598,25 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     }
                 }
             }
+        }
+        }
+
+        if (dualPane) {
+            SecondaryPane(
+                dir = secondaryDir,
+                files = secondaryFiles,
+                selectionCount = selectedItems.size,
+                onOpen = { item ->
+                    if (item.isDirectory) vm.openDirectoryInSecondary(item) else preview = item
+                },
+                onBack = vm::secondaryGoBack,
+                onCopyHere = { vm.sendToOtherPane(selectedItems, move = false); selectedUris = emptySet() },
+                onMoveHere = { vm.sendToOtherPane(selectedItems, move = true); selectedUris = emptySet() },
+                onSwap = vm::swapPanes,
+                onClose = { vm.setDualPane(false) },
+                modifier = Modifier.weight(1f).fillMaxHeight()
+            )
+        }
         }
     }
 
@@ -1381,7 +1423,8 @@ private fun MultiSelectionTopBar(
     onShare: () -> Unit,
     onDelete: () -> Unit,
     canPin: Boolean,
-    onPin: () -> Unit
+    onPin: () -> Unit,
+    onOpenInNewTab: () -> Unit
 ) {
     var more by remember { mutableStateOf(false) }
     TopAppBar(
@@ -1400,6 +1443,7 @@ private fun MultiSelectionTopBar(
                     if (canRename) DropdownMenuItem(text = { Text("Zmień nazwę") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { more = false; onRename() })
                     if (canRename) DropdownMenuItem(text = { Text("Właściwości") }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { more = false; onDetails() })
                     if (canPin) DropdownMenuItem(text = { Text("Przypnij do „Mój komputer”") }, leadingIcon = { Icon(Icons.Default.PushPin, null) }, onClick = { more = false; onPin() })
+                    if (canPin) DropdownMenuItem(text = { Text("Otwórz w nowej karcie") }, leadingIcon = { Icon(Icons.Default.Tab, null) }, onClick = { more = false; onOpenInNewTab() })
                     DropdownMenuItem(text = { Text("Udostępnij") }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { more = false; onShare() })
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Usuń") }, leadingIcon = { Icon(Icons.Default.DeleteOutline, null) }, onClick = { more = false; onDelete() })

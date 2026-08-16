@@ -1,0 +1,31 @@
+package pl.arma.files.ops
+
+/**
+ * Reguły zarządzania kartami, wydzielone z ViewModelu, żeby dało się je
+ * sprawdzić bez Androida. Same przejścia są proste, ale łatwo się w nich
+ * pomylić przy zamykaniu karty aktywnej albo tej stojącej w drugim panelu.
+ */
+object PaneRules {
+
+    /**
+     * Która karta ma stać się aktywna po zamknięciu [closing].
+     * Zwraca null, gdy zamknięcie jest niedozwolone — ostatniej karty nie
+     * zamykamy, bo aplikacja zostałaby bez widoku.
+     */
+    fun activeAfterClose(ids: List<String>, activeId: String, closing: String): String? {
+        if (ids.size <= 1 || closing !in ids) return null
+        if (closing != activeId) return activeId
+        val index = ids.indexOf(closing)
+        val remaining = ids.filterNot { it == closing }
+        return remaining[index.coerceAtMost(remaining.lastIndex)]
+    }
+
+    /** Nazwa karty na podstawie ścieżki; null oznacza ekran „Mój komputer". */
+    fun tabTitle(path: String?): String {
+        if (path == null) return "Mój komputer"
+        return path.trimEnd('/')
+            .substringAfterLast('/')
+            .substringAfterLast(':')
+            .ifBlank { "Katalog główny" }
+    }
+}
