@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0-alpha1
+
+- Google Drive przez oficjalne API v3 zamiast systemowego wyboru folderu:
+  podpięty jest cały dysk, a nie wskazany podfolder
+- logowanie kontem Google w Ustawieniach, w przeglądarce systemowej (OAuth
+  z PKCE); hasło nie przechodzi przez aplikację, a token odświeżania trafia
+  do zaszyfrowanego magazynu razem z hasłami FTP i SMB
+- kont Google może być kilka, każde ze swoim adresem e-mail na liście
+- Client ID podaje się przy budowaniu, więc aplikacja nie jest przywiązana
+  do jednego projektu ani konta — patrz DRIVE_SETUP.md
+
 ## 0.7.0-alpha2
 
 - przewijanie zdjęć gestem w podglądzie i na pełnym ekranie; gest działa

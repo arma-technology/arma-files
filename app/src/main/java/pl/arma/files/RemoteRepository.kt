@@ -2,6 +2,7 @@ package pl.arma.files
 
 import android.net.Uri
 import pl.arma.files.net.AccountStore
+import pl.arma.files.net.DriveBackend
 import pl.arma.files.net.FtpBackend
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteBackend
@@ -60,6 +61,7 @@ class RemoteRepository(private val lookup: (String?) -> RemoteAccount?) {
                 RemoteType.SFTP -> SftpBackend()
                 RemoteType.SMB -> SmbBackend()
                 RemoteType.WEBDAV -> WebDavBackend()
+                RemoteType.GDRIVE -> DriveBackend(pl.arma.files.BuildConfig.DRIVE_CLIENT_ID)
             }
         }
     }

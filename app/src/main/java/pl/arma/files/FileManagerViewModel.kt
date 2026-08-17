@@ -31,6 +31,8 @@ import pl.arma.files.index.IndexProgress
 import pl.arma.files.index.IndexedFile
 import pl.arma.files.net.AccountStore
 import pl.arma.files.net.DiscoveredHost
+import pl.arma.files.net.GoogleSession
+import pl.arma.files.net.GoogleSignIn
 import pl.arma.files.net.LanScanner
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
@@ -370,6 +372,32 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         accounts.get(account.id)?.let(repo::disconnectRemote)
         accounts.save(account)
         updateSources()
+    }
+
+    val googleSignIn = GoogleSignIn(
+        clientId = BuildConfig.DRIVE_CLIENT_ID,
+        redirectScheme = BuildConfig.DRIVE_REDIRECT_SCHEME
+    )
+
+    /** Zapisuje konto Drive po udanym logowaniu. */
+    fun completeGoogleSignIn(accountId: String, label: String, session: GoogleSession) {
+        val existing = accounts.get(accountId)
+        accounts.save(
+            RemoteAccount(
+                id = accountId,
+                type = RemoteType.GDRIVE,
+                label = label.ifBlank { session.email.ifBlank { "Google Drive" } },
+                host = "",
+                port = 443,
+                username = session.email,
+                // Token odświeżania trafia do SecretStore, tak jak hasła.
+                password = session.refreshToken,
+                rootPath = existing?.rootPath.orEmpty(),
+                enabled = true
+            )
+        )
+        updateSources()
+        _notice.value = "Podłączono Google Drive" + session.email.let { if (it.isBlank()) "" else " ($it)" }
     }
 
     fun newAccountDraft(type: RemoteType = RemoteType.SMB): RemoteAccount = RemoteAccount(

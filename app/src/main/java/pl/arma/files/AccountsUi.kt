@@ -62,6 +62,7 @@ fun typeLabel(type: RemoteType): String = when (type) {
     RemoteType.SFTP -> "SFTP"
     RemoteType.SMB -> "SMB"
     RemoteType.WEBDAV -> "WebDAV"
+    RemoteType.GDRIVE -> "Google Drive"
 }
 
 fun typeIcon(type: RemoteType): ImageVector = when (type) {
@@ -69,6 +70,7 @@ fun typeIcon(type: RemoteType): ImageVector = when (type) {
     RemoteType.SFTP -> Icons.Default.Lock
     RemoteType.SMB -> Icons.Default.Dns
     RemoteType.WEBDAV -> Icons.Default.Cloud
+    RemoteType.GDRIVE -> Icons.Default.Cloud
 }
 
 /** Lista połączeń sieciowych na ekranie ustawień. */
@@ -169,7 +171,9 @@ fun AccountEditorSheet(
     onTest: (RemoteAccount) -> Unit,
     onSave: (RemoteAccount) -> Unit,
     onDelete: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    signInAvailable: Boolean = false,
+    onGoogleSignIn: (RemoteAccount) -> Unit = {}
 ) {
     var draft by remember(initial.id) { mutableStateOf(initial) }
     var confirmDelete by remember(initial.id) { mutableStateOf(false) }
@@ -209,14 +213,24 @@ fun AccountEditorSheet(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
-                value = draft.host,
-                onValueChange = { draft = draft.copy(host = it) },
-                label = { Text("Adres serwera") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
+            if (draft.type == RemoteType.GDRIVE) {
+                GoogleDriveSection(
+                    account = draft,
+                    signInAvailable = signInAvailable,
+                    onSignIn = { onGoogleSignIn(draft) }
+                )
+            }
+
+            if (draft.type != RemoteType.GDRIVE) {
+                OutlinedTextField(
+                    value = draft.host,
+                    onValueChange = { draft = draft.copy(host = it) },
+                    label = { Text("Adres serwera") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (draft.type != RemoteType.GDRIVE) OutlinedTextField(
                 value = draft.port.toString(),
                 onValueChange = { value -> value.toIntOrNull()?.let { draft = draft.copy(port = it) } },
                 label = { Text("Port") },
@@ -242,14 +256,14 @@ fun AccountEditorSheet(
                 )
             }
 
-            OutlinedTextField(
+            if (draft.type != RemoteType.GDRIVE) OutlinedTextField(
                 value = draft.username,
                 onValueChange = { draft = draft.copy(username = it) },
                 label = { Text("Użytkownik") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
+            if (draft.type != RemoteType.GDRIVE) OutlinedTextField(
                 value = draft.password,
                 onValueChange = { draft = draft.copy(password = it) },
                 label = { Text("Hasło") },
@@ -260,7 +274,15 @@ fun AccountEditorSheet(
             OutlinedTextField(
                 value = draft.rootPath,
                 onValueChange = { draft = draft.copy(rootPath = it) },
-                label = { Text("Katalog startowy (opcjonalnie)") },
+                label = {
+                    Text(
+                        if (draft.type == RemoteType.GDRIVE) {
+                            "Katalog startowy na dysku (opcjonalnie)"
+                        } else {
+                            "Katalog startowy (opcjonalnie)"
+                        }
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -347,6 +369,50 @@ fun AccountEditorSheet(
             },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Anuluj") } }
         )
+    }
+}
+
+/**
+ * Sekcja logowania do Google Drive. Adresu serwera i hasła tu nie ma —
+ * dostępu udziela sam Google, a aplikacja dostaje token.
+ */
+@Composable
+private fun GoogleDriveSection(
+    account: RemoteAccount,
+    signInAvailable: Boolean,
+    onSignIn: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!signInAvailable) {
+                Text(
+                    "Ta wersja aplikacji nie ma wpisanego Client ID Google. " +
+                        "Zbuduj ją z parametrem driveClientId, aby włączyć logowanie.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                return@Column
+            }
+            Text(
+                if (account.configured) {
+                    "Zalogowano jako ${account.username.ifBlank { "konto Google" }}"
+                } else {
+                    "Zaloguj się swoim kontem Google. Logowanie odbywa się w przeglądarce, " +
+                        "więc hasło nie przechodzi przez aplikację."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            FilledTonalButton(onClick = onSignIn, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Cloud, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (account.configured) "Zaloguj ponownie" else "Zaloguj się do Google")
+            }
+        }
     }
 }
 

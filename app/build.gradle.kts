@@ -1,8 +1,32 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Client ID projektu Google Cloud. Nie jest tajemnicą (identyfikuje aplikację,
+// a nie użytkownika), ale nie trzymamy go w repozytorium, żeby nie przywiązywać
+// kodu do jednego projektu. Kolejność: -PdriveClientId=... , potem
+// local.properties (plik nieśledzony przez git).
+val driveClientId: String = (project.findProperty("driveClientId") as String?)
+    ?: rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
+        val properties = Properties()
+        file.inputStream().use { properties.load(it) }
+        properties.getProperty("driveClientId")
+    }
+    ?: ""
+
+// Google wymaga, żeby adres przekierowania był odwróconym Client ID. Wyliczamy
+// go, zamiast kazać wpisywać drugą, łatwą do pomylenia wartość.
+val driveRedirectScheme: String =
+    if (driveClientId.endsWith(".apps.googleusercontent.com")) {
+        "com.googleusercontent.apps." +
+            driveClientId.removeSuffix(".apps.googleusercontent.com")
+    } else {
+        "pl.arma.files.oauth"
+    }
 
 android {
     namespace = "pl.arma.files"
@@ -12,11 +36,18 @@ android {
         applicationId = "pl.arma.files"
         minSdk = 26
         targetSdk = 35
-        versionCode = 13
-        versionName = "0.7.0-alpha2"
+        versionCode = 14
+        versionName = "0.8.0-alpha1"
+
+        manifestPlaceholders["appAuthRedirectScheme"] = driveRedirectScheme
+        buildConfigField("String", "DRIVE_CLIENT_ID", "\"$driveClientId\"")
+        buildConfigField("String", "DRIVE_REDIRECT_SCHEME", "\"$driveRedirectScheme\"")
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -57,6 +88,9 @@ dependencies {
     }
     implementation("com.hierynomus:sshj:0.38.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // OAuth 2.0 + PKCE dla Google Drive. AppAuth zamiast wlasnej implementacji,
+    // bo obsluguje Custom Tabs, PKCE i odswiezanie tokenow zgodnie z RFC 8252.
+    implementation("net.openid:appauth:0.11.1")
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-nop:2.0.17")
     debugImplementation("androidx.compose.ui:ui-tooling")
