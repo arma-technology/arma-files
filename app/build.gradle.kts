@@ -36,8 +36,8 @@ android {
         applicationId = "pl.arma.files"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.8.0-alpha1"
+        versionCode = 15
+        versionName = "0.8.0-alpha2"
 
         manifestPlaceholders["appAuthRedirectScheme"] = driveRedirectScheme
         buildConfigField("String", "DRIVE_CLIENT_ID", "\"$driveClientId\"")

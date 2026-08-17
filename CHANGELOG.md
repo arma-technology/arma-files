@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0-alpha2
+
+- karty katalogów w stylu przeglądarki: zaokrąglone u góry, z wklęsłymi
+  narożnikami u dołu, dzięki czemu aktywna karta zlewa się z treścią
+- ikona źródła na karcie (pamięć, SMB, FTP, chmura, „Mój komputer")
+- płynne przejście koloru i wysokości przy przełączaniu kart
+- przy jednej karcie pasek nie zabiera miejsca — zostaje sam przycisk
+
 ## 0.8.0-alpha1
 
 - Google Drive przez oficjalne API v3 zamiast systemowego wyboru folderu:

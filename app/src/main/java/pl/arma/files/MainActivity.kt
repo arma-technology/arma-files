@@ -391,17 +391,28 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         Row(Modifier.fillMaxSize().padding(padding)) {
         Column(Modifier.weight(1f).fillMaxHeight()) {
         if (tab == Tab.FILES && !selectionMode) {
-            TabStrip(
-                tabs = tabs,
-                dualPane = dualPane,
-                // Dwa panele mają sens dopiero wtedy, gdy każdy dostanie
-                // realną szerokość — na wąskim telefonie byłyby nieczytelne.
-                canSplit = LocalConfiguration.current.screenWidthDp >= 600,
-                onSelect = vm::selectTab,
-                onClose = vm::closeTab,
-                onNew = { vm.openTab(); query = ""; category = FileCategory.ALL },
-                onToggleDual = { vm.setDualPane(!dualPane) }
-            )
+            // Dwa panele mają sens dopiero wtedy, gdy każdy dostanie realną
+            // szerokość — na wąskim telefonie byłyby nieczytelne.
+            val canSplit = LocalConfiguration.current.screenWidthDp >= 600
+            val newTab = { vm.openTab(); query = ""; category = FileCategory.ALL }
+            if (tabs.size > 1) {
+                BrowserTabStrip(
+                    tabs = tabs,
+                    dualPane = dualPane,
+                    canSplit = canSplit,
+                    onSelect = vm::selectTab,
+                    onClose = vm::closeTab,
+                    onNew = newTab,
+                    onToggleDual = { vm.setDualPane(!dualPane) }
+                )
+            } else {
+                SingleTabBar(
+                    dualPane = dualPane,
+                    canSplit = canSplit,
+                    onNew = newTab,
+                    onToggleDual = { vm.setDualPane(!dualPane) }
+                )
+            }
         }
         Box(Modifier.fillMaxSize()) {
             when {

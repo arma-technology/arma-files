@@ -195,7 +195,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 id = pane.id,
                 title = paneTitle(pane),
                 active = pane.id == activePaneId,
-                secondary = pane.id == secondaryPaneId
+                secondary = pane.id == secondaryPaneId,
+                source = pane.source,
+                atHome = pane.currentDir == null
             )
         }
     }

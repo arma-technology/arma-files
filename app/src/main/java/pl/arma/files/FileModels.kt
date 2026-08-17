@@ -24,7 +24,11 @@ data class TabInfo(
     val title: String,
     val active: Boolean,
     /** Karta pokazywana w drugim panelu w trybie dwupanelowym. */
-    val secondary: Boolean = false
+    val secondary: Boolean = false,
+    /** Źródło otwarte w karcie — decyduje o ikonie na pasku. */
+    val source: SourceType = SourceType.LOCAL,
+    /** Karta stoi na ekranie „Mój komputer", bez otwartego katalogu. */
+    val atHome: Boolean = false
 )
 
 /** Wynik analizy zajętości pamięci. */
