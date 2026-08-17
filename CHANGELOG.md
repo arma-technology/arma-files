@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0-alpha2
+
+- przewijanie zdjęć gestem w podglądzie i na pełnym ekranie; gest działa
+  tylko przy nieprzybliżonym obrazie, żeby nie kolidować z przesuwaniem kadru
+- licznik „3 z 12" pokazujący pozycję zdjęcia
+- naprawiono błąd renderowania PDF przy powiększaniu: rozmiar bitmapy tnie
+  teraz budżet pikseli, a powiększanie nie przelicza stron przy każdej
+  drobnej zmianie gestu
+
 ## 0.7.0-alpha1
 
 - lokalny indeks plików: nazwy, typy, rozmiary i daty z całej pamięci

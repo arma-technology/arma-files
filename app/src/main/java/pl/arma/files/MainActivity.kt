@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import pl.arma.files.ops.RenderBudget
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
 import pl.arma.files.ui.theme.ArmaFilesTheme
@@ -652,6 +653,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             item = item,
             vm = vm,
             favorite = item.uri.toString() in favoriteUris,
+            // Rodzeństwo bierzemy z aktualnie widocznej listy, więc przewijanie
+            // respektuje wybrane sortowanie, filtr i wyniki wyszukiwania.
+            siblings = visibleFiles.filter { it.mimeType.startsWith("image/") },
+            onNavigate = { preview = it; vm.addRecent(it.uri) },
             onDismiss = { preview = null },
             onFavorite = { vm.toggleFavorite(item.uri) },
             onDetails = { preview = null; details = item },
@@ -1526,6 +1531,8 @@ private fun PreviewSheet(
     item: FileItem,
     vm: FileManagerViewModel,
     favorite: Boolean,
+    siblings: List<FileItem>,
+    onNavigate: (FileItem) -> Unit,
     onDismiss: () -> Unit,
     onFavorite: () -> Unit,
     onDetails: () -> Unit,
@@ -1575,10 +1582,29 @@ private fun PreviewSheet(
                     PdfPreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
                 }
                 item.mimeType.startsWith("image/") -> {
+                    val position = siblings.indexOfFirst { it.uri == item.uri }
+                    val step: (Int) -> Unit = { delta ->
+                        val next = siblings.getOrNull(position + delta)
+                        if (next != null) onNavigate(next)
+                    }
+                    if (siblings.size > 1 && position >= 0) {
+                        Text(
+                            "${position + 1} z ${siblings.size} · przesuń w bok, aby zmienić zdjęcie",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
                         SvgImagePreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
                     } else {
-                        NativeImagePreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
+                        NativeImagePreview(
+                            item = item,
+                            vm = vm,
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            onNavigate = step,
+                            canNavigate = siblings.size > 1,
+                            positionLabel = if (position >= 0) "${position + 1} / ${siblings.size}" else ""
+                        )
                     }
                 }
                 isText(item) -> {
@@ -1641,7 +1667,14 @@ private fun PreviewSheet(
 }
 
 @Composable
-private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Modifier) {
+private fun NativeImagePreview(
+    item: FileItem,
+    vm: FileManagerViewModel,
+    modifier: Modifier = Modifier,
+    onNavigate: (Int) -> Unit = {},
+    canNavigate: Boolean = false,
+    positionLabel: String = ""
+) {
     var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
     var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
     var scale by remember(item.uri) { mutableFloatStateOf(1f) }
@@ -1694,6 +1727,26 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
                                     }
                                 }
                             }
+                            .pointerInput(item.uri, canNavigate) {
+                                if (!canNavigate) return@pointerInput
+                                var dragged = 0f
+                                detectHorizontalDragGestures(
+                                    onDragStart = { dragged = 0f },
+                                    onDragEnd = {
+                                        // Przewijamy tylko przy nieprzybliżonym
+                                        // obrazie — inaczej gest kolidowałby z
+                                        // przesuwaniem powiększonego kadru.
+                                        if (scale <= 1.01f && kotlin.math.abs(dragged) > 120f) {
+                                            onNavigate(if (dragged < 0) 1 else -1)
+                                        }
+                                    }
+                                ) { change, amount ->
+                                    if (scale <= 1.01f) {
+                                        dragged += amount
+                                        change.consume()
+                                    }
+                                }
+                            }
                     )
                 }
                 if (bitmap == null && error == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -1729,7 +1782,14 @@ private fun NativeImagePreview(item: FileItem, vm: FileManagerViewModel, modifie
 
     if (fullscreen) {
         bitmap?.let { image ->
-            FullscreenBitmapViewer(image = image, name = item.name, onDismiss = { fullscreen = false })
+            FullscreenBitmapViewer(
+                image = image,
+                name = item.name,
+                onDismiss = { fullscreen = false },
+                onNavigate = onNavigate,
+                canNavigate = canNavigate,
+                position = positionLabel
+            )
         }
     }
 }
@@ -1791,7 +1851,14 @@ private fun ImmersiveDialogSystemBars() {
 }
 
 @Composable
-private fun FullscreenBitmapViewer(image: Bitmap, name: String, onDismiss: () -> Unit) {
+private fun FullscreenBitmapViewer(
+    image: Bitmap,
+    name: String,
+    onDismiss: () -> Unit,
+    onNavigate: (Int) -> Unit = {},
+    canNavigate: Boolean = false,
+    position: String = ""
+) {
     var scale by remember(name) { mutableFloatStateOf(1f) }
     var offsetX by remember(name) { mutableFloatStateOf(0f) }
     var offsetY by remember(name) { mutableFloatStateOf(0f) }
@@ -1816,6 +1883,23 @@ private fun FullscreenBitmapViewer(image: Bitmap, name: String, onDismiss: () ->
                             translationX = offsetX
                             translationY = offsetY
                         }
+                        .pointerInput(name, canNavigate) {
+                            if (!canNavigate) return@pointerInput
+                            var dragged = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = { dragged = 0f },
+                                onDragEnd = {
+                                    if (scale <= 1.01f && kotlin.math.abs(dragged) > 120f) {
+                                        onNavigate(if (dragged < 0) 1 else -1)
+                                    }
+                                }
+                            ) { change, amount ->
+                                if (scale <= 1.01f) {
+                                    dragged += amount
+                                    change.consume()
+                                }
+                            }
+                        }
                         .pointerInput(name) {
                             detectTransformGestures { _, pan, zoom, _ ->
                                 val next = (scale * zoom).coerceIn(1f, 8f)
@@ -1839,6 +1923,23 @@ private fun FullscreenBitmapViewer(image: Bitmap, name: String, onDismiss: () ->
                 ) {
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, "Zamknij pełny ekran", tint = Color.White)
+                    }
+                }
+
+                if (position.isNotBlank()) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopStart)
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
+                            .padding(12.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        color = Color.Black.copy(alpha = .58f)
+                    ) {
+                        Text(
+                            position,
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
                     }
                 }
 
@@ -2105,7 +2206,10 @@ private fun PdfPreview(
                                         pageIndex = page,
                                         pageCount = pageCount,
                                         vm = vm,
-                                        targetWidth = (1500 * zoom.coerceAtMost(2f)).toInt()
+                                        // Stopniowana szerokość: pinch zmienia
+                                        // powiększenie płynnie, ale renderowanie
+                                        // przeliczamy dopiero po przekroczeniu progu.
+                                        targetWidth = RenderBudget.widthForZoom(zoom)
                                     )
                                 }
                             }
@@ -2175,7 +2279,7 @@ private fun PdfPageCard(
 
     LaunchedEffect(file.absolutePath, pageIndex, targetWidth) {
         failed = false
-        bitmap = runCatching { vm.renderPdfPage(file, pageIndex, targetWidth.coerceIn(900, 3000)) }
+        bitmap = runCatching { vm.renderPdfPage(file, pageIndex, targetWidth) }
             .onFailure { failed = true }
             .getOrNull()
     }

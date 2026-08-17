@@ -37,6 +37,7 @@ import pl.arma.files.net.RemoteType
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
 import pl.arma.files.ops.PaneRules
+import pl.arma.files.ops.RenderBudget
 import pl.arma.files.ops.OperationKind
 import pl.arma.files.ops.OperationRecord
 import pl.arma.files.ops.OperationStatus
@@ -913,16 +914,32 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         renderer.use { pdf ->
             require(pageIndex in 0 until pdf.pageCount) { "Nieprawidłowy numer strony PDF." }
             pdf.openPage(pageIndex).use { page ->
-                val width = targetWidth.coerceAtLeast(720)
-                val pageWidth = page.width.coerceAtLeast(1)
-                val height = (width.toFloat() * page.height / pageWidth).toInt().coerceAtLeast(1)
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val (width, height) = RenderBudget.fit(targetWidth, page.width, page.height)
+                val bitmap = allocate(width, height)
                 bitmap.eraseColor(AndroidColor.WHITE)
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 bitmap
             }
         }
     }
+
+    /**
+     * Bitmapa strony PDF. Przy niedoborze pamięci schodzimy na RGB_565 (połowa
+     * zużycia, a strony PDF to głównie biel i tekst), a w ostateczności na
+     * mniejszą rozdzielczość — lepiej pokazać stronę mniej ostrą niż komunikat
+     * o błędzie renderowania.
+     */
+    private fun allocate(width: Int, height: Int): Bitmap =
+        runCatching { Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888) }
+            .recoverCatching { Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565) }
+            .recoverCatching {
+                Bitmap.createBitmap(
+                    (width / 2).coerceAtLeast(1),
+                    (height / 2).coerceAtLeast(1),
+                    Bitmap.Config.RGB_565
+                )
+            }
+            .getOrThrow()
 
     fun refreshDeviceLocations() {
         _allFilesAccess.value = hasBroadStorageAccess()
