@@ -25,6 +25,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import pl.arma.files.index.FileIndexDb
+import pl.arma.files.index.IndexCategory
+import pl.arma.files.index.IndexProgress
+import pl.arma.files.index.IndexedFile
 import pl.arma.files.net.AccountStore
 import pl.arma.files.net.DiscoveredHost
 import pl.arma.files.net.LanScanner
@@ -47,6 +51,25 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = (app as ArmaFilesApp).engine
     private val trash = (app as ArmaFilesApp).trash
     private val accounts = AccountStore(app)
+    private val index = (app as ArmaFilesApp).index
+    private val indexer = (app as ArmaFilesApp).indexer
+
+    val indexProgress: StateFlow<IndexProgress> = indexer.progress
+
+    private val _searchResults = MutableStateFlow<List<FileItem>>(emptyList())
+    val searchResults: StateFlow<List<FileItem>> = _searchResults.asStateFlow()
+
+    private val _globalSearch = MutableStateFlow(false)
+    val globalSearch: StateFlow<Boolean> = _globalSearch.asStateFlow()
+
+    private val _analysis = MutableStateFlow(StorageAnalysis())
+    val analysis: StateFlow<StorageAnalysis> = _analysis.asStateFlow()
+
+    private val _duplicates = MutableStateFlow<List<DuplicateSet>>(emptyList())
+    val duplicates: StateFlow<List<DuplicateSet>> = _duplicates.asStateFlow()
+
+    private val _analyzing = MutableStateFlow(false)
+    val analyzing: StateFlow<Boolean> = _analyzing.asStateFlow()
 
     private val _remoteAccounts = MutableStateFlow<List<RemoteAccount>>(emptyList())
     val remoteAccounts: StateFlow<List<RemoteAccount>> = _remoteAccounts.asStateFlow()
@@ -279,6 +302,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         updateSources()
         refreshDeviceLocations()
         loadTrash()
+        // Same statystyki indeksu to jedno zapytanie agregujące — tanie, a
+        // dzięki temu ekran główny od razu wie, czy indeks w ogóle istnieje.
+        analyzeStorage()
     }
 
     fun setTree(tree: Uri) {
@@ -1097,6 +1123,108 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (tree == null) return "Wymaga wybrania folderu"
         val name = runCatching { repo.displayName(repo.treeToDocumentUri(tree)) }.getOrNull()
         return name?.takeIf { it.isNotBlank() } ?: "Podłączony"
+    }
+
+    /** Uruchamia budowanie indeksu dla wszystkich nośników urządzenia. */
+    fun buildIndex() {
+        if (!hasBroadStorageAccess()) {
+            _error.value = "Indeksowanie wymaga dostępu do wszystkich plików."
+            return
+        }
+        val roots = _deviceStorages.value.map { it.rootUri }
+        if (roots.isEmpty()) {
+            _error.value = "Nie wykryto nośników do zindeksowania."
+            return
+        }
+        indexer.start(roots)
+    }
+
+    fun cancelIndexing() = indexer.cancel()
+
+    fun setGlobalSearch(enabled: Boolean) {
+        _globalSearch.value = enabled
+        if (!enabled) _searchResults.value = emptyList()
+    }
+
+    /** Szuka w całym zindeksowanym urządzeniu, a nie tylko w bieżącym katalogu. */
+    fun searchEverywhere(query: String) {
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            val found = withContext(Dispatchers.IO) { index.search(query) }
+            _searchResults.value = found.map(::toFileItem)
+        }
+    }
+
+    /** Kategoria licząca się dla całej pamięci, nie tylko dla otwartego katalogu. */
+    fun browseCategory(category: IndexCategory) {
+        viewModelScope.launch {
+            val found = withContext(Dispatchers.IO) { index.byCategory(category) }
+            _searchResults.value = found.map(::toFileItem)
+            _globalSearch.value = true
+        }
+    }
+
+    fun analyzeStorage() {
+        _analyzing.value = true
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                val monthsAgo = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000
+                StorageAnalysis(
+                    stats = index.stats(),
+                    largestFiles = index.largestFiles(30).map(::toFileItem),
+                    largestFolders = index.largestFolders(20),
+                    oldFiles = index.olderThan(monthsAgo, 30).map(::toFileItem)
+                )
+            }
+            _analysis.value = result
+            _analyzing.value = false
+        }
+    }
+
+    /**
+     * Szuka duplikatów: najpierw po rozmiarze, potem porównując SHA-256.
+     * Sam rozmiar to za mało na potwierdzenie, a liczenie skrótu wszystkiego
+     * byłoby nieproporcjonalnie drogie — stąd dwa etapy.
+     */
+    fun findDuplicates() {
+        _analyzing.value = true
+        viewModelScope.launch {
+            val sets = withContext(Dispatchers.IO) {
+                index.duplicateCandidates(minSize = 4096, limit = 60).flatMap { group ->
+                    val byHash = mutableMapOf<String, MutableList<FileItem>>()
+                    group.files.forEach { candidate ->
+                        val item = toFileItem(candidate)
+                        val hash = runCatching { repo.sha256Blocking(item.uri) }.getOrNull() ?: return@forEach
+                        byHash.getOrPut(hash) { mutableListOf() } += item
+                    }
+                    byHash.values
+                        .filter { it.size > 1 }
+                        .map { DuplicateSet(size = group.size, files = it) }
+                }
+            }
+            _duplicates.value = sets
+            _analyzing.value = false
+        }
+    }
+
+    private fun toFileItem(entry: IndexedFile) = FileItem(
+        uri = Uri.parse(entry.uri),
+        name = entry.name,
+        mimeType = if (entry.isDirectory) DIRECTORY_MIME else entry.mime,
+        size = entry.size,
+        lastModified = entry.modified,
+        isDirectory = entry.isDirectory
+    )
+
+    /** Otwiera katalog, w którym leży wskazany plik z wyników wyszukiwania. */
+    fun revealParent(item: FileItem) {
+        val parent = item.uri.toString().substringBeforeLast('/')
+        _globalSearch.value = false
+        _searchResults.value = emptyList()
+        openLocalLocation(Uri.parse(parent))
     }
 
     private fun loadSavedCollections() {

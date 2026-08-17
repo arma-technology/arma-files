@@ -27,6 +27,20 @@ data class TabInfo(
     val secondary: Boolean = false
 )
 
+/** Wynik analizy zajętości pamięci. */
+data class StorageAnalysis(
+    val stats: pl.arma.files.index.IndexStats? = null,
+    val largestFiles: List<FileItem> = emptyList(),
+    val largestFolders: List<pl.arma.files.index.FolderUsage> = emptyList(),
+    val oldFiles: List<FileItem> = emptyList()
+)
+
+/** Zbiór plików o potwierdzonej identycznej zawartości. */
+data class DuplicateSet(
+    val size: Long,
+    val files: List<FileItem>
+)
+
 data class ClipboardPayload(
     val items: List<FileItem>,
     val cut: Boolean

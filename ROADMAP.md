@@ -79,13 +79,21 @@ Przenoszenie między panelami działa przez zaznaczenie i przyciski
 jednoznaczne i działają tak samo na telefonie, gdzie paneli nie ma;
 przeciąganie można dołożyć później jako skrót, nie jako jedyną drogę.
 
-### Faza 4 — indeks i porządki
+### Faza 4 — indeks i porządki — ZROBIONE
 
-- lokalny indeks nazw/typów/rozmiarów/dat (Room + FTS)
+- lokalny indeks nazw/typów/rozmiarów/dat — na czystym SQLite z FTS4,
+  bez Room: schemat to jedna tabela plus tabela FTS, a Room wymagałby
+  procesora adnotacji w budowaniu
 - globalne wyszukiwanie po całym urządzeniu i aktywnych zasobach
 - kategorie obejmujące całą pamięć, sortowanie „największe pliki”
 - analizator pamięci — pokazuje fakty, nie kasuje za użytkownika
 - duplikaty: najpierw rozmiar, potem SHA-256
+
+Indeks obejmuje tylko pamięć urządzenia. Chodzenie po całym NAS-ie przy
+każdym odświeżeniu byłoby wolne i obciążałoby serwer, a natychmiastowe
+wyniki są potrzebne przede wszystkim lokalnie. Indeks jest migawką —
+po zmianach trzeba go odświeżyć; automatyczna aktualizacja przy operacjach
+to kandydat na osobny krok.
 
 ### Faza 5 — media, PDF v2, integracja z systemem
 

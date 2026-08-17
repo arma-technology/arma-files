@@ -12,8 +12,8 @@ android {
         applicationId = "pl.arma.files"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.6.0-alpha2"
+        versionCode = 12
+        versionName = "0.7.0-alpha1"
     }
 
     buildFeatures { compose = true }
@@ -66,4 +66,5 @@ dependencies {
     // Robolectric, bo silnik operacji posługuje się android.net.Uri, które poza
     // emulatorem rzuca "not mocked". Sama logika konfliktów i kosza jest czysta.
     testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test:core:1.6.1")
 }

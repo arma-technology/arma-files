@@ -182,7 +182,10 @@ class FileRepository(private val context: Context) : FileOps {
         outputRoot
     }
 
-    suspend fun sha256(uri: Uri): String = withContext(Dispatchers.IO) {
+    suspend fun sha256(uri: Uri): String = withContext(Dispatchers.IO) { sha256Blocking(uri) }
+
+    /** Wersja bez przełączania wątku — wołający jest już na Dispatchers.IO. */
+    fun sha256Blocking(uri: Uri): String {
         val digest = MessageDigest.getInstance("SHA-256")
         openInput(uri).use { input ->
             val buffer = ByteArray(64 * 1024)
@@ -192,7 +195,7 @@ class FileRepository(private val context: Context) : FileOps {
                 digest.update(buffer, 0, read)
             }
         }
-        digest.digest().joinToString("") { "%02x".format(it) }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
     suspend fun itemInfo(uri: Uri): FileItem? = withContext(Dispatchers.IO) { itemInfoBlocking(uri) }

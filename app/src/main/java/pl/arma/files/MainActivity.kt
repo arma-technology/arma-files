@@ -122,6 +122,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
     val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
     val remoteAccounts by vm.remoteAccounts.collectAsStateWithLifecycle()
+    val indexProgress by vm.indexProgress.collectAsStateWithLifecycle()
+    val searchResults by vm.searchResults.collectAsStateWithLifecycle()
+    val globalSearch by vm.globalSearch.collectAsStateWithLifecycle()
+    val analysis by vm.analysis.collectAsStateWithLifecycle()
+    val duplicates by vm.duplicates.collectAsStateWithLifecycle()
+    val analyzing by vm.analyzing.collectAsStateWithLifecycle()
     val tabs by vm.tabs.collectAsStateWithLifecycle()
     val dualPane by vm.dualPane.collectAsStateWithLifecycle()
     val secondaryFiles by vm.secondaryFiles.collectAsStateWithLifecycle()
@@ -151,6 +157,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var apkToInstall by remember { mutableStateOf<FileItem?>(null) }
     var editedAccount by remember { mutableStateOf<Pair<RemoteAccount, Boolean>?>(null) }
     var showDiscovery by remember { mutableStateOf(false) }
+    var showAnalysis by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -218,6 +225,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         }
     }
 
+    LaunchedEffect(query, globalSearch) {
+        // Tylko przy wpisanej frazie. Puste zapytanie wyczyściłoby wyniki
+        // wybrane przez kliknięcie kategorii, która też korzysta z tej listy.
+        if (globalSearch && query.isNotBlank()) vm.searchEverywhere(query)
+    }
+
     LaunchedEffect(notice) {
         notice?.let {
             snackbarHostState.showSnackbar(it)
@@ -252,8 +265,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         Tab.SETTINGS -> emptyList()
     }
 
-    val visibleFiles = remember(baseFiles, query, sort, category) {
-        baseFiles
+    val visibleFiles = remember(baseFiles, query, sort, category, globalSearch, searchResults) {
+        (if (globalSearch) searchResults else baseFiles)
             .asSequence()
             .filter { it.name.contains(query, ignoreCase = true) }
             .filter { matchesCategory(it, category) }
@@ -412,6 +425,14 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onSettings = { tab = Tab.SETTINGS },
                         trashCount = trashEntries.size,
                         onOpenTrash = { showTrash = true },
+                        indexProgress = indexProgress,
+                        indexedCount = analysis.stats?.files ?: 0,
+                        onBuildIndex = { vm.buildIndex(); vm.analyzeStorage() },
+                        onCancelIndex = vm::cancelIndexing,
+                        onAnalyze = { showAnalysis = true; vm.analyzeStorage() },
+                        onCategory = { category ->
+                            vm.browseCategory(category); tab = Tab.FILES; query = ""
+                        },
                         onUnpin = vm::unpinFolder,
                         onMovePinned = vm::movePinned,
                         onOpenHistory = { showHistory = true }
@@ -458,7 +479,13 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                 onSort = { sort = it },
                                 view = viewMode,
                                 onView = { viewMode = it },
-                                placeholder = if (tab == Tab.FILES) "Szukaj w tym folderze" else "Szukaj plików"
+                                placeholder = when {
+                                    globalSearch -> "Szukaj w całej pamięci"
+                                    tab == Tab.FILES -> "Szukaj w tym folderze"
+                                    else -> "Szukaj plików"
+                                },
+                                globalSearch = globalSearch,
+                                onGlobalSearch = vm::setGlobalSearch
                             )
 
                             CategoryRow(selected = category, source = baseFiles, onSelected = { category = it })
@@ -769,6 +796,17 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         )
     }
 
+    if (showAnalysis) {
+        StorageAnalysisSheet(
+            analysis = analysis,
+            duplicates = duplicates,
+            busy = analyzing,
+            onFindDuplicates = vm::findDuplicates,
+            onOpen = { item -> showAnalysis = false; vm.revealParent(item) },
+            onDismiss = { showAnalysis = false }
+        )
+    }
+
     if (showTrash) {
         TrashSheet(
             entries = trashEntries,
@@ -793,6 +831,12 @@ private fun ComputerHome(
     onSettings: () -> Unit,
     trashCount: Int,
     onOpenTrash: () -> Unit,
+    indexProgress: pl.arma.files.index.IndexProgress,
+    indexedCount: Int,
+    onBuildIndex: () -> Unit,
+    onCancelIndex: () -> Unit,
+    onAnalyze: () -> Unit,
+    onCategory: (pl.arma.files.index.IndexCategory) -> Unit,
     onUnpin: (String) -> Unit,
     onMovePinned: (Int, Int) -> Unit,
     onOpenHistory: () -> Unit
@@ -874,6 +918,15 @@ private fun ComputerHome(
         }
 
         item {
+            IndexBar(
+                progress = indexProgress,
+                indexed = indexedCount,
+                onBuild = onBuildIndex,
+                onCancel = onCancelIndex
+            )
+        }
+        item { GlobalCategoryRow(onPick = onCategory) }
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -884,6 +937,7 @@ private fun ComputerHome(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
+                TextButton(onClick = onAnalyze) { Text("Analiza") }
                 TextButton(onClick = onOpenHistory) { Text("Historia") }
                 TrashButton(count = trashCount, onClick = onOpenTrash)
             }
@@ -1161,7 +1215,9 @@ private fun SearchToolbar(
     onSort: (SortMode) -> Unit,
     view: ViewMode,
     onView: (ViewMode) -> Unit,
-    placeholder: String
+    placeholder: String,
+    globalSearch: Boolean,
+    onGlobalSearch: (Boolean) -> Unit
 ) {
     var menu by remember { mutableStateOf(false) }
     Surface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
@@ -1188,6 +1244,17 @@ private fun SearchToolbar(
                     unfocusedIndicatorColor = Color.Transparent
                 )
             )
+            IconButton(onClick = { onGlobalSearch(!globalSearch) }) {
+                Icon(
+                    if (globalSearch) Icons.Default.TravelExplore else Icons.Default.ManageSearch,
+                    if (globalSearch) "Szukaj tylko tutaj" else "Szukaj w całej pamięci",
+                    tint = if (globalSearch) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Default.SwapVert, "Sortuj") }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {

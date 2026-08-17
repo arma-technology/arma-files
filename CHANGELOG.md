@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0-alpha1
+
+- lokalny indeks plików: nazwy, typy, rozmiary i daty z całej pamięci
+  urządzenia, budowany na żądanie z paska na ekranie „Mój komputer"
+- wyszukiwanie po całym urządzeniu, a nie tylko w bieżącym katalogu —
+  przełącznik obok pola wyszukiwania
+- kategorie Obrazy / Filmy / Audio / Dokumenty / Archiwa / APK obejmujące
+  całą pamięć, liczone przy indeksowaniu
+- analiza pamięci: największe pliki, największe katalogi, pliki nietknięte
+  od pół roku; sama pokazuje fakty, niczego nie kasuje
+- wykrywanie duplikatów: najpierw po rozmiarze, potem porównaniem SHA-256,
+  z informacją, ile miejsca dałoby się odzyskać
+
 ## 0.6.0-alpha2
 
 - zakładki katalogów: kilka miejsc otwartych naraz, przełączanie bez cofania
