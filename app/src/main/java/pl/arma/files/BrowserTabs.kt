@@ -1,12 +1,11 @@
 package pl.arma.files
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cloud
@@ -33,80 +35,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
-/**
- * Kształt karty przeglądarki: zaokrąglony u góry, a u dołu z wklęsłymi
- * narożnikami, które „wtapiają" kartę w pasek.
- *
- * To właśnie te wklęsłe łuki sprawiają, że karta czyta się jako zakładka
- * połączona z treścią, a nie jako pigułka leżąca na pasku — sama zmiana
- * promienia rogów tego efektu nie daje.
- */
-internal class BrowserTabShape(
-    private val topRadiusDp: Float = 12f,
-    private val bottomCurveDp: Float = 10f
-) : Shape {
-
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
-        val width = size.width
-        val height = size.height
-
-        // Wklęsłość i zaokrąglenie muszą się zmieścić w wysokości karty, inaczej
-        // przy niskiej karcie lewa krawędź wychodziłaby ponad jej górny brzeg.
-        val curve = with(density) { bottomCurveDp.dp.toPx() }
-            .coerceAtMost(width / 4f)
-            .coerceAtMost(height / 2f)
-            .coerceAtLeast(0f)
-        val top = with(density) { topRadiusDp.dp.toPx() }
-            .coerceAtMost(height - curve)
-            .coerceAtMost(width / 2f - curve)
-            .coerceAtLeast(0f)
-
-        val path = Path().apply {
-            // Lewy dolny narożnik — łuk wklęsły w stronę karty.
-            moveTo(0f, height)
-            cubicTo(
-                curve * 0.55f, height,
-                curve, height - curve * 0.55f,
-                curve, height - curve
-            )
-            // Lewa krawędź w górę.
-            lineTo(curve, top)
-            cubicTo(curve, top * 0.45f, curve + top * 0.45f, 0f, curve + top, 0f)
-            // Górna krawędź.
-            lineTo(width - curve - top, 0f)
-            cubicTo(
-                width - curve - top * 0.45f, 0f,
-                width - curve, top * 0.45f,
-                width - curve, top
-            )
-            // Prawa krawędź w dół.
-            lineTo(width - curve, height - curve)
-            cubicTo(
-                width - curve, height - curve * 0.55f,
-                width - curve * 0.55f, height,
-                width, height
-            )
-            close()
-        }
-        return Outline.Generic(path)
-    }
-}
+/** Zaokrąglenie tylko u góry — dolna krawędź styka się z treścią. */
+private val TabShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+private val TabHeight = 40.dp
 
 private fun tabIcon(tab: TabInfo): ImageVector = when {
     tab.atHome -> Icons.Default.Computer
@@ -118,8 +59,11 @@ private fun tabIcon(tab: TabInfo): ImageVector = when {
 }
 
 /**
- * Pasek kart w stylu przeglądarki. Aktywna karta ma kolor treści pod paskiem,
- * więc wygląda, jakby była z nią połączona; pozostałe są przygaszone.
+ * Pasek zakładek katalogów.
+ *
+ * Zakładki są zaokrąglone u góry i obrysowane cienką linią, a dolną krawędzią
+ * dotykają treści — stąd wrażenie, że zakładka jest z nią połączona. Aktywna
+ * jest jaśniejsza i ma wyraźniejszy obrys.
  */
 @Composable
 fun BrowserTabStrip(
@@ -131,59 +75,46 @@ fun BrowserTabStrip(
     onNew: () -> Unit,
     onToggleDual: () -> Unit
 ) {
-    val barColor = MaterialTheme.colorScheme.surfaceContainerHighest
-    val contentColor = MaterialTheme.colorScheme.surface
-    val scroll = rememberScrollState()
+    val listState = rememberLazyListState()
+    val activeIndex = tabs.indexOfFirst { it.active }
 
-    Box(Modifier.fillMaxWidth().background(barColor)) {
+    // Po otwarciu albo przełączeniu zakładki trzeba ją pokazać — inaczej
+    // aktywna potrafi zostać poza ekranem albo pod przyciskiem „+".
+    LaunchedEffect(activeIndex, tabs.size) {
+        if (activeIndex >= 0) listState.animateScrollToItem(activeIndex)
+    }
+
+    Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
         Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp)
-                .height(42.dp),
+            Modifier.fillMaxWidth().height(TabHeight),
             verticalAlignment = Alignment.Bottom
         ) {
-            Row(
-                Modifier
-                    .weight(1f)
-                    .horizontalScroll(scroll)
-                    .padding(start = 6.dp),
-                verticalAlignment = Alignment.Bottom
+            LazyRow(
+                state = listState,
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.Bottom,
+                contentPadding = PaddingValues(end = 6.dp)
             ) {
-                tabs.forEach { tab ->
+                items(tabs, key = { it.id }) { tab ->
                     BrowserTab(
                         tab = tab,
-                        contentColor = contentColor,
-                        barColor = barColor,
                         closable = tabs.size > 1,
                         onSelect = { onSelect(tab.id) },
                         onClose = { onClose(tab.id) }
                     )
                 }
-
-                // Plus tuż za ostatnią kartą, tak jak w przeglądarce.
-                Box(
-                    Modifier
-                        .padding(start = 2.dp, bottom = 4.dp)
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onNew),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        "Nowa karta",
-                        Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
+
+            // „+" stoi poza obszarem przewijania, więc nie znika przy krawędzi,
+            // gdy zakładek jest więcej niż mieści ekran.
+            NewTabButton(onNew)
 
             if (canSplit) {
                 Box(
                     Modifier
                         .padding(end = 8.dp, bottom = 4.dp)
-                        .size(32.dp)
+                        .size(34.dp)
                         .clip(CircleShape)
                         .clickable(onClick = onToggleDual),
                     contentAlignment = Alignment.Center
@@ -191,7 +122,7 @@ fun BrowserTabStrip(
                     Icon(
                         if (dualPane) Icons.Default.Fullscreen else Icons.Default.VerticalSplit,
                         if (dualPane) "Jeden panel" else "Dwa panele",
-                        Modifier.size(19.dp),
+                        Modifier.size(20.dp),
                         tint = if (dualPane) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -207,78 +138,93 @@ fun BrowserTabStrip(
 @Composable
 private fun BrowserTab(
     tab: TabInfo,
-    contentColor: Color,
-    barColor: Color,
     closable: Boolean,
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
     val background by animateColorAsState(
         targetValue = when {
-            tab.active -> contentColor
-            // Karta z drugiego panelu jest wyróżniona, ale słabiej niż aktywna —
-            // obie są „w użyciu", tylko jedna przyjmuje kliknięcia.
-            tab.secondary -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .55f)
-            else -> barColor
+            tab.active -> MaterialTheme.colorScheme.surface
+            tab.secondary -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .4f)
+            else -> MaterialTheme.colorScheme.surfaceContainerLow
         },
-        label = "tlo karty"
+        label = "tlo zakladki"
     )
-    val labelColor by animateColorAsState(
+    val outline by animateColorAsState(
         targetValue = if (tab.active) {
-            MaterialTheme.colorScheme.onSurface
+            MaterialTheme.colorScheme.outline.copy(alpha = .45f)
         } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
+            MaterialTheme.colorScheme.outlineVariant
         },
-        label = "kolor napisu"
+        label = "obrys zakladki"
     )
-    val height by animateFloatAsState(
-        targetValue = if (tab.active) 38f else 34f,
-        animationSpec = spring(),
-        label = "wysokosc karty"
-    )
+    val label = if (tab.active) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
     Row(
         modifier = Modifier
-            .height(height.dp)
-            .widthIn(min = 118.dp, max = 190.dp)
-            .clip(BrowserTabShape())
+            .height(TabHeight)
+            .widthIn(min = 110.dp, max = 156.dp)
+            .clip(TabShape)
             .background(background)
+            .border(1.dp, outline, TabShape)
             .clickable(onClick = onSelect)
-            .padding(start = 14.dp, end = 6.dp),
+            .padding(start = 12.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Icon(
             tabIcon(tab),
             null,
-            Modifier.size(15.dp),
-            tint = if (tab.active) MaterialTheme.colorScheme.primary else labelColor
+            Modifier.size(17.dp),
+            tint = if (tab.active) MaterialTheme.colorScheme.primary else label
         )
         Text(
             tab.title,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (tab.active) FontWeight.SemiBold else FontWeight.Normal,
-            color = labelColor,
+            color = label,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
         if (closable) {
             Box(
-                Modifier
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onClose),
+                Modifier.size(26.dp).clip(CircleShape).clickable(onClick = onClose),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Close, "Zamknij kartę", Modifier.size(13.dp), tint = labelColor)
+                Icon(Icons.Default.Close, "Zamknij kartę", Modifier.size(16.dp), tint = label)
             }
         }
     }
 }
 
+@Composable
+private fun NewTabButton(onNew: () -> Unit) {
+    Box(
+        Modifier
+            .height(TabHeight)
+            .width(50.dp)
+            .clip(TabShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, TabShape)
+            .clickable(onClick = onNew),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Default.Add,
+            "Nowa karta",
+            Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
 /**
- * Gdy karta jest jedna, pasek kart tylko zabierałby miejsce — zostaje sam
+ * Gdy zakładka jest jedna, pasek tylko zabierałby miejsce — zostaje sam
  * przycisk otwarcia kolejnej i przełącznik podziału.
  */
 @Composable

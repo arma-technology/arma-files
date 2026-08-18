@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0-alpha3
+
+- zakładki niższe i węższe, mieszczą się trzy zamiast dwóch
+- przycisk „+" stoi poza obszarem przewijania, więc nie znika przy krawędzi
+- pasek sam przewija się do aktywnej zakładki
+- uzupełniono paletę motywu: brakujące odcienie powierzchni Material zastępował
+  własną, fioletową paletą bazową, przez co część elementów odcinała się
+  kolorem od reszty aplikacji
+
 ## 0.8.0-alpha2
 
 - karty katalogów w stylu przeglądarki: zaokrąglone u góry, z wklęsłymi

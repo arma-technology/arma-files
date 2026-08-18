@@ -18,9 +18,18 @@ private val Light = lightColorScheme(
     tertiaryContainer = Color(0xFFF5E5C7),
     background = Color(0xFFF5F7F5),
     surface = Color(0xFFFCFDFC),
+    onSurface = Color(0xFF191D1A),
     surfaceVariant = Color(0xFFE7ECE8),
+    onSurfaceVariant = Color(0xFF424A44),
+    // Pełna drabinka powierzchni. Niezdefiniowane odcienie Material zastępuje
+    // własną, fioletową paletą bazową — a wtedy elementy używające akurat tych
+    // odcieni odcinają się kolorem od reszty aplikacji.
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF7FAF8),
     surfaceContainer = Color(0xFFEDF1EE),
     surfaceContainerHigh = Color(0xFFE6EBE7),
+    surfaceContainerHighest = Color(0xFFDFE5E1),
+    outline = Color(0xFF6F7B73),
     outlineVariant = Color(0xFFD4DDD6)
 )
 
@@ -35,9 +44,15 @@ private val Dark = darkColorScheme(
     tertiaryContainer = Color(0xFF51462F),
     background = Color(0xFF101411),
     surface = Color(0xFF151A16),
+    onSurface = Color(0xFFE1E4E1),
     surfaceVariant = Color(0xFF273029),
+    onSurfaceVariant = Color(0xFFC0C9C2),
+    surfaceContainerLowest = Color(0xFF0B0F0C),
+    surfaceContainerLow = Color(0xFF161B18),
     surfaceContainer = Color(0xFF1B211D),
     surfaceContainerHigh = Color(0xFF242B26),
+    surfaceContainerHighest = Color(0xFF2E3630),
+    outline = Color(0xFF89968D),
     outlineVariant = Color(0xFF39453D)
 )
 
