@@ -207,6 +207,35 @@ class FileIndexDb(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, D
         }.filter { it.files.size > 1 }
     }
 
+    /**
+     * Zajętość w rozbiciu na kategorie — do rozkładu „Obrazy · Filmy · Inne"
+     * pod kartą nośnika. Liczone w bazie, bo lista plików bywa stutysięczna.
+     */
+    fun usageByCategory(): Map<IndexCategory, Long> = readableDatabase.rawQuery(
+        "SELECT category, SUM(size) FROM files WHERE is_dir = 0 GROUP BY category",
+        null
+    ).use { cursor ->
+        buildMap {
+            while (cursor.moveToNext()) {
+                val category = runCatching { IndexCategory.valueOf(cursor.getString(0)) }
+                    .getOrDefault(IndexCategory.OTHER)
+                put(category, (get(category) ?: 0L) + cursor.getLong(1))
+            }
+        }
+    }
+
+    /** Liczba plików w katalogu razem z podkatalogami. */
+    fun countUnder(parentUri: String): Int = readableDatabase.rawQuery(
+        "SELECT COUNT(*) FROM files WHERE is_dir = 0 AND (parent_uri = ? OR uri LIKE ?)",
+        arrayOf(parentUri, "$parentUri/%")
+    ).use { cursor -> if (cursor.moveToFirst()) cursor.getInt(0) else 0 }
+
+    /** Suma rozmiarów w katalogu razem z podkatalogami. */
+    fun bytesUnder(parentUri: String): Long = readableDatabase.rawQuery(
+        "SELECT SUM(size) FROM files WHERE is_dir = 0 AND (parent_uri = ? OR uri LIKE ?)",
+        arrayOf(parentUri, "$parentUri/%")
+    ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else 0L }
+
     fun stats(): IndexStats = readableDatabase.rawQuery(
         """
         SELECT

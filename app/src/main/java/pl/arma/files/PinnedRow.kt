@@ -19,7 +19,11 @@ import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,7 +60,9 @@ private val CARD_SPACING = 12.dp
 @Composable
 fun PinnedFolderRow(
     pinned: List<PinnedFolder>,
+    stats: Map<String, Pair<Int, Long>>,
     onOpen: (PinnedFolder) -> Unit,
+    onOpenInNewTab: (PinnedFolder) -> Unit,
     onUnpin: (String) -> Unit,
     onMove: (Int, Int) -> Unit,
     onAddFolder: () -> Unit
@@ -111,7 +118,13 @@ fun PinnedFolderRow(
                         )
                     }
             ) {
-                PinnedCard(folder, onClick = { onOpen(folder) }, onUnpin = { onUnpin(folder.id) })
+                PinnedCard(
+                    folder = folder,
+                    stat = stats[folder.id],
+                    onClick = { onOpen(folder) },
+                    onOpenInNewTab = { onOpenInNewTab(folder) },
+                    onUnpin = { onUnpin(folder.id) }
+                )
             }
         }
 
@@ -139,24 +152,51 @@ fun PinnedFolderRow(
 }
 
 @Composable
-private fun PinnedCard(folder: PinnedFolder, onClick: () -> Unit, onUnpin: () -> Unit) {
+private fun PinnedCard(
+    folder: PinnedFolder,
+    stat: Pair<Int, Long>?,
+    onClick: () -> Unit,
+    onOpenInNewTab: () -> Unit,
+    onUnpin: () -> Unit
+) {
+    var menu by remember { mutableStateOf(false) }
     val icon = when {
         folder.label.equals("Zdjęcia", ignoreCase = true) -> Icons.Default.Image
         else -> Icons.Default.Folder
     }
-    Card(onClick = onClick, modifier = Modifier.width(CARD_WIDTH), shape = RoundedCornerShape(24.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Card(onClick = onClick, modifier = Modifier.width(CARD_WIDTH), shape = RoundedCornerShape(22.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(icon, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = onUnpin, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.Close, "Odepnij", Modifier.size(16.dp))
+                Box {
+                    // Krzyżyk na kaflu folderu czytał się jak „usuń folder";
+                    // menu jest jednoznaczne i mieści resztę akcji.
+                    IconButton(onClick = { menu = true }, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.MoreVert, "Więcej", Modifier.size(18.dp))
+                    }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Otwórz") },
+                            onClick = { menu = false; onClick() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Otwórz w nowej karcie") },
+                            onClick = { menu = false; onOpenInNewTab() }
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Odepnij") },
+                            onClick = { menu = false; onUnpin() }
+                        )
+                    }
                 }
             }
             Column(Modifier.fillMaxWidth()) {
                 Text(folder.label, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    folder.subtitle.substringAfterLast('/').ifBlank { folder.subtitle },
+                    stat?.let { (count, bytes) -> "$count plików · ${formatSize(bytes)}" }
+                        ?: folder.subtitle.substringAfterLast('/').ifBlank { folder.subtitle },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

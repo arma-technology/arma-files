@@ -16,6 +16,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -123,6 +124,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
     val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
     val remoteAccounts by vm.remoteAccounts.collectAsStateWithLifecycle()
+    val pinnedStats by vm.pinnedStats.collectAsStateWithLifecycle()
     val indexProgress by vm.indexProgress.collectAsStateWithLifecycle()
     val searchResults by vm.searchResults.collectAsStateWithLifecycle()
     val globalSearch by vm.globalSearch.collectAsStateWithLifecycle()
@@ -395,24 +397,21 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             // szerokość — na wąskim telefonie byłyby nieczytelne.
             val canSplit = LocalConfiguration.current.screenWidthDp >= 600
             val newTab = { vm.openTab(); query = ""; category = FileCategory.ALL }
-            if (tabs.size > 1) {
-                BrowserTabStrip(
-                    tabs = tabs,
-                    dualPane = dualPane,
-                    canSplit = canSplit,
-                    onSelect = vm::selectTab,
-                    onClose = vm::closeTab,
-                    onNew = newTab,
-                    onToggleDual = { vm.setDualPane(!dualPane) }
-                )
-            } else {
-                SingleTabBar(
-                    dualPane = dualPane,
-                    canSplit = canSplit,
-                    onNew = newTab,
-                    onToggleDual = { vm.setDualPane(!dualPane) }
-                )
-            }
+            // Pasek ma zawsze tę samą budowę, także przy jednej karcie —
+            // wcześniej zamieniał się w inny element i ekran wyglądał, jakby
+            // aplikacja miała dwa różne układy.
+            BrowserTabStrip(
+                tabs = tabs,
+                dualPane = dualPane,
+                canSplit = canSplit,
+                onSelect = vm::selectTab,
+                onClose = vm::closeTab,
+                onCloseOthers = vm::closeOtherTabs,
+                onDuplicate = vm::duplicateTab,
+                onPin = vm::pinTabFolder,
+                onNew = newTab,
+                onToggleDual = { vm.setDualPane(!dualPane) }
+            )
         }
         Box(Modifier.fillMaxSize()) {
             when {
@@ -454,6 +453,14 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenTrash = { showTrash = true },
                         indexProgress = indexProgress,
                         indexedCount = analysis.stats?.files ?: 0,
+                        globalQuery = query,
+                        onGlobalQuery = { value ->
+                            // Wpisanie frazy tutaj włącza wyszukiwanie globalne
+                            // i przenosi na listę wyników.
+                            query = value
+                            vm.setGlobalSearch(value.isNotBlank())
+                            if (value.isNotBlank()) tab = Tab.FILES
+                        },
                         onBuildIndex = { vm.buildIndex(); vm.analyzeStorage() },
                         onCancelIndex = vm::cancelIndexing,
                         onAnalyze = { showAnalysis = true; vm.analyzeStorage() },
@@ -462,6 +469,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         },
                         onUnpin = vm::unpinFolder,
                         onMovePinned = vm::movePinned,
+                        pinnedStats = pinnedStats,
+                        onOpenPinnedInNewTab = { folder ->
+                            vm.openTab(); openLocal(folder.rootUri)
+                        },
+                        storageUsage = analysis.usageByCategory
+                            .filterValues { it > 0 }
+                            .toList()
+                            .sortedByDescending { it.second }
+                            .take(4)
+                            .map { (category, bytes) -> categoryShortLabel(category) to bytes },
                         onOpenHistory = { showHistory = true }
                     )
                 }
@@ -486,8 +503,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             if (tab == Tab.FILES) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     LocationStrip(
-                                        label = folderLabel(currentDir),
+                                        crumbs = breadcrumbs(root, currentDir),
                                         atRoot = currentDir == root,
+                                        onCrumb = vm::openPath,
                                         onRoot = vm::goRoot
                                     )
                                     Spacer(Modifier.width(6.dp))
@@ -876,12 +894,17 @@ private fun ComputerHome(
     onOpenTrash: () -> Unit,
     indexProgress: pl.arma.files.index.IndexProgress,
     indexedCount: Int,
+    globalQuery: String,
+    onGlobalQuery: (String) -> Unit,
     onBuildIndex: () -> Unit,
     onCancelIndex: () -> Unit,
     onAnalyze: () -> Unit,
     onCategory: (pl.arma.files.index.IndexCategory) -> Unit,
     onUnpin: (String) -> Unit,
     onMovePinned: (Int, Int) -> Unit,
+    pinnedStats: Map<String, Pair<Int, Long>>,
+    onOpenPinnedInNewTab: (PinnedFolder) -> Unit,
+    storageUsage: List<Pair<String, Long>>,
     onOpenHistory: () -> Unit
 ) {
     LazyColumn(
@@ -897,34 +920,36 @@ private fun ComputerHome(
                         Brush.linearGradient(
                             listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary.copy(alpha = .88f))
                         ),
-                        RoundedCornerShape(bottomStart = 34.dp, bottomEnd = 34.dp)
+                        RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp)
                     )
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
+                    .padding(horizontal = 18.dp, vertical = 14.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(14.dp),
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .14f)
                     ) {
                         Icon(
                             Icons.Default.Computer,
                             null,
-                            modifier = Modifier.padding(13.dp).size(32.dp),
+                            modifier = Modifier.padding(9.dp).size(24.dp),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                    Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             "Mój komputer",
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
-                            "Pamięć urządzenia, karty i zasoby sieciowe w jednym miejscu",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .82f)
+                            "Pamięć urządzenia i zasoby sieciowe",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .82f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     IconButton(onClick = onSettings) {
@@ -964,8 +989,11 @@ private fun ComputerHome(
             IndexBar(
                 progress = indexProgress,
                 indexed = indexedCount,
+                query = globalQuery,
+                onQuery = onGlobalQuery,
                 onBuild = onBuildIndex,
-                onCancel = onCancelIndex
+                onCancel = onCancelIndex,
+                onRefresh = onBuildIndex
             )
         }
         item { GlobalCategoryRow(onPick = onCategory) }
@@ -988,7 +1016,9 @@ private fun ComputerHome(
         item {
             PinnedFolderRow(
                 pinned = pinned,
+                stats = pinnedStats,
                 onOpen = onOpenPinned,
+                onOpenInNewTab = onOpenPinnedInNewTab,
                 onUnpin = onUnpin,
                 onMove = onMovePinned,
                 onAddFolder = onAddFolder
@@ -1004,7 +1034,7 @@ private fun ComputerHome(
             )
         }
         items(storages, key = { it.id }) { storage ->
-            DeviceStorageCard(storage = storage, onClick = { onOpenStorage(storage) })
+            DeviceStorageCard(storage = storage, usage = storageUsage, onClick = { onOpenStorage(storage) })
         }
 
         if (connectedSources.isNotEmpty()) {
@@ -1024,7 +1054,22 @@ private fun ComputerHome(
 }
 
 @Composable
-private fun DeviceStorageCard(storage: DeviceStorage, onClick: () -> Unit) {
+private fun categoryShortLabel(category: pl.arma.files.index.IndexCategory): String = when (category) {
+    pl.arma.files.index.IndexCategory.IMAGE -> "Obrazy"
+    pl.arma.files.index.IndexCategory.VIDEO -> "Filmy"
+    pl.arma.files.index.IndexCategory.AUDIO -> "Audio"
+    pl.arma.files.index.IndexCategory.DOCUMENT -> "Dokumenty"
+    pl.arma.files.index.IndexCategory.ARCHIVE -> "Archiwa"
+    pl.arma.files.index.IndexCategory.APK -> "APK"
+    pl.arma.files.index.IndexCategory.OTHER -> "Inne"
+}
+
+@Composable
+private fun DeviceStorageCard(
+    storage: DeviceStorage,
+    usage: List<Pair<String, Long>>,
+    onClick: () -> Unit
+) {
     val used = (storage.totalBytes - storage.freeBytes).coerceAtLeast(0L)
     val fraction = if (storage.totalBytes > 0) (used.toFloat() / storage.totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
     Surface(
@@ -1057,6 +1102,17 @@ private fun DeviceStorageCard(storage: DeviceStorage, onClick: () -> Unit) {
                     }
                 }
                 LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(50)))
+                if (usage.isNotEmpty()) {
+                    // Rozbicie pochodzi z indeksu, więc pojawia się dopiero po
+                    // jego zbudowaniu — bez niego nie mamy skąd wziąć kategorii.
+                    Text(
+                        usage.joinToString(" · ") { (label, bytes) -> "$label ${formatSize(bytes)}" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Text(
                     if (storage.totalBytes > 0) {
                         "Zajęte ${formatSize(storage.totalBytes - storage.freeBytes)} · " +
@@ -1221,16 +1277,79 @@ private fun ActiveSourcesRow(
 }
 
 @Composable
-private fun LocationStrip(label: String, atRoot: Boolean, onRoot: () -> Unit) {
+/**
+ * Rozbija bieżącą ścieżkę na klikalne człony, licząc od korzenia źródła.
+ * Poza korzeniem nie schodzimy — użytkownik nie ma tam dostępu.
+ */
+private fun breadcrumbs(root: Uri?, current: Uri?): List<Pair<String, Uri>> {
+    if (current == null) return emptyList()
+    val rootPath = root?.path.orEmpty().trimEnd('/')
+    val currentPath = current.path.orEmpty().trimEnd('/')
+    val rootName = folderLabel(root)
+
+    if (root == null || !currentPath.startsWith(rootPath)) {
+        return listOf(folderLabel(current) to current)
+    }
+    val rest = currentPath.removePrefix(rootPath).trim('/')
+    val crumbs = mutableListOf(rootName to root)
+    var path = rootPath
+    rest.split('/').filter { it.isNotBlank() }.forEach { segment ->
+        path = "$path/$segment"
+        crumbs += segment to current.buildUpon().path(path).build()
+    }
+    return crumbs
+}
+
+@Composable
+private fun LocationStrip(
+    crumbs: List<Pair<String, Uri>>,
+    atRoot: Boolean,
+    onCrumb: (Uri) -> Unit,
+    onRoot: () -> Unit
+) {
+    val scroll = rememberScrollState()
+    // Przy głębokiej ścieżce interesuje nas koniec, nie początek.
+    LaunchedEffect(crumbs.size) { scroll.animateScrollTo(scroll.maxValue) }
+
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(14.dp)) {
-            Row(Modifier.padding(horizontal = 11.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Folder, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(7.dp))
-                Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
+        Row(
+            Modifier.weight(1f).horizontalScroll(scroll),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Folder,
+                null,
+                Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(6.dp))
+            crumbs.forEachIndexed { index, (name, uri) ->
+                if (index > 0) {
+                    Text(
+                        "›",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                }
+                val last = index == crumbs.lastIndex
+                Text(
+                    name,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (last) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (last) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    maxLines = 1,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(enabled = !last) { onCrumb(uri) }
+                        .padding(horizontal = 6.dp, vertical = 6.dp)
+                )
             }
         }
-        Spacer(Modifier.weight(1f))
         if (!atRoot) {
             TextButton(onClick = onRoot) {
                 Icon(Icons.Default.Home, null, Modifier.size(18.dp))

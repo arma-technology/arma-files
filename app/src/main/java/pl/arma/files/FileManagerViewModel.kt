@@ -223,6 +223,42 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         refreshPane(pane)
     }
 
+    /** Zamyka wszystkie karty poza wskazaną. */
+    fun closeOtherTabs(id: String) {
+        if (panes.none { it.id == id }) return
+        panes.retainAll { it.id == id }
+        activePaneId = id
+        secondaryPaneId = null
+        syncPanes()
+    }
+
+    /** Otwiera drugą kartę na tym samym katalogu — wygodne przy porównywaniu. */
+    fun duplicateTab(id: String) {
+        val source = panes.firstOrNull { it.id == id } ?: return
+        val copy = Pane(java.util.UUID.randomUUID().toString())
+        copy.root = source.root
+        copy.source = source.source
+        copy.currentDir = source.currentDir
+        source.navStack.forEach(copy.navStack::addLast)
+        panes.add(panes.indexOf(source) + 1, copy)
+        activePaneId = copy.id
+        refreshPane(copy)
+    }
+
+    /** Przypina katalog otwarty w karcie do ekranu „Mój komputer". */
+    fun pinTabFolder(id: String) {
+        val pane = panes.firstOrNull { it.id == id } ?: return
+        val dir = pane.currentDir ?: run {
+            _error.value = "Ta karta nie ma otwartego katalogu."
+            return
+        }
+        viewModelScope.launch {
+            val item = runCatching { repo.itemInfo(dir) }.getOrNull()
+                ?: FileItem(dir, PaneRules.tabTitle(dir.path), DIRECTORY_MIME, 0, 0, true)
+            pinFolder(item)
+        }
+    }
+
     fun closeTab(id: String) {
         val nextActive = PaneRules.activeAfterClose(panes.map { it.id }, activePaneId, id) ?: return
         panes.removeAll { it.id == id }
@@ -569,6 +605,15 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         pane.root = uri
         pane.currentDir = uri
         pane.navStack.clear()
+        refreshPane(pane)
+    }
+
+    /** Skok do wskazanego członu ścieżki z paska nawigacji. */
+    fun openPath(uri: Uri) {
+        val pane = active()
+        if (pane.currentDir == uri) return
+        pane.currentDir?.let(pane.navStack::addLast)
+        pane.currentDir = uri
         refreshPane(pane)
     }
 
@@ -1034,6 +1079,22 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         loadPinned()
     }
 
+    private val _pinnedStats = MutableStateFlow<Map<String, Pair<Int, Long>>>(emptyMap())
+    /** Liczba plików i zajętość przypiętych folderów, prosto z indeksu. */
+    val pinnedStats: StateFlow<Map<String, Pair<Int, Long>>> = _pinnedStats.asStateFlow()
+
+    private fun loadPinnedStats() {
+        viewModelScope.launch {
+            val stats = withContext(Dispatchers.IO) {
+                _pinnedFolders.value.associate { folder ->
+                    val uri = folder.rootUri.toString()
+                    uri to (index.countUnder(uri) to index.bytesUnder(uri))
+                }
+            }
+            _pinnedStats.value = stats
+        }
+    }
+
     private fun loadPinned() {
         val stored = migratePicturesToCamera(
             prefs.pinned() ?: defaultPinned().also { defaults ->
@@ -1050,6 +1111,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 subtitle = parsed.path ?: label
             )
         }
+        loadPinnedStats()
     }
 
     /**
@@ -1220,6 +1282,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             val result = withContext(Dispatchers.IO) {
                 val monthsAgo = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000
                 StorageAnalysis(
+                    usageByCategory = index.usageByCategory(),
                     stats = index.stats(),
                     largestFiles = index.largestFiles(30).map(::toFileItem),
                     largestFolders = index.largestFolders(20),

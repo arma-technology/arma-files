@@ -17,6 +17,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FolderZip
@@ -29,12 +32,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,49 +51,109 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import pl.arma.files.index.IndexCategory
 import pl.arma.files.index.IndexProgress
 
-/** Pasek stanu indeksu — pokazywany tylko wtedy, gdy jest co powiedzieć. */
+/**
+ * Jeden element o dwóch stanach.
+ *
+ * Dopóki indeksu nie ma, zachęca do zbudowania. Gdy już jest, zamienia się w
+ * pole wyszukiwania po całym urządzeniu — bo budowanie indeksu robi się raz na
+ * jakiś czas, a szuka codziennie, więc to szukanie zasługuje na to miejsce.
+ */
 @Composable
-fun IndexBar(progress: IndexProgress, indexed: Int, onBuild: () -> Unit, onCancel: () -> Unit) {
+fun IndexBar(
+    progress: IndexProgress,
+    indexed: Int,
+    query: String,
+    onQuery: (String) -> Unit,
+    onBuild: () -> Unit,
+    onCancel: () -> Unit,
+    onRefresh: () -> Unit
+) {
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainer
     ) {
-        Column(Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Indeks plików", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        when {
-                            progress.running -> "Skanowanie… ${progress.scanned} elementów"
-                            indexed > 0 -> "$indexed elementów · migawka, odśwież po zmianach"
-                            else -> "Zbuduj indeks, aby szukać w całej pamięci i analizować zajętość"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (progress.running) {
-                    TextButton(onClick = onCancel) { Text("Przerwij") }
-                } else {
-                    FilledTonalButton(onClick = onBuild) {
-                        Text(if (indexed > 0) "Odśwież" else "Zbuduj")
+        when {
+            progress.running -> Column(Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Budowanie indeksu", fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "${progress.scanned} elementów",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
+                    TextButton(onClick = onCancel) { Text("Przerwij") }
                 }
-            }
-            if (progress.running) {
                 Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(
                     Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(50))
                 )
+            }
+
+            indexed > 0 -> Row(
+                Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    null,
+                    Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextField(
+                    value = query,
+                    onValueChange = onQuery,
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    placeholder = { Text("Szukaj we wszystkich plikach") },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    )
+                )
+                if (query.isNotBlank()) {
+                    IconButton(onClick = { onQuery("") }) {
+                        Icon(Icons.Default.Close, "Wyczyść")
+                    }
+                } else {
+                    IconButton(onClick = onRefresh) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            "Odśwież indeks",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            else -> Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Search,
+                    null,
+                    Modifier.size(22.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Wyszukiwanie globalne", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Zbuduj indeks, aby szukać plików na całym urządzeniu",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                FilledTonalButton(onClick = onBuild) { Text("Włącz") }
             }
         }
     }
@@ -108,10 +176,18 @@ fun GlobalCategoryRow(onPick: (IndexCategory) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(entries) { (category, label) ->
-            AssistChip(
+            SuggestionChip(
                 onClick = { onPick(category) },
                 label = { Text(label.first) },
-                leadingIcon = { Icon(label.second, null, Modifier.size(17.dp)) }
+                icon = { Icon(label.second, null, Modifier.size(17.dp)) },
+                colors = SuggestionChipDefaults.suggestionChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    labelColor = MaterialTheme.colorScheme.onSurface,
+                    iconContentColor = MaterialTheme.colorScheme.primary
+                ),
+                // Bez obrysu — rząd kategorii ma być lekki, a nie wyglądać
+                // jak cztery przyciski w ramkach.
+                border = null
             )
         }
     }

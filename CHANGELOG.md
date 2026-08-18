@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.0-alpha1
+
+- pasek zakładek ma zawsze tę samą budowę, także przy jednej karcie; wcześniej
+  zamieniał się w inny element i ekran wyglądał jak dwa różne układy
+- menu zakładki po dłuższym przytrzymaniu: duplikuj, przypnij folder,
+  zamknij pozostałe, zamknij
+- karta indeksu po zbudowaniu zamienia się w pole wyszukiwania globalnego —
+  budowanie robi się raz, a szuka codziennie
+- przypięte foldery: zamiast krzyżyka menu z akcjami (otwórz, otwórz w nowej
+  karcie, odepnij), a pod nazwą liczba plików i zajętość
+- pod paskiem zajętości nośnika rozbicie na kategorie
+- niższy nagłówek „Mój komputer", lżejsze chipsy kategorii bez obrysu
+- klikalna ścieżka nawigacji: skok do dowolnego katalogu nadrzędnego
+
 ## 0.8.0-alpha3
 
 - zakładki niższe i węższe, mieszczą się trzy zamiast dwóch

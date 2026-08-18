@@ -197,4 +197,42 @@ class FileIndexDbTest {
         // Sama gwiazdka po oczyszczeniu daje pusty token, wiec tez nic nie zwraca.
         assertTrue(db.search("*").isEmpty())
     }
+
+    @Test
+    fun `zajetosc rozbita na kategorie`() {
+        db.upsert(
+            listOf(
+                file("/storage/DCIM/a.jpg", size = 1_000),
+                file("/storage/DCIM/b.jpg", size = 2_000),
+                file("/storage/Filmy/c.mp4", size = 9_000),
+                file("/storage/Projekt", directory = true)
+            )
+        )
+        val usage = db.usageByCategory()
+        assertEquals(3_000L, usage[IndexCategory.IMAGE])
+        assertEquals(9_000L, usage[IndexCategory.VIDEO])
+        // Katalogi nie wchodza do rozbicia, bo ich rozmiar to zawsze zero.
+        assertEquals(null, usage[IndexCategory.OTHER])
+    }
+
+    @Test
+    fun `liczenie plikow obejmuje podkatalogi`() {
+        db.upsert(
+            listOf(
+                file("/storage/Pobrane/a.txt", size = 10),
+                file("/storage/Pobrane/pod/b.txt", size = 20),
+                file("/storage/Pobrane/pod", directory = true),
+                file("/storage/Inne/c.txt", size = 30)
+            )
+        )
+        assertEquals(2, db.countUnder("file:///storage/Pobrane"))
+        assertEquals(30L, db.bytesUnder("file:///storage/Pobrane"))
+        assertEquals(1, db.countUnder("file:///storage/Inne"))
+    }
+
+    @Test
+    fun `pusty katalog daje zero, a nie blad`() {
+        assertEquals(0, db.countUnder("file:///storage/Nieistnieje"))
+        assertEquals(0L, db.bytesUnder("file:///storage/Nieistnieje"))
+    }
 }

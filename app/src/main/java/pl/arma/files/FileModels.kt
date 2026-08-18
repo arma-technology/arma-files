@@ -34,6 +34,7 @@ data class TabInfo(
 /** Wynik analizy zajętości pamięci. */
 data class StorageAnalysis(
     val stats: pl.arma.files.index.IndexStats? = null,
+    val usageByCategory: Map<pl.arma.files.index.IndexCategory, Long> = emptyMap(),
     val largestFiles: List<FileItem> = emptyList(),
     val largestFolders: List<pl.arma.files.index.FolderUsage> = emptyList(),
     val oldFiles: List<FileItem> = emptyList()

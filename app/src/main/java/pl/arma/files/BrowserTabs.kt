@@ -3,7 +3,9 @@ package pl.arma.files
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -23,13 +25,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VerticalSplit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,6 +45,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +83,9 @@ fun BrowserTabStrip(
     canSplit: Boolean,
     onSelect: (String) -> Unit,
     onClose: (String) -> Unit,
+    onCloseOthers: (String) -> Unit,
+    onDuplicate: (String) -> Unit,
+    onPin: (String) -> Unit,
     onNew: () -> Unit,
     onToggleDual: () -> Unit
 ) {
@@ -100,8 +114,12 @@ fun BrowserTabStrip(
                     BrowserTab(
                         tab = tab,
                         closable = tabs.size > 1,
+                        canCloseOthers = tabs.size > 1,
                         onSelect = { onSelect(tab.id) },
-                        onClose = { onClose(tab.id) }
+                        onClose = { onClose(tab.id) },
+                        onCloseOthers = { onCloseOthers(tab.id) },
+                        onDuplicate = { onDuplicate(tab.id) },
+                        onPin = { onPin(tab.id) }
                     )
                 }
             }
@@ -135,13 +153,19 @@ fun BrowserTabStrip(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BrowserTab(
     tab: TabInfo,
     closable: Boolean,
+    canCloseOthers: Boolean,
     onSelect: () -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onCloseOthers: () -> Unit,
+    onDuplicate: () -> Unit,
+    onPin: () -> Unit
 ) {
+    var menu by remember { mutableStateOf(false) }
     val background by animateColorAsState(
         targetValue = when {
             tab.active -> MaterialTheme.colorScheme.surface
@@ -171,7 +195,7 @@ private fun BrowserTab(
             .clip(TabShape)
             .background(background)
             .border(1.dp, outline, TabShape)
-            .clickable(onClick = onSelect)
+            .combinedClickable(onClick = onSelect, onLongClick = { menu = true })
             .padding(start = 12.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -199,6 +223,36 @@ private fun BrowserTab(
                 Icon(Icons.Default.Close, "Zamknij kartę", Modifier.size(16.dp), tint = label)
             }
         }
+
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(
+                text = { Text("Duplikuj kartę") },
+                leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
+                onClick = { menu = false; onDuplicate() }
+            )
+            if (!tab.atHome) {
+                DropdownMenuItem(
+                    text = { Text("Przypnij folder") },
+                    leadingIcon = { Icon(Icons.Default.PushPin, null) },
+                    onClick = { menu = false; onPin() }
+                )
+            }
+            if (canCloseOthers) {
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text("Zamknij pozostałe") },
+                    leadingIcon = { Icon(Icons.Default.ClearAll, null) },
+                    onClick = { menu = false; onCloseOthers() }
+                )
+            }
+            if (closable) {
+                DropdownMenuItem(
+                    text = { Text("Zamknij kartę") },
+                    leadingIcon = { Icon(Icons.Default.Close, null) },
+                    onClick = { menu = false; onClose() }
+                )
+            }
+        }
     }
 }
 
@@ -220,50 +274,5 @@ private fun NewTabButton(onNew: () -> Unit) {
             Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-/**
- * Gdy zakładka jest jedna, pasek tylko zabierałby miejsce — zostaje sam
- * przycisk otwarcia kolejnej i przełącznik podziału.
- */
-@Composable
-fun SingleTabBar(dualPane: Boolean, canSplit: Boolean, onNew: () -> Unit, onToggleDual: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (canSplit) {
-                Box(
-                    Modifier.size(34.dp).clip(CircleShape).clickable(onClick = onToggleDual),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        if (dualPane) Icons.Default.Fullscreen else Icons.Default.VerticalSplit,
-                        if (dualPane) "Jeden panel" else "Dwa panele",
-                        Modifier.size(19.dp),
-                        tint = if (dualPane) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
-            }
-            Spacer(Modifier.width(2.dp))
-            Box(
-                Modifier.size(34.dp).clip(CircleShape).clickable(onClick = onNew),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    "Nowa karta",
-                    Modifier.size(19.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
     }
 }
