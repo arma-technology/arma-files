@@ -448,7 +448,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenSource = { vm.openSource(it) },
                         onGrantAccess = ::requestBroadStorageAccess,
                         onAddFolder = { folderPicker.launch(null) },
-                        onSettings = { tab = Tab.SETTINGS },
                         trashCount = trashEntries.size,
                         onOpenTrash = { showTrash = true },
                         indexProgress = indexProgress,
@@ -889,7 +888,6 @@ private fun ComputerHome(
     onOpenSource: (StorageSource) -> Unit,
     onGrantAccess: () -> Unit,
     onAddFolder: () -> Unit,
-    onSettings: () -> Unit,
     trashCount: Int,
     onOpenTrash: () -> Unit,
     indexProgress: pl.arma.files.index.IndexProgress,
@@ -912,52 +910,6 @@ private fun ComputerHome(
         contentPadding = PaddingValues(bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary.copy(alpha = .88f))
-                        ),
-                        RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp)
-                    )
-                    .padding(horizontal = 18.dp, vertical = 14.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .14f)
-                    ) {
-                        Icon(
-                            Icons.Default.Computer,
-                            null,
-                            modifier = Modifier.padding(9.dp).size(24.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "Mój komputer",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Text(
-                            "Pamięć urządzenia i zasoby sieciowe",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .82f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    IconButton(onClick = onSettings) {
-                        Icon(Icons.Default.Settings, "Ustawienia", tint = MaterialTheme.colorScheme.onPrimary)
-                    }
-                }
-            }
-        }
 
         if (!allFilesAccess) {
             item {
@@ -986,18 +938,6 @@ private fun ComputerHome(
         }
 
         item {
-            IndexBar(
-                progress = indexProgress,
-                indexed = indexedCount,
-                query = globalQuery,
-                onQuery = onGlobalQuery,
-                onBuild = onBuildIndex,
-                onCancel = onCancelIndex,
-                onRefresh = onBuildIndex
-            )
-        }
-        item { GlobalCategoryRow(onPick = onCategory) }
-        item {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -1022,6 +962,17 @@ private fun ComputerHome(
                 onUnpin = onUnpin,
                 onMove = onMovePinned,
                 onAddFolder = onAddFolder
+            )
+        }
+        item {
+            CategorySearchRow(
+                indexed = indexedCount,
+                progress = indexProgress,
+                query = globalQuery,
+                onQuery = onGlobalQuery,
+                onPick = onCategory,
+                onBuild = onBuildIndex,
+                onCancel = onCancelIndex
             )
         }
 

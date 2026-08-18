@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0-alpha2
+
+- usunięty zielony nagłówek „Mój komputer" — Ustawienia są w dolnym pasku,
+  więc powielał wejście i zabierał najcenniejsze miejsce na ekranie
+- przypięte foldery razem z Analizą, Historią i Koszem od razu pod zakładkami
+- kategorie i wyszukiwanie w jednym rzędzie; wyszukiwanie zwinięte do ikony,
+  która po kliknięciu rozwija pasek na miejscu kategorii
+- gdy indeksu jeszcze nie ma, rozwinięty pasek proponuje jego zbudowanie
+  zamiast pustego pola
+
 ## 0.9.0-alpha1
 
 - pasek zakładek ma zawsze tę samą budowę, także przy jednej karcie; wcześniej

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
@@ -44,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +53,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,139 +63,132 @@ import pl.arma.files.index.IndexCategory
 import pl.arma.files.index.IndexProgress
 
 /**
- * Jeden element o dwóch stanach.
+ * Kategorie i wyszukiwanie w jednym rzędzie.
  *
- * Dopóki indeksu nie ma, zachęca do zbudowania. Gdy już jest, zamienia się w
- * pole wyszukiwania po całym urządzeniu — bo budowanie indeksu robi się raz na
- * jakiś czas, a szuka codziennie, więc to szukanie zasługuje na to miejsce.
+ * Wyszukiwanie zwinięte jest do samej ikony, bo pole tekstowe zajmowałoby
+ * całą szerokość dla czynności, która zaczyna się od tapnięcia. Po kliknięciu
+ * ikona rozwija się w pasek na miejscu kategorii.
  */
 @Composable
-fun IndexBar(
-    progress: IndexProgress,
+fun CategorySearchRow(
     indexed: Int,
+    progress: IndexProgress,
     query: String,
     onQuery: (String) -> Unit,
+    onPick: (IndexCategory) -> Unit,
     onBuild: () -> Unit,
-    onCancel: () -> Unit,
-    onRefresh: () -> Unit
+    onCancel: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer
-    ) {
-        when {
-            progress.running -> Column(Modifier.padding(14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Budowanie indeksu", fontWeight = FontWeight.SemiBold)
-                        Text(
-                            "${progress.scanned} elementów",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    TextButton(onClick = onCancel) { Text("Przerwij") }
-                }
-                Spacer(Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(50))
-                )
-            }
+    var expanded by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
 
-            indexed > 0 -> Row(
-                Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+    LaunchedEffect(expanded) {
+        if (expanded && indexed > 0) runCatching { focus.requestFocus() }
+    }
+
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (expanded) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier.weight(1f)
+            ) {
+                when {
+                    progress.running -> Row(
+                        Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Buduję indeks… ${progress.scanned}",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = onCancel) { Text("Przerwij") }
+                    }
+
+                    // Bez indeksu nie ma czego przeszukiwać, więc zamiast pola
+                    // proponujemy jego zbudowanie.
+                    indexed == 0 -> Row(
+                        Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Zbuduj indeks, aby szukać w całej pamięci",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = onBuild) { Text("Zbuduj") }
+                    }
+
+                    else -> TextField(
+                        value = query,
+                        onValueChange = onQuery,
+                        modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                        singleLine = true,
+                        placeholder = { Text("Szukaj we wszystkich plikach") },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+            IconButton(onClick = { expanded = false; onQuery("") }) {
+                Icon(Icons.Default.Close, "Zamknij wyszukiwanie")
+            }
+        } else {
+            LazyRow(
+                Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(categoryEntries) { (category, label) ->
+                    SuggestionChip(
+                        onClick = { onPick(category) },
+                        label = { Text(label.first) },
+                        icon = { Icon(label.second, null, Modifier.size(17.dp)) },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            labelColor = MaterialTheme.colorScheme.onSurface,
+                            iconContentColor = MaterialTheme.colorScheme.primary
+                        ),
+                        border = null
+                    )
+                }
+            }
+            Spacer(Modifier.width(4.dp))
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                onClick = { expanded = true }
             ) {
                 Icon(
                     Icons.Default.Search,
-                    null,
-                    Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                TextField(
-                    value = query,
-                    onValueChange = onQuery,
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    placeholder = { Text("Szukaj we wszystkich plikach") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
-                if (query.isNotBlank()) {
-                    IconButton(onClick = { onQuery("") }) {
-                        Icon(Icons.Default.Close, "Wyczyść")
-                    }
-                } else {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            "Odśwież indeks",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            else -> Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Search,
-                    null,
-                    Modifier.size(22.dp),
+                    "Szukaj we wszystkich plikach",
+                    Modifier.padding(9.dp).size(20.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("Wyszukiwanie globalne", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        "Zbuduj indeks, aby szukać plików na całym urządzeniu",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                FilledTonalButton(onClick = onBuild) { Text("Włącz") }
             }
         }
     }
 }
 
-/** Kategorie obejmujące całą pamięć, nie tylko otwarty katalog. */
-@Composable
-fun GlobalCategoryRow(onPick: (IndexCategory) -> Unit) {
-    val entries = listOf(
-        IndexCategory.IMAGE to ("Obrazy" to Icons.Default.Image),
-        IndexCategory.VIDEO to ("Filmy" to Icons.Default.Movie),
-        IndexCategory.AUDIO to ("Audio" to Icons.Default.AudioFile),
-        IndexCategory.DOCUMENT to ("Dokumenty" to Icons.Default.Description),
-        IndexCategory.ARCHIVE to ("Archiwa" to Icons.Default.FolderZip),
-        IndexCategory.APK to ("APK" to Icons.Default.Android)
-    )
-    LazyRow(
-        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(entries) { (category, label) ->
-            SuggestionChip(
-                onClick = { onPick(category) },
-                label = { Text(label.first) },
-                icon = { Icon(label.second, null, Modifier.size(17.dp)) },
-                colors = SuggestionChipDefaults.suggestionChipColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    labelColor = MaterialTheme.colorScheme.onSurface,
-                    iconContentColor = MaterialTheme.colorScheme.primary
-                ),
-                // Bez obrysu — rząd kategorii ma być lekki, a nie wyglądać
-                // jak cztery przyciski w ramkach.
-                border = null
-            )
-        }
-    }
-}
+private val categoryEntries = listOf(
+    IndexCategory.IMAGE to ("Obrazy" to Icons.Default.Image),
+    IndexCategory.VIDEO to ("Filmy" to Icons.Default.Movie),
+    IndexCategory.AUDIO to ("Audio" to Icons.Default.AudioFile),
+    IndexCategory.DOCUMENT to ("Dokumenty" to Icons.Default.Description),
+    IndexCategory.ARCHIVE to ("Archiwa" to Icons.Default.FolderZip),
+    IndexCategory.APK to ("APK" to Icons.Default.Android)
+)
 
 /** Analiza zajętości: fakty do samodzielnej oceny, bez kasowania za użytkownika. */
 @OptIn(ExperimentalMaterial3Api::class)
