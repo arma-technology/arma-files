@@ -116,6 +116,58 @@ akcjami. Wymaga EXIF z fazy 5 i SHA-256 liczonego w tle przez silnik z
 fazy 1, więc powstaje po nich; sam panel jest pracą na jeden wieczór, gdy
 dane już są.
 
+### Faza 6 — wydanie
+
+Najpilniejsza, bo dziś aplikacji **nie da się wydać nikomu**. Ustalone
+przeglądem stanu projektu przy wersji 0.9.0-alpha3.
+
+- **konfiguracja podpisu.** `assembleRelease` działa, ale produkuje
+  `app-release-unsigned.apk`, którego Android nie zainstaluje. Brakuje
+  keystore'a i bloku `signingConfig`.
+- **minifikacja R8.** Nie ma bloku `buildTypes`, więc R8 nie działa nawet
+  w wydaniu. W pliku APK lądują przez to m.in. dane kryptografii
+  postkwantowej BouncyCastle (sam `lowmcL5.bin.properties` to 750 KB),
+  ciągnięte przez sshj i nigdy nieużywane. Debug waży 23,6 MB,
+  niezminifikowane wydanie 17,5 MB.
+- **reguły `proguard-rules.pro`.** sshj, jcifs-ng i AppAuth korzystają
+  z refleksji i wczytywania klas po nazwie — bez reguł R8 usunie to, czego
+  nie widzi w kodzie, a błąd wyjdzie dopiero przy próbie połączenia.
+- **weryfikacja na żywo trzech ścieżek**: OAuth Google Drive, SFTP i WebDAV.
+  Mają testy jednostkowe, ale żadna nie dotknęła prawdziwego serwera.
+
+Podpis blokuje też cel „aplikacja na wiele telefonów": Google wiąże Client ID
+z odciskiem certyfikatu, więc bez stałego keystore'a logowanie do Drive działa
+wyłącznie z kluczem debug z tego komputera.
+
+### Faza 7 — dług techniczny
+
+- **rozbicie `MainActivity.kt`** — 2856 linii. Każda zmiana na ekranie głównym
+  wymaga przewijania przez podgląd PDF, viewer obrazów i dialogi.
+- **testy warstwy sieciowej.** Backendy FTP, SMB, SFTP, WebDAV i Drive nie mają
+  żadnego pokrycia; przetestowane są tylko czyste kawałki (ścieżki, parser
+  PROPFIND, cache identyfikatorów Drive). WebDAV i Drive mówią po HTTP, więc
+  `MockWebServer` pokryje oba bez sieci — dwa najsłabiej sprawdzone backendy
+  za jedną zależność testową.
+- **odświeżanie indeksu przy operacjach.** Indeks jest migawką i rozjeżdża się
+  z rzeczywistością do czasu ręcznego odświeżenia, a silnik operacji wie
+  dokładnie, co zmienił.
+
+### Kierunki poza roadmapą
+
+Ugruntowane w tym, co już zbudowane — silnik operacji, indeks i backendy
+sieciowe wystarczą, brakuje tylko warstwy decyzyjnej:
+
+- **synchronizacja katalogów** — porównywanie drzew i reguły rozstrzygania.
+- **zaplanowane kopie zapasowe** — „DCIM na NAS co noc, tylko po Wi-Fi
+  i przy ładowaniu"; kolejka i usługa pierwszoplanowa już to udźwigną.
+
+Bardziej ryzykowne, do rozważenia dopiero po powyższych:
+
+- **telefon jako serwer** — udostępnienie katalogu po HTTP/WebDAV w sieci
+  lokalnej, czyli odwrócenie kierunku przesyłania.
+- **wersja desktopowa na Compose Multiplatform** — logika jest już oddzielona
+  od interfejsu, ale to podwaja powierzchnię utrzymania.
+
 ## Zasady
 
 - Nowy kod ma testy jednostkowe. Zaczynamy od silnika operacji, bo jego
