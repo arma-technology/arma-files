@@ -10,13 +10,15 @@ plugins {
 // a nie użytkownika), ale nie trzymamy go w repozytorium, żeby nie przywiązywać
 // kodu do jednego projektu. Kolejność: -PdriveClientId=... , potem
 // local.properties (plik nieśledzony przez git).
-val driveClientId: String = (project.findProperty("driveClientId") as String?)
-    ?: rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
-        val properties = Properties()
-        file.inputStream().use { properties.load(it) }
-        properties.getProperty("driveClientId")
-    }
-    ?: ""
+/** Wartości spoza repozytorium: Client ID Google i dane podpisu wydania. */
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+
+fun local(name: String): String? =
+    (project.findProperty(name) as String?) ?: localProperties.getProperty(name)
+
+val driveClientId: String = local("driveClientId").orEmpty()
 
 // Google wymaga, żeby adres przekierowania był odwróconym Client ID. Wyliczamy
 // go, zamiast kazać wpisywać drugą, łatwą do pomylenia wartość.
@@ -44,6 +46,41 @@ android {
         buildConfigField("String", "DRIVE_REDIRECT_SCHEME", "\"$driveRedirectScheme\"")
     }
 
+    signingConfigs {
+        create("release") {
+            // Klucz i hasła są poza repozytorium — patrz local.properties oraz
+            // katalog ArmaFiles-klucz. Bez nich wydanie buduje się niepodpisane.
+            local("storeFile")?.let { path ->
+                storeFile = file(path)
+                storePassword = local("storePassword")
+                keyAlias = local("keyAlias")
+                keyPassword = local("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Pozwala zainstalować zminifikowane wydanie obok już zainstalowanej
+            // aplikacji, żeby je sprawdzić bez kasowania jej danych:
+            // ./gradlew assembleRelease -PreleaseIdSuffix=.test
+            local("releaseIdSuffix")?.let { applicationIdSuffix = it }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
+                .takeIf { it.storeFile != null }
+        }
+        debug {
+            // Wersja robocza obok wydania na tym samym telefonie — inaczej
+            // instalacja jednej nadpisywałaby drugą i gubiła jej dane.
+            applicationIdSuffix = ".debug"
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -60,6 +97,10 @@ android {
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        // Tablice kryptografii postkwantowej BouncyCastle to zasoby w archiwum,
+        // a nie klasy, więc R8 ich nie usuwa mimo że nigdy z nich nie korzystamy.
+        // Same pliki „picnic" to ponad megabajt.
+        resources.excludes += "org/bouncycastle/pqc/**"
     }
 
     testOptions {
