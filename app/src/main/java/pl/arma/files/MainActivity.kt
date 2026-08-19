@@ -472,6 +472,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenPinnedInNewTab = { folder ->
                             vm.openTab(); openLocal(folder.rootUri)
                         },
+                        searchResults = if (globalSearch && query.isNotBlank()) searchResults else emptyList(),
+                        onOpenResult = { item ->
+                            if (item.isDirectory) vm.openDirectory(item) else preview = item
+                        },
+                        onRevealResult = vm::revealParent,
                         storageUsage = analysis.usageByCategory
                             .filterValues { it > 0 }
                             .toList()
@@ -902,6 +907,9 @@ private fun ComputerHome(
     onMovePinned: (Int, Int) -> Unit,
     pinnedStats: Map<String, Pair<Int, Long>>,
     onOpenPinnedInNewTab: (PinnedFolder) -> Unit,
+    searchResults: List<FileItem>,
+    onOpenResult: (FileItem) -> Unit,
+    onRevealResult: (FileItem) -> Unit,
     storageUsage: List<Pair<String, Long>>,
     onOpenHistory: () -> Unit
 ) {
@@ -948,8 +956,14 @@ private fun ComputerHome(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onAnalyze) { Text("Analiza") }
-                TextButton(onClick = onOpenHistory) { Text("Historia") }
+                // Same ikony — trzy akcje z podpisami nie mieściły się obok
+                // nagłówka i „Kosz" był ucinany przy krawędzi.
+                IconButton(onClick = onAnalyze) {
+                    Icon(Icons.Default.PieChart, "Analiza pamięci", tint = MaterialTheme.colorScheme.primary)
+                }
+                IconButton(onClick = onOpenHistory) {
+                    Icon(Icons.Default.History, "Historia operacji", tint = MaterialTheme.colorScheme.primary)
+                }
                 TrashButton(count = trashCount, onClick = onOpenTrash)
             }
         }
@@ -972,8 +986,30 @@ private fun ComputerHome(
                 onQuery = onGlobalQuery,
                 onPick = onCategory,
                 onBuild = onBuildIndex,
-                onCancel = onCancelIndex
+                onCancel = onCancelIndex,
+                onRefresh = onBuildIndex
             )
+        }
+
+        // Wyniki pojawiają się pod paskiem, w miejscu pozostałych sekcji.
+        // Zamiana całego ekranu zabierałaby pole, w którym trwa pisanie.
+        if (searchResults.isNotEmpty()) {
+            item {
+                Text(
+                    "Znaleziono ${searchResults.size}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
+            }
+            items(searchResults, key = { it.uri.toString() }) { item ->
+                SearchResultRow(
+                    item = item,
+                    onOpen = { onOpenResult(item) },
+                    onReveal = { onRevealResult(item) }
+                )
+            }
+            return@LazyColumn
         }
 
         item {
@@ -1004,7 +1040,47 @@ private fun ComputerHome(
     }
 }
 
+/** Wiersz wyniku wyszukiwania: nazwa, ścieżka i skok do katalogu. */
 @Composable
+private fun SearchResultRow(item: FileItem, onOpen: () -> Unit, onReveal: () -> Unit) {
+    Surface(
+        onClick = onOpen,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (item.isDirectory) Icons.Default.Folder else fileIcon(item),
+                null,
+                Modifier.size(24.dp),
+                tint = fileTint(item)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
+                Text(
+                    item.uri.path.orEmpty().substringBeforeLast('/').removePrefix("/storage/emulated/0"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (!item.isDirectory) {
+                Text(
+                    formatSize(item.size),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onReveal) {
+                Icon(Icons.Default.FolderOpen, "Pokaż w katalogu", Modifier.size(20.dp))
+            }
+        }
+    }
+}
+
 private fun categoryShortLabel(category: pl.arma.files.index.IndexCategory): String = when (category) {
     pl.arma.files.index.IndexCategory.IMAGE -> "Obrazy"
     pl.arma.files.index.IndexCategory.VIDEO -> "Filmy"
@@ -1521,7 +1597,22 @@ private fun FileVisual(
         var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
         LaunchedEffect(item.uri, item.lastModified) {
             failed = false
-            bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 640) }
+            val key = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+            val cached = ThumbnailCache.get(key)
+            if (cached != null) {
+                bitmap = cached
+                return@LaunchedEffect
+            }
+            // Pobranie kilkudziesięciu megabajtów z serwera po to, by pokazać
+            // kafelek wielkości paznokcia, kosztuje więcej, niż daje.
+            if (vm.isRemote(item.uri) && item.size > REMOTE_THUMBNAIL_LIMIT) {
+                failed = true
+                return@LaunchedEffect
+            }
+            bitmap = runCatching {
+                ThumbnailCache.throttled { vm.decodeImage(item, targetMaxSide = 640) }
+            }
+                .onSuccess { decoded -> ThumbnailCache.put(key, decoded) }
                 .onFailure { failed = true }
                 .getOrNull()
         }
@@ -1739,15 +1830,11 @@ private fun PreviewSheet(
                             Text("Zapisz zmiany")
                         }
                     } else {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth().weight(1f),
-                            shape = RoundedCornerShape(18.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainer
-                        ) {
-                            Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                                Text(text ?: "Wczytywanie…", fontFamily = FontFamily.Monospace)
-                            }
-                        }
+                        TextViewer(
+                            item = item,
+                            vm = vm,
+                            modifier = Modifier.fillMaxWidth().weight(1f)
+                        )
                         FilledTonalButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Default.Edit, null)
                             Spacer(Modifier.width(8.dp))
@@ -2727,21 +2814,15 @@ private fun formatDate(timestamp: Long): String {
     return DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(timestamp))
 }
 
+/** Powyżej tego rozmiaru nie ściągamy zdalnego pliku dla samej miniatury. */
+private const val REMOTE_THUMBNAIL_LIMIT = 12L * 1024 * 1024
+
 private fun isPdf(item: FileItem): Boolean = item.mimeType == "application/pdf" || item.name.endsWith(".pdf", true)
 
 private fun isZip(item: FileItem): Boolean = item.mimeType == "application/zip" || item.name.endsWith(".zip", true)
 
 private fun isText(item: FileItem): Boolean =
-    item.mimeType.startsWith("text/") ||
-        item.mimeType.contains("json") ||
-        item.mimeType.contains("xml") ||
-        item.name.endsWith(".yaml", true) ||
-        item.name.endsWith(".yml", true) ||
-        item.name.endsWith(".md", true) ||
-        item.name.endsWith(".kt", true) ||
-        item.name.endsWith(".kts", true) ||
-        item.name.endsWith(".py", true) ||
-        item.name.endsWith(".sh", true)
+    !item.isDirectory && pl.arma.files.text.TextProfile.isTextFile(item.name, item.mimeType)
 
 private suspend fun shareItems(context: Context, items: List<FileItem>, vm: FileManagerViewModel) {
     val files = items.filterNot { it.isDirectory }

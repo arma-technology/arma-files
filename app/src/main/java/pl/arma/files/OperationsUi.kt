@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -412,9 +414,13 @@ private fun formatClock(timestamp: Long): String =
 /** Ikona kosza z licznikiem — wpinana w ekran „Mój komputer". */
 @Composable
 fun TrashButton(count: Int, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Icon(Icons.Default.Delete, null, Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(if (count > 0) "Kosz ($count)" else "Kosz")
+    IconButton(onClick = onClick) {
+        if (count > 0) {
+            BadgedBox(badge = { Badge { Text(count.toString()) } }) {
+                Icon(Icons.Default.Delete, "Kosz ($count)", tint = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            Icon(Icons.Default.Delete, "Kosz", tint = MaterialTheme.colorScheme.primary)
+        }
     }
 }

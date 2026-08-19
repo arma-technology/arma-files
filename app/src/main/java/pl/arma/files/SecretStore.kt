@@ -14,6 +14,9 @@ class SecretStore(context: Context) {
     private val prefs = context.getSharedPreferences("network_secrets", Context.MODE_PRIVATE)
     private val alias = "arma_files_network_credentials"
 
+    @Volatile
+    private var cachedKey: SecretKey? = null
+
     fun put(name: String, value: String) {
         if (value.isEmpty()) {
             prefs.edit().remove(name).apply()
@@ -43,7 +46,16 @@ class SecretStore(context: Context) {
         }.getOrDefault("")
     }
 
-    private fun key(): SecretKey {
+    /**
+     * Klucz zapamiętany po pierwszym użyciu. Ładowanie magazynu kluczy przy
+     * każdym odczycie oznaczało wywołanie do procesu systemowego — niepotrzebnie
+     * drogo, skoro klucz się nie zmienia w trakcie życia procesu.
+     */
+    private fun key(): SecretKey = cachedKey ?: synchronized(this) {
+        cachedKey ?: loadOrCreateKey().also { cachedKey = it }
+    }
+
+    private fun loadOrCreateKey(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (store.getKey(alias, null) as? SecretKey)?.let { return it }
         val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")

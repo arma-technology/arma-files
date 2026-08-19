@@ -101,21 +101,32 @@ class FileRepository(private val context: Context) : FileOps {
         deleted
     }
 
-    suspend fun readText(uri: Uri, maxBytes: Int = 2_000_000): String = withContext(Dispatchers.IO) {
+    /**
+     * Wczytuje początek pliku jako bajty.
+     *
+     * Poprzednia wersja składała tekst, dekodując każdą porcję osobno — znak
+     * wielobajtowy rozcięty na granicy porcji rozpadał się wtedy na dwa znaki
+     * zastępcze, co przy polskich tekstach psuło co któryś wyraz. Dekodowanie
+     * należy do [pl.arma.files.text.TextReader], który dostaje całość naraz.
+     */
+    suspend fun readBytes(uri: Uri, maxBytes: Int = 2_000_000): ByteArray = withContext(Dispatchers.IO) {
         openInput(uri).use { input ->
-            val out = StringBuilder()
-            val buffer = ByteArray(32 * 1024)
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(64 * 1024)
             var total = 0
             while (total < maxBytes) {
                 val wanted = minOf(buffer.size, maxBytes - total)
                 val count = input.read(buffer, 0, wanted)
                 if (count <= 0) break
-                out.append(buffer.copyOf(count).toString(Charsets.UTF_8))
+                out.write(buffer, 0, count)
                 total += count
             }
-            out.toString()
+            out.toByteArray()
         }
     }
+
+    suspend fun readText(uri: Uri, maxBytes: Int = 2_000_000): String =
+        pl.arma.files.text.TextReader.decode(readBytes(uri, maxBytes)).first
 
     suspend fun writeText(uri: Uri, text: String) = withContext(Dispatchers.IO) {
         openOutput(uri).bufferedWriter().use { it.write(text) }

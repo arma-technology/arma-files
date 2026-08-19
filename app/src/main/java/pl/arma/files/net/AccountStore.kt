@@ -17,10 +17,31 @@ class AccountStore(context: Context) {
     private val secrets = SecretStore(context)
     private val legacy = context.getSharedPreferences("network_sources", Context.MODE_PRIVATE)
 
+    @Volatile
+    private var cached: List<RemoteAccount>? = null
+
+    /**
+     * Lista kont z pamięci podręcznej.
+     *
+     * Odczyt bez cache'u odszyfrowywał hasło każdego konta przez Android
+     * Keystore, a `get(id)` woła się przy każdej operacji na pliku — także
+     * przy każdej miniaturze w katalogu. Operacje Keystore idą przez osobny
+     * proces systemowy, więc było to odczuwalne przy listowaniu zasobów.
+     */
     fun all(): List<RemoteAccount> {
-        migrateIfNeeded()
-        return AccountCodec.decode(prefs.getString("accounts", "").orEmpty())
-            .map { it.copy(password = secrets.get(passwordKey(it.id))) }
+        cached?.let { return it }
+        synchronized(this) {
+            cached?.let { return it }
+            migrateIfNeeded()
+            val loaded = AccountCodec.decode(prefs.getString("accounts", "").orEmpty())
+                .map { it.copy(password = secrets.get(passwordKey(it.id))) }
+            cached = loaded
+            return loaded
+        }
+    }
+
+    private fun invalidate() {
+        synchronized(this) { cached = null }
     }
 
     fun get(id: String?): RemoteAccount? = id?.let { wanted -> all().firstOrNull { it.id == wanted } }
@@ -31,11 +52,13 @@ class AccountStore(context: Context) {
         if (index >= 0) current[index] = account else current += account
         write(current)
         secrets.put(passwordKey(account.id), account.password)
+        invalidate()
     }
 
     fun delete(id: String) {
         write(all().filterNot { it.id == id })
         secrets.put(passwordKey(id), "")
+        invalidate()
     }
 
     private fun write(accounts: List<RemoteAccount>) {

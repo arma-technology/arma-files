@@ -46,9 +46,11 @@ import pl.arma.files.ops.OperationStatus
 import pl.arma.files.ops.PendingConflict
 import pl.arma.files.ops.Reorder
 import pl.arma.files.ops.TrashEntry
+import pl.arma.files.text.TextDocument
+import pl.arma.files.text.TextReader
 
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
-    private val repo = FileRepository(app)
+    private val repo = (app as ArmaFilesApp).repository
     private val prefs = StoragePrefs(app)
     private val networkPrefs = NetworkPrefs(app)
     private val engine = (app as ArmaFilesApp).engine
@@ -894,6 +896,15 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     suspend fun readText(uri: Uri) = repo.readText(uri)
+
+    /** Wczytuje plik do czytnika: kodowanie, obcięcie i spis treści. */
+    suspend fun readDocument(item: FileItem): TextDocument = withContext(Dispatchers.IO) {
+        val bytes = repo.readBytes(item.uri, TextReader.DEFAULT_LIMIT)
+        if (TextReader.looksBinary(bytes)) {
+            throw IllegalArgumentException("To nie jest plik tekstowy.")
+        }
+        TextReader.read(bytes, totalBytes = item.size, limit = TextReader.DEFAULT_LIMIT)
+    }
     suspend fun writeText(uri: Uri, text: String) = repo.writeText(uri, text)
     suspend fun sha256(uri: Uri) = repo.sha256(uri)
 
@@ -1189,6 +1200,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearError() { _error.value = null }
     fun clearNotice() { _notice.value = null }
+
+    fun isRemote(uri: Uri): Boolean = RemoteRepository.isRemoteScheme(uri.scheme)
 
     fun itemFromUri(uri: Uri): FileItem? {
         val name = repo.displayName(uri) ?: uri.lastPathSegment ?: "plik"

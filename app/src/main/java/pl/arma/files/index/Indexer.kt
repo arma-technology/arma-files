@@ -45,9 +45,10 @@ class Indexer(
             val batch = mutableListOf<IndexedFile>()
             var scanned = 0
             try {
+                val visited = HashSet<String>()
                 roots.forEach { root ->
                     val dir = root.path?.let(::File) ?: return@forEach
-                    scanned = walk(dir, batch, scanned)
+                    scanned = walk(dir, batch, scanned, depth = 0, visited = visited)
                 }
                 if (batch.isNotEmpty()) db.upsert(batch)
                 _progress.value = IndexProgress(
@@ -70,13 +71,25 @@ class Indexer(
         _progress.value = _progress.value.copy(running = false)
     }
 
-    private suspend fun walk(dir: File, batch: MutableList<IndexedFile>, counted: Int): Int {
+    private suspend fun walk(
+        dir: File,
+        batch: MutableList<IndexedFile>,
+        counted: Int,
+        depth: Int,
+        visited: MutableSet<String>
+    ): Int {
         var scanned = counted
         coroutineContext.ensureActive()
 
         // Katalogi zaczynające się kropką to zwykle dane aplikacji i cache;
         // własnego kosza też nie chcemy pokazywać w wynikach wyszukiwania.
         if (dir.name.startsWith('.')) return scanned
+
+        // Dowiązanie wskazujące na katalog nadrzędny zapętliłoby skan w
+        // nieskończoność, a sama głębokość drzewa wyczerpałaby stos.
+        if (depth > MAX_DEPTH) return scanned
+        val canonical = runCatching { dir.canonicalPath }.getOrNull() ?: return scanned
+        if (!visited.add(canonical)) return scanned
 
         val children = dir.listFiles() ?: return scanned
         val parentUri = Uri.fromFile(dir).toString()
@@ -106,12 +119,15 @@ class Indexer(
                 )
             }
 
-            if (directory) scanned = walk(child, batch, scanned)
+            if (directory) scanned = walk(child, batch, scanned, depth + 1, visited)
         }
         return scanned
     }
 
     private companion object {
         const val BATCH_SIZE = 500
+
+        /** Realne drzewa katalogów są płytsze; głębiej zaczynają się pętle. */
+        const val MAX_DEPTH = 32
     }
 }

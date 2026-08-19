@@ -77,7 +77,8 @@ fun CategorySearchRow(
     onQuery: (String) -> Unit,
     onPick: (IndexCategory) -> Unit,
     onBuild: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
@@ -138,6 +139,17 @@ fun CategorySearchRow(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         )
+                    )
+                }
+            }
+            // Odświeżenie indeksu mieszka tutaj — indeks jest migawką, a bez
+            // tego przycisku nowe pliki nigdy by się w wynikach nie pojawiły.
+            if (indexed > 0 && query.isBlank() && !progress.running) {
+                IconButton(onClick = onRefresh) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        "Odśwież indeks",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

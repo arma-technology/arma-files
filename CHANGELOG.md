@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.9.0-alpha3
+
+Czytnik plików tekstowych:
+
+- rozpoznawanie kodowania: znacznik BOM, UTF-8, a gdy plik w nim nie jest —
+  CP1250; pliki `.txt`, `.srt` i `.csv` z polskiego Windowsa nie wyświetlają
+  się już jako ciąg znaków zapytania
+- numery wierszy, zawijanie do przełączenia, wyszukiwanie w pliku z licznikiem
+  trafień i podświetleniem
+- spis treści: nagłówki w Markdown, deklaracje w kodzie
+- rozpoznawanie plików binarnych — zamiast krzaków komunikat
+- lista typów tekstowych rozszerzona o logi, CSV, napisy, pliki konfiguracyjne
+  i większość języków programowania; działa też bez typu MIME, którego FTP
+  i SMB nie podają
+
+Poprawki wydajności i stabilności:
+
+- jedno repozytorium plików na proces; wcześniej istniały dwa, a wraz z nimi
+  dwie pule połączeń i dwa konteksty SMB
+- konta sieciowe trzymane w pamięci; wcześniej każda operacja na pliku
+  odszyfrowywała hasła przez Android Keystore
+- klucz szyfrujący ładowany raz zamiast przy każdym odczycie
+- miniatury: pamięć podręczna, najwyżej trzy dekodowania naraz i pomijanie
+  dużych plików zdalnych, których pobieranie kosztowało więcej niż dawało
+- skaner indeksu odporny na pętle dowiązań i zbyt głębokie drzewa
+
+Naprawione błędy:
+
+- odczyt tekstu psuł polskie znaki na granicy porcji odczytu: każdy fragment
+  był dekodowany osobno, więc znak wielobajtowy rozpadał się na dwa znaki
+  zastępcze
+- wpisanie frazy w wyszukiwarce na ekranie głównym nie pokazywało wyników
+- odświeżanie indeksu zniknęło razem ze starą kartą indeksu
+- „Kosz" był ucinany przy krawędzi; akcje w nagłówku są teraz ikonami
+
 ## 0.9.0-alpha2
 
 - usunięty zielony nagłówek „Mój komputer" — Ustawienia są w dolnym pasku,

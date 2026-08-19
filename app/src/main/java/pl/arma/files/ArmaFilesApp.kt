@@ -18,7 +18,14 @@ class ArmaFilesApp : Application() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    val engine: OperationEngine by lazy { OperationEngine(FileRepository(this), scope) }
+    /**
+     * Jedno repozytorium na proces. Wcześniej ViewModel tworzył własne obok
+     * tego z silnika, przez co istniały dwie pule połączeń i dwa konteksty SMB
+     * — kopiowanie łączyło się z serwerem osobno od przeglądania.
+     */
+    val repository: FileRepository by lazy { FileRepository(this) }
+
+    val engine: OperationEngine by lazy { OperationEngine(repository, scope) }
 
     val trash: TrashStore by lazy { TrashStore(this) }
 
