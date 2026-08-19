@@ -47,9 +47,22 @@ keytool -list -v -keystore ~/.android/debug.keystore \
         -alias androiddebugkey -storepass android -keypass android | grep SHA1
 ```
 
-Dla wersji produkcyjnej trzeba podać odcisk swojego keystore'a. **Aplikacja
-podpisana innym kluczem nie zaloguje się** — Google wiąże Client ID
-z certyfikatem, i to właśnie ta weryfikacja zastępuje sekret klienta.
+Dla wydań podpisywanych naszym kluczem odcisk jest w
+`Dokumenty/ArmaFiles-klucz/PRZECZYTAJ.md`. **Aplikacja podpisana innym kluczem
+nie zaloguje się** — Google wiąże Client ID z certyfikatem, i to właśnie ta
+weryfikacja zastępuje sekret klienta.
+
+> **Przy publikacji w Google Play dochodzi drugi odcisk.** Obowiązuje tam Play
+> App Signing: aplikacja na telefonie użytkownika jest podpisana certyfikatem
+> Google'a, a nie naszym. Jeśli zarejestrujesz tylko odcisk naszego klucza,
+> logowanie zadziała w wersjach budowanych lokalnie i **zawiedzie u każdego,
+> kto zainstaluje aplikację ze sklepu**. Trzeba dodać oba: nasz oraz odcisk
+> z Play Console, z zakładki integralności aplikacji.
+>
+> Pamiętaj też, że zakres `drive` jest zastrzeżony — publiczna dystrybucja
+> wymaga weryfikacji OAuth i corocznego audytu bezpieczeństwa. Alternatywa
+> przy aplikacji w sklepie: zostawić projekt OAuth w trybie testowym, wtedy
+> Drive działa dla kont z listy testowej, a pozostali dostają komunikat.
 
 ## 4. Budowanie
 
