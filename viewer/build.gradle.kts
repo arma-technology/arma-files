@@ -9,7 +9,7 @@ plugins {
 // przenieść do innej aplikacji razem z samym katalogiem.
 android {
     namespace = "pl.arma.viewer"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26

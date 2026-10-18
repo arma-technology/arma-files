@@ -16,7 +16,13 @@
 - pendrive i karta SD pojawiają się na ekranie „Mój komputer” od razu po
   podłączeniu (pendrive z ikoną USB); po wyjęciu nośnika zamykają się jego
   karty i znikają jego pliki z wyników wyszukiwania i analizy
-- katalog główny pamięci podpisany nazwą nośnika zamiast „0”
+- katalog główny pamięci podpisany nazwą nośnika zamiast „0”, katalog
+  startowy serwera nazwą konta zamiast „Katalog główny”
+- pole portu w edytorze połączenia daje się wyczyścić i wpisać od nowa
+  (wcześniej ostatnia cyfra zostawała); puste oznacza port domyślny
+- plik otwarty z innej aplikacji pokazuje rozmiar zamiast „0 B”
+- Android 16 (API 36) jako docelowy; poprawka karty Język przy kontekście
+  z podmienionym językiem
 - po zmianie języka aplikacja zostaje na bieżącym ekranie, a tytuły kart
   przechodzą na nowy język
 

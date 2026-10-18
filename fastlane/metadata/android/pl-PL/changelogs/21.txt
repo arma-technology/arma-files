@@ -1,0 +1,4 @@
+• 21 języków i wybór języka w Ustawieniach
+• pendrive i karta SD widoczne od razu po podłączeniu
+• naprawione połączenia SMB, SFTP, FTPS i WebDAV
+• karta „O aplikacji”: licencja GPL i kod źródłowy

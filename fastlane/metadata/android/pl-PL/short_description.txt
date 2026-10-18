@@ -1,0 +1,1 @@
+Menedżer plików z podglądem PDF i CAD (DWG, DXF), pomiarami i FTP/SFTP/SMB

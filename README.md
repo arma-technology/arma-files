@@ -1,10 +1,11 @@
 # ARMA Files
 
 Menedżer plików dla Androida z przeglądarką PDF i rysunków CAD. Pamięć
-urządzenia i karty SD, Google Drive, OneDrive, Dropbox, FTP/FTPS, SFTP i SMB
+urządzenia, karty SD i pendrive'y, Google Drive, OneDrive, Dropbox, FTP/FTPS, SFTP, SMB
+i WebDAV
 w jednym miejscu, z podglądem większości plików bez wychodzenia z aplikacji.
 
-Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md)
+Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md) · [prywatność](PRIVACY.md)
 
 ## Co potrafi
 
@@ -37,7 +38,7 @@ przenieść do innej aplikacji — opis w [viewer/README.md](viewer/README.md).
 
 ## Budowanie
 
-Wymagania: JDK 17, Android SDK 35, NDK 28.2 i CMake 3.31 (dla modułu `dwg`),
+Wymagania: JDK 17, Android SDK 36, NDK 28.2 i CMake 3.31 (dla modułu `dwg`),
 [Git LFS](https://git-lfs.com) — skompilowane biblioteki LibreDWG są w LFS.
 
 ```bash
@@ -80,5 +81,5 @@ Twojego wyboru) dowolnej późniejszej. Rozpowszechniany jest bez jakiejkolwiek
 gwarancji.
 
 Dołączone biblioteki mają licencje zgodne z GPL-3.0: LibreDWG (GPL-3.0+),
-PdfBox-Android, AndroidX, Coil, OkHttp, AppAuth, Commons Net, SSHJ
+PdfBox-Android, AndroidX, Coil, OkHttp, Commons Net, SSHJ
 (Apache 2.0), jcifs-ng (LGPL-2.1), SLF4J (MIT).

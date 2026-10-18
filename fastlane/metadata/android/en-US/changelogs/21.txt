@@ -1,0 +1,4 @@
+• 21 languages and a language setting
+• USB drives and SD cards appear as soon as they are connected
+• fixed SMB, SFTP, FTPS and WebDAV connections
+• “About” card: GPL licence and source code

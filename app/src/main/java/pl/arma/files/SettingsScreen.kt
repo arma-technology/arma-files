@@ -1,5 +1,6 @@
 package pl.arma.files
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -112,7 +113,7 @@ fun SettingsScreen(
 /** Język aplikacji; nazwy języków zawsze w ich własnym brzmieniu. */
 @Composable
 private fun LanguageCard() {
-    val activity = LocalContext.current as? android.app.Activity ?: return
+    val activity = LocalActivity.current ?: return
     val current = remember { AppLanguage.current(activity) }
     var picking by remember { mutableStateOf(false) }
     val systemLabel = stringResource(R.string.settings_language_system)

@@ -1,0 +1,34 @@
+ARMA Files to menedżer plików dla ludzi, którzy pracują z rysunkami i dokumentacją — na budowie, w biurze projektowym i w domu. Otwiera PDF, DWG i DXF bez wychodzenia z aplikacji i pozwala na nich mierzyć.
+
+<b>Pliki</b>
+• ekran „Mój komputer”: przypięte foldery, pamięć wbudowana, karta SD i pendrive, serwery sieciowe
+• kopiowanie i przenoszenie w tle między dowolnymi miejscami, kosz, ZIP, zmiana nazwy, SHA-256
+• karty i dwa panele obok siebie
+• Ostatnie i Ulubione, sortowanie zapamiętywane dla każdego folderu
+• indeks plików: szybkie wyszukiwanie, największe pliki i foldery, stare pliki
+
+<b>Sieć i chmura</b>
+• FTP, FTPS, SFTP, SMB (Windows, NAS) i WebDAV, wiele kont każdego typu
+• wyszukiwanie serwerów w sieci lokalnej
+• Dysk Google, OneDrive i Dropbox przez systemowy wybór folderów
+• hasła szyfrowane kluczem z Android Keystore, ostrzeżenie przy zmianie klucza serwera
+
+<b>PDF</b>
+• powiększenie do 6400%, wyszukiwanie tekstu, warstwy
+• komentarze: oglądanie, dodawanie i zapis w pliku
+
+<b>CAD</b>
+• DXF i DWG (przez LibreDWG): warstwy, rodzaje linii, kreskowania, wymiary, wyszukiwanie tekstu
+
+<b>Pomiary w PDF i CAD</b>
+• przyciąganie do końców, przecięć, środków i prostopadłej
+• tryb osi do mierzenia odległości od ściany
+• skala odczytana z pliku, z tabelki rysunkowej albo z kalibracji na znanym wymiarze
+
+<b>Języki</b>
+21 języków, m.in. polski, angielski, niemiecki, czeski, słowacki, węgierski, ukraiński i rosyjski.
+
+<b>Prywatność i licencja</b>
+Bez reklam, bez analityki, bez zbierania danych. ARMA Files to wolne oprogramowanie na licencji GNU GPL 3.0 — kod źródłowy jest publiczny.
+
+Uprawnienie „Dostęp do wszystkich plików” jest potrzebne, bo zarządzanie plikami to podstawowa funkcja aplikacji. Bez niego aplikacja działa w trybie ograniczonym przez systemowy wybór folderów.

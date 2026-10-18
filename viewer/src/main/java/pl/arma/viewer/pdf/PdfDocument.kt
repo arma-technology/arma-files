@@ -169,6 +169,8 @@ class PdfDocument private constructor(
         return (text + shx).sortedWith(compareBy({ it.page }, { it.bounds.top.toInt() / 8 }, { it.bounds.left }))
     }
 
+    // PageMatchBounds tylko po sprawdzeniu systemSearch, jak w searchPage.
+    @SuppressLint("NewApi")
     private suspend fun searchText(query: String, onProgress: (Int) -> Unit): List<SheetMatch> =
         if (systemSearch) {
             withContext(Dispatchers.IO) {

@@ -1,0 +1,1 @@
+File manager with PDF and CAD (DWG, DXF) viewer, measuring and FTP/SFTP/SMB

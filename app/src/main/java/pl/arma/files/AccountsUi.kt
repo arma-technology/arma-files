@@ -180,6 +180,9 @@ fun AccountEditorSheet(
 
     // Bez stanu częściowego: po każdej zmianie treści (wynik testu, schowanie
     // klawiatury) arkusz wracał do połowy ekranu i przyciski chowały się pod nim.
+    // Port jako tekst: pole musi dać się wyczyścić i wpisać od nowa; pusty
+    // oznacza port domyślny protokołu.
+    var portText by remember(initial.id) { mutableStateOf(draft.port.toString()) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -205,6 +208,7 @@ fun AccountEditorSheet(
                                 type = type,
                                 port = if (wasDefault) RemoteAccount.defaultPort(type, draft.secure) else draft.port
                             )
+                            if (wasDefault) portText = draft.port.toString()
                         },
                         label = { Text(typeLabel(type)) }
                     )
@@ -226,8 +230,15 @@ fun AccountEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
-                value = draft.port.toString(),
-                onValueChange = { value -> value.toIntOrNull()?.let { draft = draft.copy(port = it) } },
+                value = portText,
+                onValueChange = { value ->
+                    val digits = value.filter(Char::isDigit).take(5)
+                    portText = digits
+                    val port = digits.toIntOrNull()?.takeIf { it in 1..65535 }
+                        ?: RemoteAccount.defaultPort(draft.type, draft.secure)
+                    draft = draft.copy(port = port)
+                },
+                placeholder = { Text(RemoteAccount.defaultPort(draft.type, draft.secure).toString()) },
                 label = { Text(stringResource(R.string.accounts_port)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -284,6 +295,7 @@ fun AccountEditorSheet(
                                 secure = secure,
                                 port = if (wasDefault) RemoteAccount.defaultPort(draft.type, secure) else draft.port
                             )
+                            if (wasDefault) portText = draft.port.toString()
                         }
                     )
                     Spacer(Modifier.width(10.dp))

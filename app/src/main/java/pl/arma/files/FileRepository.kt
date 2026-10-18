@@ -220,6 +220,17 @@ class FileRepository(private val context: Context) : FileOps {
         }
     }
 
+    /** Rozmiar i data bez łączenia z siecią — z pliku albo od dostawcy treści; zera, gdy nieznane. */
+    fun localSizeAndDate(uri: Uri): Pair<Long, Long> = runCatching {
+        when {
+            remote.isRemote(uri) -> 0L to 0L
+            uri.scheme == "file" -> fileFor(uri).let { it.length() to it.lastModified() }
+            else -> resolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { c ->
+                if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) to 0L else null
+            } ?: (0L to 0L)
+        }
+    }.getOrDefault(0L to 0L)
+
     fun persistTreePermission(treeUri: Uri) {
         val read = Intent.FLAG_GRANT_READ_URI_PERMISSION
         val readWrite = read or Intent.FLAG_GRANT_WRITE_URI_PERMISSION

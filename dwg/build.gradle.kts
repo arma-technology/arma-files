@@ -7,7 +7,7 @@ plugins {
 // (:viewer) nie zależała od kodu na licencji GPL.
 android {
     namespace = "pl.arma.dwg"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
 
     defaultConfig {

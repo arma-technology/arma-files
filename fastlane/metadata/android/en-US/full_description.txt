@@ -1,0 +1,34 @@
+ARMA Files is a file manager for people who work with drawings and documentation — on site, in the design office and at home. It opens PDF, DWG and DXF without leaving the app and lets you measure on them.
+
+<b>Files</b>
+• “My computer” screen: pinned folders, internal storage, SD card and USB drives, network servers
+• background copy and move between any locations, trash, ZIP, rename, SHA-256
+• tabs and two panes side by side
+• Recent and Favourites, sort order remembered per folder
+• file index: fast search, largest files and folders, old files
+
+<b>Network and cloud</b>
+• FTP, FTPS, SFTP, SMB (Windows, NAS) and WebDAV, several accounts of each type
+• discovery of servers in the local network
+• Google Drive, OneDrive and Dropbox through the system folder picker
+• passwords encrypted with an Android Keystore key, warning when a server key changes
+
+<b>PDF</b>
+• zoom up to 6400%, text search, layers
+• comments: view, add and save into the file
+
+<b>CAD</b>
+• DXF and DWG (via LibreDWG): layers, line types, hatches, dimensions, text search
+
+<b>Measuring on PDF and CAD</b>
+• snapping to endpoints, intersections, midpoints and perpendicular
+• axis mode for measuring distance from a wall
+• scale read from the file, from the title block or calibrated on a known dimension
+
+<b>Languages</b>
+21 languages, including English, Polish, German, Czech, Slovak, Hungarian, Ukrainian and Russian.
+
+<b>Privacy and licence</b>
+No ads, no analytics, no data collection. ARMA Files is free software under the GNU GPL 3.0 — the source code is public.
+
+“All files access” is required because managing files is the app's core function. Without it the app works in a limited mode through the system folder picker.

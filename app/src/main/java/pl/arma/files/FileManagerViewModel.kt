@@ -178,9 +178,19 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private fun secondary(): Pane? = secondaryPaneId?.let { id -> panes.firstOrNull { it.id == id } }
 
     private fun paneTitle(pane: Pane): String =
-        // Katalog główny nośnika ma nazwę nośnika, a nie „0” z /storage/emulated/0.
-        _deviceStorages.value.firstOrNull { it.rootUri == pane.currentDir }?.label
-            ?: tabTitle(pane.currentDir?.path)
+        pane.currentDir?.let(::rootLabel) ?: tabTitle(pane.currentDir?.path)
+
+    /**
+     * Nazwa katalogu, który jest początkiem miejsca: nośnik zamiast „0”
+     * z /storage/emulated/0, konto zamiast „/” serwera. Null dla zwykłych folderów.
+     */
+    fun rootLabel(uri: Uri): String? {
+        _deviceStorages.value.firstOrNull { it.rootUri == uri }?.let { return it.label }
+        if (RemoteRepository.isRemoteScheme(uri.scheme) && uri.path.orEmpty().trim('/').isEmpty()) {
+            return _remoteAccounts.value.firstOrNull { it.id == uri.authority }?.label?.ifBlank { null }
+        }
+        return null
+    }
 
     private fun tabTitle(path: String?) = PaneRules.tabTitle(path, text(R.string.home_title), text(R.string.panes_root))
 
@@ -1278,7 +1288,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun itemFromUri(uri: Uri): FileItem? {
         val name = repo.displayName(uri) ?: uri.lastPathSegment ?: text(R.string.common_file)
         val mime = getApplication<Application>().contentResolver.getType(uri) ?: guessMime(name)
-        return FileItem(uri, name, mime, 0, 0, mime == DIRECTORY_MIME)
+        // Plik otwarty z innej aplikacji: bez rozmiaru nagłówek podglądu pokazywał „0 B”.
+        val (size, modified) = repo.localSizeAndDate(uri)
+        return FileItem(uri, name, mime, size, modified, mime == DIRECTORY_MIME)
     }
 
     private fun updateSources() {

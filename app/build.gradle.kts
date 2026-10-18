@@ -21,14 +21,14 @@ val sourceUrl: String = local("sourceUrl")
 
 android {
     namespace = "pl.arma.files"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "pl.arma.files"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 20
-        versionName = "0.10.0"
+        targetSdk = 36
+        versionCode = 21
+        versionName = "0.10.1"
 
         buildConfigField("String", "SOURCE_URL", "\"$sourceUrl\"")
     }

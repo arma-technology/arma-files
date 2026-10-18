@@ -539,7 +539,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     Column(Modifier.fillMaxSize()) {
                         FolderHeader(
                             tab = tab,
-                            crumbs = breadcrumbs(root, currentDir, deviceStorages),
+                            crumbs = breadcrumbs(root, currentDir, vm::rootLabel),
                             onCrumb = vm::openPath,
                             searchOpen = searchOpen || query.isNotBlank(),
                             onSearchOpen = { open ->
@@ -1207,12 +1207,11 @@ private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
  * Rozbija bieżącą ścieżkę na klikalne człony, licząc od korzenia źródła.
  * Poza korzeniem nie schodzimy — użytkownik nie ma tam dostępu.
  */
-private fun breadcrumbs(root: Uri?, current: Uri?, storages: List<DeviceStorage>): List<Pair<String, Uri>> {
+private fun breadcrumbs(root: Uri?, current: Uri?, rootLabel: (Uri) -> String?): List<Pair<String, Uri>> {
     if (current == null) return emptyList()
     val rootPath = root?.path.orEmpty().trimEnd('/')
     val currentPath = current.path.orEmpty().trimEnd('/')
-    // Katalog główny nośnika podpisany nazwą nośnika, nie „0” z /storage/emulated/0.
-    val rootName = storages.firstOrNull { it.rootUri == root }?.label ?: folderLabel(root)
+    val rootName = root?.let(rootLabel) ?: folderLabel(root)
 
     if (root == null || !currentPath.startsWith(rootPath)) {
         return listOf(folderLabel(current) to current)
