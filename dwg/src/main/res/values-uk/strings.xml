@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Не вдалося обробити креслення DWG — файл завеликий або пошкоджений.</string>
+    <string name="dwg_no_result">Перетворення DWG не дало результату.</string>
+    <string name="dwg_start_failed">Не вдалося запустити перетворення DWG.</string>
+</resources>

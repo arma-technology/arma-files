@@ -1,5 +1,7 @@
 package pl.arma.files.ops
 
+import pl.arma.files.R
+import pl.arma.files.text
 import android.net.Uri
 import pl.arma.files.FileItem
 
@@ -66,11 +68,11 @@ data class Operation(
 ) {
     val label: String
         get() = when (kind) {
-            OperationKind.COPY -> "Kopiowanie"
-            OperationKind.MOVE -> "Przenoszenie"
-            OperationKind.TRASH -> "Przenoszenie do kosza"
-            OperationKind.DELETE -> "Usuwanie"
-            OperationKind.RESTORE -> "Przywracanie"
+            OperationKind.COPY -> text(R.string.op_copy)
+            OperationKind.MOVE -> text(R.string.op_move)
+            OperationKind.TRASH -> text(R.string.op_trash)
+            OperationKind.DELETE -> text(R.string.op_delete)
+            OperationKind.RESTORE -> text(R.string.op_restore)
         }
 
     val isFinished: Boolean

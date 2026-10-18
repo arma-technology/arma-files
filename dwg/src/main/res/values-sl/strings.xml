@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Risbe DWG ni bilo mogoče obdelati — datoteka je prevelika ali poškodovana.</string>
+    <string name="dwg_no_result">Pretvorba DWG ni dala rezultata.</string>
+    <string name="dwg_start_failed">Pretvorbe DWG ni bilo mogoče zagnati.</string>
+</resources>

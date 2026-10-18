@@ -1,5 +1,7 @@
 package pl.arma.files.ops
 
+import pl.arma.files.R
+import pl.arma.files.text
 import android.net.Uri
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -136,7 +138,7 @@ class OperationEngine(
                 }
                 else -> {
                     val target = operation.targetParent
-                        ?: throw IOException("Brak katalogu docelowego.")
+                        ?: throw IOException(text(R.string.err_no_target))
                     operation.sources.forEach { item ->
                         coroutineContext.ensureActive()
                         awaitResume()
@@ -152,7 +154,7 @@ class OperationEngine(
             record(id, OperationStatus.CANCELLED, context)
             throw cancellation
         } catch (error: Throwable) {
-            val message = error.message ?: "Operacja nie powiodła się."
+            val message = error.message ?: text(R.string.err_operation_failed)
             patch(id) { it.copy(status = OperationStatus.FAILED, error = message, skipped = context.skipped) }
             record(id, OperationStatus.FAILED, context, message)
         } finally {
@@ -228,7 +230,7 @@ class OperationEngine(
 
         if (item.isDirectory) {
             val created = ops.createFolder(targetParent, name)
-                ?: throw IOException("Nie udało się utworzyć folderu: $name")
+                ?: throw IOException(text(R.string.err_folder_create_named, name))
             context.remember(targetParent, name, item.copy(uri = created, name = name))
             ops.listChildren(item.uri).forEach { child ->
                 coroutineContext.ensureActive()
@@ -236,17 +238,17 @@ class OperationEngine(
                 transfer(child, created, context, startedAt, topLevel = false)
             }
             if (moving && !ops.delete(item)) {
-                throw IOException("Nie udało się usunąć katalogu źródłowego: ${item.name}")
+                throw IOException(text(R.string.err_source_folder_delete, item.name))
             }
             if (topLevel) context.pairs += item.uri.toString() to created.toString()
         } else {
             val mime = if (item.mimeType == DIRECTORY_MIME) "application/octet-stream" else item.mimeType
             val created = ops.createFile(targetParent, name, mime)
-                ?: throw IOException("Nie udało się utworzyć pliku: $name")
+                ?: throw IOException(text(R.string.err_file_create_named, name))
             context.remember(targetParent, name, item.copy(uri = created, name = name))
             copyBytes(item, created, context.operationId, name, startedAt)
             if (moving && !ops.delete(item)) {
-                throw IOException("Kopia powstała, ale nie udało się usunąć źródła: ${item.name}")
+                throw IOException(text(R.string.err_move_source_left, item.name))
             }
             if (topLevel) context.pairs += item.uri.toString() to created.toString()
         }
@@ -292,7 +294,7 @@ class OperationEngine(
                 deleteTree(child, context)
             }
         }
-        if (!ops.delete(item)) throw IOException("Nie udało się usunąć: ${item.name}")
+        if (!ops.delete(item)) throw IOException(text(R.string.err_delete_named, item.name))
         if (!item.isDirectory) {
             patch(context.operationId) {
                 it.copy(

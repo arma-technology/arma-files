@@ -1,6 +1,8 @@
 package pl.arma.files.net
 
 import okhttp3.Credentials
+import pl.arma.files.R
+import pl.arma.files.text
 import okhttp3.HttpUrl
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.MediaType.Companion.toMediaType
@@ -36,7 +38,7 @@ class WebDavBackend : RemoteBackend {
      * Destination, więc zmiana nazwy na „ąę” kończyła się wyjątkiem.
      */
     private fun url(account: RemoteAccount, path: String, directory: Boolean = false): String {
-        if (account.host.isBlank()) throw IOException("WebDAV: brak adresu serwera.")
+        if (account.host.isBlank()) throw IOException(text(R.string.dav_no_host))
         val builder = HttpUrl.Builder()
             .scheme(if (account.secure) "https" else "http")
             .host(account.host)
@@ -66,11 +68,11 @@ class WebDavBackend : RemoteBackend {
         }
 
     private fun describe(code: Int): String = when (code) {
-        401, 403 -> "WebDAV: błędny login lub hasło."
-        404 -> "WebDAV: zasób nie istnieje."
-        405 -> "WebDAV: serwer odrzucił operację."
-        507 -> "WebDAV: brak miejsca na serwerze."
-        else -> "WebDAV: serwer odpowiedział błędem $code."
+        401, 403 -> text(R.string.dav_auth)
+        404 -> text(R.string.dav_missing)
+        405 -> text(R.string.dav_rejected)
+        507 -> text(R.string.dav_full)
+        else -> text(R.string.dav_error, code)
     }
 
     private val propfindBody = """
@@ -172,7 +174,7 @@ class WebDavBackend : RemoteBackend {
         }
         val body = response.body ?: run {
             response.close()
-            throw IOException("WebDAV: pusta odpowiedź serwera.")
+            throw IOException(text(R.string.dav_empty))
         }
         return object : InputStream() {
             private val source = body.byteStream()

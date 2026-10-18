@@ -176,7 +176,7 @@ class PdfDocument private constructor(
                 for (index in 0 until pageCount) {
                     ensureActive()
                     val found = lock.withLock {
-                        check(!closed) { "Dokument PDF jest zamknięty." }
+                        check(!closed) { "PDF document is closed." }
                         searchPage(index, query)
                     }
                     found.forEach { match -> matches += SheetMatch(index, match.bounds) }
@@ -236,8 +236,8 @@ class PdfDocument private constructor(
                 // Wycinek zamówiony w trakcie gestu bywa nieaktualny, zanim
                 // doczeka się blokady — wtedy nie ma po co go rysować.
                 ensureActive()
-                check(!closed) { "Dokument PDF jest zamknięty." }
-                require(index in 0 until pageCount) { "Nieprawidłowy numer strony PDF." }
+                check(!closed) { "PDF document is closed." }
+                require(index in 0 until pageCount) { "Invalid PDF page number." }
                 renderer.openPage(index).use(block)
             }
         }

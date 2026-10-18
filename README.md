@@ -27,6 +27,11 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md)
   i prostopadłej, tryb osi do mierzenia odległości od ściany; skala odczytana
   z pliku, z tabelki rysunkowej albo z kalibracji
 
+**Języki:** angielski, polski, albański, białoruski, bośniacki, bułgarski,
+chorwacki, czeski, estoński, litewski, łotewski, macedoński, niderlandzki,
+niemiecki, rosyjski, rumuński, serbski, słowacki, słoweński, ukraiński,
+węgierski. Poprawki tłumaczeń są mile widziane — pliki `res/values-*/strings.xml`.
+
 Przeglądarka PDF i CAD to osobne moduły (`viewer/`, `dwg/`), które można
 przenieść do innej aplikacji — opis w [viewer/README.md](viewer/README.md).
 

@@ -1,6 +1,8 @@
 package pl.arma.files.net
 
 import net.schmizz.sshj.SSHClient
+import pl.arma.files.R
+import pl.arma.files.text
 import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
 import net.schmizz.sshj.sftp.SFTPClient
@@ -45,7 +47,7 @@ class SftpBackend(
     )
 
     private fun connect(account: RemoteAccount): Session {
-        if (account.host.isBlank()) throw IOException("SFTP: brak adresu serwera.")
+        if (account.host.isBlank()) throw IOException(text(R.string.sftp_no_host))
         installBouncyCastle
         val ssh = SSHClient()
         ssh.addHostKeyVerifier(knownHosts?.let(::TrustOnFirstUse) ?: PromiscuousVerifier())
@@ -62,13 +64,13 @@ class SftpBackend(
             )
         }.onFailure {
             runCatching { ssh.disconnect() }
-            throw IOException("SFTP: błędny login lub hasło.")
+            throw IOException(text(R.string.sftp_auth))
         }
         // Serwer bez podsystemu SFTP nie odpowiada na jego otwarcie, a sshj
         // czeka na tę odpowiedź bez limitu — aplikacja wisiała na zawsze.
         val sftp = runCatching { withTimeout(20_000) { ssh.newSFTPClient() } }.getOrElse {
             runCatching { ssh.disconnect() }
-            throw IOException("SFTP: serwer nie udostępnia SFTP.")
+            throw IOException(text(R.string.sftp_no_subsystem))
         }
         if (account.rootPath.isBlank()) {
             homes.computeIfAbsent(account.id) { runCatching { sftp.canonicalize(".") }.getOrDefault("/") }
@@ -97,7 +99,7 @@ class SftpBackend(
         }
 
         override fun hostKeyChangedAction(hostname: String, key: PublicKey): Boolean =
-            throw IOException("SFTP: klucz serwera $hostname się zmienił. Jeśli serwer nie był przeinstalowany, ktoś może podszywać się pod niego.")
+            throw IOException(text(R.string.sftp_key_changed, hostname))
     }
 
     private fun close(session: Session) {
@@ -178,7 +180,7 @@ class SftpBackend(
     override fun openInput(account: RemoteAccount, path: String): InputStream {
         val session = connect(account)
         val handle = runCatching { session.sftp.open(path(account, path)) }
-            .getOrElse { close(session); throw IOException("SFTP: nie można otworzyć pliku.") }
+            .getOrElse { close(session); throw IOException(text(R.string.sftp_open_failed)) }
         // Kilka żądań odczytu w locie naraz; pojedyncze czekało na każdą
         // odpowiedź i w sieci z opóźnieniem transfer spadał kilkukrotnie.
         val stream = handle.ReadAheadRemoteFileInputStream(16)
@@ -200,7 +202,7 @@ class SftpBackend(
                 path(account, path),
                 EnumSet.of(OpenMode.WRITE, OpenMode.CREAT, OpenMode.TRUNC)
             )
-        }.getOrElse { close(session); throw IOException("SFTP: nie można zapisać pliku.") }
+        }.getOrElse { close(session); throw IOException(text(R.string.sftp_write_failed)) }
         val stream = handle.RemoteFileOutputStream(0, 16)
         return object : OutputStream() {
             override fun write(b: Int) = stream.write(b)

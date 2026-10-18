@@ -1,5 +1,7 @@
 package pl.arma.viewer.cad
 
+import pl.arma.viewer.R
+import pl.arma.viewer.ViewerText
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
@@ -56,14 +58,14 @@ class CadDocument private constructor(
 
     private val _paper = MutableStateFlow(background.paper)
     override val paperColor: StateFlow<Int> = _paper.asStateFlow()
-    override val backgroundModes: List<String> = CadBackground.entries.map { it.label }
+    override val backgroundModes: List<String> = CadBackground.entries.map { ViewerText.get(it.label) }
     override val backgroundMode: Int get() = background.ordinal
 
     override val notes: List<String> = buildList {
-        if (truncated) add("Rysunek jest bardzo duży — pokazano tylko jego część.")
+        if (truncated) add(ViewerText.get(R.string.viewer_cad_truncated))
         val unsupported = scene.skipped.filterKeys { it in setOf("3DSOLID", "REGION", "BODY", "SURFACE", "MESH", "OLE2FRAME", "PROXY", "ACAD_PROXY_ENTITY") }
         if (unsupported.isNotEmpty()) {
-            add("Pominięto obiekty, których nie da się narysować: " + unsupported.entries.joinToString { "${it.key} (${it.value})" })
+            add(ViewerText.get(R.string.viewer_cad_skipped, unsupported.entries.joinToString { "${it.key} (${it.value})" }))
         }
     }
 
@@ -184,7 +186,7 @@ class CadDocument private constructor(
             SheetScale(mm, unitLabel(mm), ScaleSource.UNITS)
         } else {
             // Rysunek bez jednostek: w polskich projektach to prawie zawsze milimetry.
-            SheetScale(1.0, "mm (założone)", ScaleSource.UNITS)
+            SheetScale(1.0, ViewerText.get(R.string.viewer_cad_assumed_mm), ScaleSource.UNITS)
         }
     }
 
@@ -192,9 +194,9 @@ class CadDocument private constructor(
         1.0 -> "mm"
         10.0 -> "cm"
         1000.0 -> "m"
-        25.4 -> "cal"
-        304.8 -> "stopa"
-        else -> "${mm} mm/j."
+        25.4 -> ViewerText.get(R.string.viewer_unit_inch)
+        304.8 -> ViewerText.get(R.string.viewer_unit_foot)
+        else -> ViewerText.get(R.string.viewer_mm_per_unit, mm.toString())
     }
 
     override suspend fun setLayerVisible(id: String, visible: Boolean) {
@@ -218,12 +220,12 @@ class CadDocument private constructor(
          * Czyta DXF i buduje scenę. Pliki z LibreDWG przychodzą jako binarny DXF —
          * czytnik rozpoznaje format sam.
          */
-        @Suppress("UNUSED_PARAMETER")
         suspend fun open(context: Context, file: File, kind: String): CadDocument = withContext(Dispatchers.IO) {
+            ViewerText.init(context)
             val builder = CadSceneBuilder()
             val drawing = file.inputStream().use { DxfParser.parse(it, builder::collect) }
             val scene = builder.build(drawing)
-            check(scene.strokes.count + scene.fills.count + scene.texts.size > 0) { "Rysunek nie zawiera nic do pokazania w obszarze modelu." }
+            check(scene.strokes.count + scene.fills.count + scene.texts.size > 0) { ViewerText.get(R.string.viewer_cad_empty) }
             CadDocument(scene, kind, builder.truncated)
         }
 

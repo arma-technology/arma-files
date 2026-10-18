@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Neizdevās apstrādāt DWG rasējumu — fails ir pārāk liels vai bojāts.</string>
+    <string name="dwg_no_result">DWG pārveide nedeva rezultātu.</string>
+    <string name="dwg_start_failed">Neizdevās palaist DWG pārveidi.</string>
+</resources>

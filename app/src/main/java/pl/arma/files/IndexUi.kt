@@ -60,6 +60,8 @@ import pl.arma.files.ui.theme.LocalFileTypeColors
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import pl.arma.files.index.IndexCategory
 import pl.arma.files.index.IndexProgress
 
@@ -106,11 +108,11 @@ fun CategorySearchRow(
                         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Buduję indeks… ${progress.scanned}",
+                            stringResource(R.string.index_building, progress.scanned),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.weight(1f)
                         )
-                        TextButton(onClick = onCancel) { Text("Przerwij") }
+                        TextButton(onClick = onCancel) { Text(stringResource(R.string.index_stop)) }
                     }
 
                     // Bez indeksu nie ma czego przeszukiwać, więc zamiast pola
@@ -120,12 +122,12 @@ fun CategorySearchRow(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "Zbuduj indeks, aby szukać w całej pamięci",
+                            stringResource(R.string.index_build_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
-                        TextButton(onClick = onBuild) { Text("Zbuduj") }
+                        TextButton(onClick = onBuild) { Text(stringResource(R.string.index_build)) }
                     }
 
                     else -> TextField(
@@ -133,7 +135,7 @@ fun CategorySearchRow(
                         onValueChange = onQuery,
                         modifier = Modifier.fillMaxWidth().focusRequester(focus),
                         singleLine = true,
-                        placeholder = { Text("Szukaj we wszystkich plikach") },
+                        placeholder = { Text(stringResource(R.string.index_search_all)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -149,13 +151,13 @@ fun CategorySearchRow(
                 IconButton(onClick = onRefresh) {
                     Icon(
                         Icons.Default.Refresh,
-                        "Odśwież indeks",
+                        stringResource(R.string.index_refresh),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             IconButton(onClick = { expanded = false; onQuery("") }) {
-                Icon(Icons.Default.Close, "Zamknij wyszukiwanie")
+                Icon(Icons.Default.Close, stringResource(R.string.common_close_search))
             }
         } else {
             LazyRow(
@@ -166,7 +168,7 @@ fun CategorySearchRow(
                 items(categoryEntries) { (category, label) ->
                     SuggestionChip(
                         onClick = { onPick(category) },
-                        label = { Text(label.first) },
+                        label = { Text(stringResource(label.first)) },
                         icon = { Icon(label.second, null, Modifier.size(17.dp), tint = indexCategoryColor(category)) },
                         colors = SuggestionChipDefaults.suggestionChipColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -184,7 +186,7 @@ fun CategorySearchRow(
             ) {
                 Icon(
                     Icons.Default.Search,
-                    "Szukaj we wszystkich plikach",
+                    stringResource(R.string.index_search_all),
                     Modifier.padding(9.dp).size(20.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -208,12 +210,12 @@ private fun indexCategoryColor(category: IndexCategory): Color {
 }
 
 private val categoryEntries = listOf(
-    IndexCategory.IMAGE to ("Obrazy" to Icons.Default.Image),
-    IndexCategory.VIDEO to ("Filmy" to Icons.Default.Movie),
-    IndexCategory.AUDIO to ("Audio" to Icons.Default.AudioFile),
-    IndexCategory.DOCUMENT to ("Dokumenty" to Icons.Default.Description),
-    IndexCategory.ARCHIVE to ("Archiwa" to Icons.Default.FolderZip),
-    IndexCategory.APK to ("APK" to Icons.Default.Android)
+    IndexCategory.IMAGE to (R.string.category_images to Icons.Default.Image),
+    IndexCategory.VIDEO to (R.string.category_videos to Icons.Default.Movie),
+    IndexCategory.AUDIO to (R.string.category_audio to Icons.Default.AudioFile),
+    IndexCategory.DOCUMENT to (R.string.category_documents to Icons.Default.Description),
+    IndexCategory.ARCHIVE to (R.string.category_archives to Icons.Default.FolderZip),
+    IndexCategory.APK to (R.string.category_apk to Icons.Default.Android)
 )
 
 /** Analiza zajętości: fakty do samodzielnej oceny, bez kasowania za użytkownika. */
@@ -231,10 +233,10 @@ fun StorageAnalysisSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
-            Text("Analiza pamięci", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.analysis_title), style = MaterialTheme.typography.titleMedium)
             analysis.stats?.let { stats ->
                 Text(
-                    "${stats.files} plików · ${stats.folders} katalogów · ${formatSize(stats.totalBytes)}",
+                    pluralStringResource(R.plurals.n_files, stats.files.toInt(), stats.files.toInt()) + " · " + pluralStringResource(R.plurals.n_folders, stats.folders.toInt(), stats.folders.toInt()) + " · " + formatSize(stats.totalBytes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -242,9 +244,14 @@ fun StorageAnalysisSheet(
             Spacer(Modifier.height(10.dp))
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(listOf("Największe pliki", "Największe katalogi", "Stare pliki", "Duplikaty")) { label ->
-                    val target = listOf("Największe pliki", "Największe katalogi", "Stare pliki", "Duplikaty")
-                        .indexOf(label)
+                val sections = listOf(
+                    R.string.analysis_largest_files,
+                    R.string.analysis_largest_folders,
+                    R.string.analysis_old_files,
+                    R.string.analysis_duplicates
+                )
+                items(sections.size) { target ->
+                    val label = stringResource(sections[target])
                     AssistChip(
                         onClick = {
                             section = target
@@ -261,7 +268,7 @@ fun StorageAnalysisSheet(
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        if (section == 3) "Porównuję zawartość plików…" else "Liczę…",
+                        if (section == 3) stringResource(R.string.analysis_comparing) else stringResource(R.string.analysis_counting),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -276,11 +283,11 @@ fun StorageAnalysisSheet(
                         FileLine(
                             folder.parentUri.trimEnd('/').substringAfterLast('/'),
                             formatSize(folder.totalBytes),
-                            "${folder.fileCount} plików · ${folder.parentUri.removePrefix("file://")}"
+                            pluralStringResource(R.plurals.n_files, folder.fileCount.toInt(), folder.fileCount.toInt()) + " · " + folder.parentUri.removePrefix("file://")
                         ) { }
                     }
                     2 -> items(analysis.oldFiles, key = { it.uri.toString() }) { item ->
-                        FileLine(item.name, formatSize(item.size), "ostatnia zmiana: " + parentOf(item)) {
+                        FileLine(item.name, formatSize(item.size), java.text.DateFormat.getDateInstance().format(java.util.Date(item.lastModified)) + " · " + parentOf(item)) {
                             onOpen(item)
                         }
                     }
@@ -288,9 +295,7 @@ fun StorageAnalysisSheet(
                         if (duplicates.isEmpty() && !busy) {
                             item {
                                 Text(
-                                    "Nie znaleziono duplikatów wśród plików powyżej 4 KB. " +
-                                        "Porównywany jest skrót SHA-256, więc pliki o tym samym " +
-                                        "rozmiarze, ale innej zawartości nie są zliczane.",
+                                    stringResource(R.string.analysis_no_duplicates),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -299,8 +304,7 @@ fun StorageAnalysisSheet(
                         duplicates.forEach { set ->
                             item {
                                 Text(
-                                    "${set.files.size} kopii · ${formatSize(set.size)} każda " +
-                                        "· do odzyskania ${formatSize(set.size * (set.files.size - 1))}",
+                                    stringResource(R.string.analysis_duplicate_detail, pluralStringResource(R.plurals.n_copies, set.files.size, set.files.size), formatSize(set.size), formatSize(set.size * (set.files.size - 1))),
                                     style = MaterialTheme.typography.labelLarge,
                                     modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
                                 )

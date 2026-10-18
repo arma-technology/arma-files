@@ -73,7 +73,7 @@ class RemoteRepository(
 
     private fun accountFor(uri: Uri): RemoteAccount =
         lookup(uri.authority)
-            ?: throw IOException("Połączenie nie istnieje lub zostało usunięte.")
+            ?: throw IOException(text(R.string.err_account_missing))
 
     private fun pathOf(uri: Uri): String = RemotePaths.normalize(uri.path.orEmpty())
 
@@ -126,7 +126,7 @@ class RemoteRepository(
     fun rename(item: FileItem, newName: String): Uri = withAccount(item.uri) { backend, account, path ->
         val target = RemotePaths.child(RemotePaths.parentOf(path), newName)
         if (!backend.move(account, path, target)) {
-            throw IOException("Zmiana nazwy nie powiodła się.")
+            throw IOException(text(R.string.err_rename_failed))
         }
         uriFor(item.uri, target)
     }

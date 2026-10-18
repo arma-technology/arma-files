@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">DWG-цртежот не можеше да се обработи — датотеката е преголема или оштетена.</string>
+    <string name="dwg_no_result">Конверзијата на DWG не даде резултат.</string>
+    <string name="dwg_start_failed">Конверзијата на DWG не можеше да се стартува.</string>
+</resources>

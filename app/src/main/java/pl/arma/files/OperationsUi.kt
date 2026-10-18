@@ -43,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import pl.arma.files.ops.ConflictAction
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
@@ -62,41 +64,41 @@ fun ConflictDialog(conflict: PendingConflict, onDecision: (ConflictDecision) -> 
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { },
-        title = { Text(if (conflict.isDirectory) "Folder już istnieje" else "Plik już istnieje") },
+        title = { Text(if (conflict.isDirectory) stringResource(R.string.conflict_folder_exists) else stringResource(R.string.conflict_file_exists)) },
         text = {
             Column {
                 Text(conflict.name, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(12.dp))
                 if (!conflict.isDirectory) {
                     Text(
-                        "Nowy: ${formatSize(conflict.sourceSize)}",
+                        stringResource(R.string.conflict_new, formatSize(conflict.sourceSize)),
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        "Istniejący: ${formatSize(conflict.targetSize)}",
+                        stringResource(R.string.conflict_existing, formatSize(conflict.targetSize)),
                         style = MaterialTheme.typography.bodySmall
                     )
                     Spacer(Modifier.height(12.dp))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = applyToAll, onCheckedChange = { applyToAll = it })
-                    Text("Zastosuj do wszystkich", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.conflict_apply_all), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 onDecision(ConflictDecision(ConflictAction.KEEP_BOTH, applyToAll))
-            }) { Text("Zachowaj oba") }
+            }) { Text(stringResource(R.string.conflict_keep_both)) }
         },
         dismissButton = {
             Row {
                 TextButton(onClick = {
                     onDecision(ConflictDecision(ConflictAction.SKIP, applyToAll))
-                }) { Text("Pomiń") }
+                }) { Text(stringResource(R.string.conflict_skip)) }
                 TextButton(onClick = {
                     onDecision(ConflictDecision(ConflictAction.REPLACE, applyToAll))
-                }) { Text("Zamień") }
+                }) { Text(stringResource(R.string.conflict_replace)) }
             }
         }
     )
@@ -121,7 +123,7 @@ fun OperationBar(
                 Column(Modifier.weight(1f)) {
                     Text(
                         if (active.status == OperationStatus.PAUSED) {
-                            "${active.label} — wstrzymane"
+                            stringResource(R.string.ops_paused_suffix, active.label)
                         } else {
                             active.label
                         },
@@ -137,17 +139,17 @@ fun OperationBar(
                 }
                 if (active.status == OperationStatus.PAUSED) {
                     IconButton(onClick = { onResume(active.id) }) {
-                        Icon(Icons.Default.PlayArrow, "Wznów")
+                        Icon(Icons.Default.PlayArrow, stringResource(R.string.ops_resume))
                     }
                 } else {
                     IconButton(onClick = { onPause(active.id) }) {
-                        Icon(Icons.Default.Pause, "Wstrzymaj")
+                        Icon(Icons.Default.Pause, stringResource(R.string.ops_pause))
                     }
                 }
                 IconButton(onClick = { onCancel(active.id) }) {
-                    Icon(Icons.Default.Close, "Anuluj")
+                    Icon(Icons.Default.Close, stringResource(R.string.common_cancel))
                 }
-                TextButton(onClick = onOpenQueue) { Text("Kolejka") }
+                TextButton(onClick = onOpenQueue) { Text(stringResource(R.string.ops_queue)) }
             }
             Spacer(Modifier.height(6.dp))
             if (active.progress.bytesTotal > 0L) {
@@ -171,11 +173,11 @@ private fun operationDetails(operation: Operation, waiting: Int): String {
         progress.currentName.takeIf { it.isNotBlank() },
         "${progress.filesDone}/${progress.filesTotal}",
         if (progress.bytesTotal > 0L) {
-            "${formatSize(progress.bytesDone)} z ${formatSize(progress.bytesTotal)}"
+            text(R.string.ops_bytes_of, formatSize(progress.bytesDone), formatSize(progress.bytesTotal))
         } else null,
         if (!paused && progress.bytesPerSecond > 0L) "${formatSize(progress.bytesPerSecond)}/s" else null,
-        if (!paused) formatRemaining(progress.secondsRemaining)?.let { "pozostało $it" } else null,
-        if (waiting > 0) "w kolejce: $waiting" else null
+        if (!paused) formatRemaining(progress.secondsRemaining)?.let { text(R.string.ops_remaining, it) } else null,
+        if (waiting > 0) text(R.string.ops_waiting, waiting) else null
     ).joinToString(" · ")
 }
 
@@ -192,13 +194,13 @@ fun OperationQueueSheet(
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Kolejka operacji", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                TextButton(onClick = onClearFinished) { Text("Wyczyść zakończone") }
+                Text(stringResource(R.string.ops_queue_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = onClearFinished) { Text(stringResource(R.string.ops_clear_finished)) }
             }
             Spacer(Modifier.height(8.dp))
             if (operations.isEmpty()) {
                 Text(
-                    "Brak operacji.",
+                    stringResource(R.string.ops_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -227,15 +229,15 @@ fun OperationQueueSheet(
                             if (!operation.isFinished) {
                                 if (operation.status == OperationStatus.PAUSED) {
                                     IconButton(onClick = { onResume(operation.id) }) {
-                                        Icon(Icons.Default.PlayArrow, "Wznów")
+                                        Icon(Icons.Default.PlayArrow, stringResource(R.string.ops_resume))
                                     }
                                 } else {
                                     IconButton(onClick = { onPause(operation.id) }) {
-                                        Icon(Icons.Default.Pause, "Wstrzymaj")
+                                        Icon(Icons.Default.Pause, stringResource(R.string.ops_pause))
                                     }
                                 }
                                 IconButton(onClick = { onCancel(operation.id) }) {
-                                    Icon(Icons.Default.Close, "Anuluj")
+                                    Icon(Icons.Default.Close, stringResource(R.string.common_cancel))
                                 }
                             }
                         }
@@ -255,12 +257,12 @@ fun OperationQueueSheet(
 }
 
 private fun statusLabel(operation: Operation): String = when (operation.status) {
-    OperationStatus.QUEUED -> "oczekuje"
-    OperationStatus.RUNNING -> "w toku"
-    OperationStatus.PAUSED -> "wstrzymane"
-    OperationStatus.COMPLETED -> if (operation.skipped > 0) "gotowe, pominięto ${operation.skipped}" else "gotowe"
-    OperationStatus.FAILED -> "błąd"
-    OperationStatus.CANCELLED -> "anulowane"
+    OperationStatus.QUEUED -> text(R.string.ops_status_queued)
+    OperationStatus.RUNNING -> text(R.string.ops_status_running)
+    OperationStatus.PAUSED -> text(R.string.ops_status_paused)
+    OperationStatus.COMPLETED -> if (operation.skipped > 0) text(R.string.ops_status_done_skipped, operation.skipped) else text(R.string.ops_status_done)
+    OperationStatus.FAILED -> text(R.string.ops_status_failed)
+    OperationStatus.CANCELLED -> text(R.string.ops_status_cancelled)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -274,21 +276,21 @@ fun TrashSheet(
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Kosz", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.trash_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 if (entries.isNotEmpty()) {
-                    TextButton(onClick = onEmpty) { Text("Opróżnij") }
+                    TextButton(onClick = onEmpty) { Text(stringResource(R.string.trash_empty_action)) }
                 }
             }
             Spacer(Modifier.height(4.dp))
             if (entries.isEmpty()) {
                 Text(
-                    "Kosz jest pusty. Usunięte pliki trafiają tutaj i zostają na tym samym nośniku, więc nie zajmują dodatkowego miejsca.",
+                    stringResource(R.string.trash_empty_text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
                 Text(
-                    "${entries.size} elementów · ${formatSize(entries.sumOf { it.size })}",
+                    pluralStringResource(R.plurals.n_items, entries.size, entries.size) + " · " + formatSize(entries.sumOf { it.size }),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -311,7 +313,7 @@ fun TrashSheet(
                             }
                             Spacer(Modifier.width(8.dp))
                             IconButton(onClick = { onRestore(listOf(entry)) }) {
-                                Icon(Icons.Default.Restore, "Przywróć")
+                                Icon(Icons.Default.Restore, stringResource(R.string.trash_restore))
                             }
                         }
                         HorizontalDivider()
@@ -334,18 +336,18 @@ fun OperationHistorySheet(
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Historia operacji",
+                    stringResource(R.string.history_title),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
                 if (history.isNotEmpty()) {
-                    TextButton(onClick = onClear) { Text("Wyczyść") }
+                    TextButton(onClick = onClear) { Text(stringResource(R.string.history_clear)) }
                 }
             }
             Spacer(Modifier.height(4.dp))
             if (history.isEmpty()) {
                 Text(
-                    "Tu pojawią się zakończone operacje. Kopiowanie, przeniesienie i kosz można stąd cofnąć.",
+                    stringResource(R.string.history_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -375,7 +377,7 @@ fun OperationHistorySheet(
                             )
                         }
                         if (record.undoable) {
-                            TextButton(onClick = { onUndo(record) }) { Text("Cofnij") }
+                            TextButton(onClick = { onUndo(record) }) { Text(stringResource(R.string.common_undo)) }
                         }
                     }
                     HorizontalDivider()
@@ -386,24 +388,24 @@ fun OperationHistorySheet(
 }
 
 private fun recordLabel(record: OperationRecord): String = when (record.kind) {
-    pl.arma.files.ops.OperationKind.COPY -> "Kopiowanie"
-    pl.arma.files.ops.OperationKind.MOVE -> "Przenoszenie"
-    pl.arma.files.ops.OperationKind.TRASH -> "Do kosza"
-    pl.arma.files.ops.OperationKind.DELETE -> "Usunięcie"
-    pl.arma.files.ops.OperationKind.RESTORE -> "Przywrócenie"
+    pl.arma.files.ops.OperationKind.COPY -> text(R.string.history_copy)
+    pl.arma.files.ops.OperationKind.MOVE -> text(R.string.history_move)
+    pl.arma.files.ops.OperationKind.TRASH -> text(R.string.history_trash)
+    pl.arma.files.ops.OperationKind.DELETE -> text(R.string.history_delete)
+    pl.arma.files.ops.OperationKind.RESTORE -> text(R.string.history_restore)
 }
 
 private fun recordDetails(record: OperationRecord): String {
     val status = when (record.status) {
-        OperationStatus.COMPLETED -> "gotowe"
-        OperationStatus.FAILED -> record.error ?: "błąd"
-        OperationStatus.CANCELLED -> "anulowane"
+        OperationStatus.COMPLETED -> text(R.string.ops_status_done)
+        OperationStatus.FAILED -> record.error ?: text(R.string.ops_status_failed)
+        OperationStatus.CANCELLED -> text(R.string.ops_status_cancelled)
         else -> "—"
     }
     return listOfNotNull(
         status,
         if (record.bytes > 0L) formatSize(record.bytes) else null,
-        if (record.skipped > 0) "pominięto ${record.skipped}" else null,
+        if (record.skipped > 0) text(R.string.ops_skipped, record.skipped) else null,
         formatClock(record.finishedAt)
     ).joinToString(" · ")
 }
@@ -417,10 +419,10 @@ fun TrashButton(count: Int, onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         if (count > 0) {
             BadgedBox(badge = { Badge { Text(count.toString()) } }) {
-                Icon(Icons.Default.Delete, "Kosz ($count)", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Delete, stringResource(R.string.trash_with_count, count), tint = MaterialTheme.colorScheme.primary)
             }
         } else {
-            Icon(Icons.Default.Delete, "Kosz", tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Default.Delete, stringResource(R.string.trash_title), tint = MaterialTheme.colorScheme.primary)
         }
     }
 }

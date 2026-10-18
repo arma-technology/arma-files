@@ -140,7 +140,7 @@ class FileRepository(private val context: Context) : FileOps {
         val created = mutableListOf<Uri>()
         sources.forEach { source ->
             created += copyInternal(source, targetParent)
-                ?: throw IOException("Nie udało się skopiować: ${source.name}")
+                ?: throw IOException(text(R.string.err_copy_failed, source.name))
         }
         created
     }
@@ -148,7 +148,7 @@ class FileRepository(private val context: Context) : FileOps {
     suspend fun createZip(items: List<FileItem>, targetParent: Uri, archiveName: String): Uri = withContext(Dispatchers.IO) {
         val safeName = archiveName.trim().let { if (it.endsWith(".zip", true)) it else "$it.zip" }
         val zipUri = createFileBlocking(targetParent, safeName, "application/zip")
-            ?: throw IOException("Nie udało się utworzyć archiwum.")
+            ?: throw IOException(text(R.string.err_zip_create))
         try {
             openOutput(zipUri).use { raw ->
                 ZipOutputStream(BufferedOutputStream(raw)).use { zip ->
@@ -165,7 +165,7 @@ class FileRepository(private val context: Context) : FileOps {
     suspend fun extractZip(zipItem: FileItem, targetParent: Uri): Uri = withContext(Dispatchers.IO) {
         val base = zipItem.name.substringBeforeLast('.', zipItem.name).ifBlank { "Rozpakowane" }
         val outputRoot = createFolderBlocking(targetParent, base)
-            ?: throw IOException("Nie udało się utworzyć katalogu docelowego.")
+            ?: throw IOException(text(R.string.err_target_folder))
         val directories = mutableMapOf("" to outputRoot)
 
         openInput(zipItem.uri).use { raw ->
@@ -181,7 +181,7 @@ class FileRepository(private val context: Context) : FileOps {
                             val fileName = cleanPath.substringAfterLast('/')
                             val parent = ensureDirectoryPath(outputRoot, parentPath, directories)
                             val outUri = createFileBlocking(parent, fileName, guessMime(fileName))
-                                ?: throw IOException("Nie udało się utworzyć: $fileName")
+                                ?: throw IOException(text(R.string.err_create_named, fileName))
                             openOutput(outUri).use { out -> zip.copyTo(out) }
                         }
                     }
@@ -246,13 +246,13 @@ class FileRepository(private val context: Context) : FileOps {
     override fun openInput(uri: Uri): InputStream = when {
         remote.isRemote(uri) -> remote.openInput(uri)
         uri.scheme == "file" -> FileInputStream(fileFor(uri))
-        else -> resolver.openInputStream(uri) ?: throw IOException("Nie można otworzyć pliku do odczytu.")
+        else -> resolver.openInputStream(uri) ?: throw IOException(text(R.string.err_open_read))
     }
 
     override fun openOutput(uri: Uri): OutputStream = when {
         remote.isRemote(uri) -> remote.openOutput(uri)
         uri.scheme == "file" -> FileOutputStream(fileFor(uri), false)
-        else -> resolver.openOutputStream(uri, "w") ?: throw IOException("Nie można otworzyć pliku do zapisu.")
+        else -> resolver.openOutputStream(uri, "w") ?: throw IOException(text(R.string.err_open_write))
     }
 
     private fun deleteBlocking(item: FileItem): Boolean = when {
@@ -268,7 +268,7 @@ class FileRepository(private val context: Context) : FileOps {
         return if (source.isDirectory) {
             val newDir = createFolderBlocking(targetParent, source.name) ?: return null
             listChildrenBlocking(source.uri).forEach { child ->
-                if (copyInternal(child, newDir) == null) throw IOException("Nie udało się skopiować: ${child.name}")
+                if (copyInternal(child, newDir) == null) throw IOException(text(R.string.err_copy_failed, child.name))
             }
             newDir
         } else {
@@ -294,7 +294,7 @@ class FileRepository(private val context: Context) : FileOps {
     private fun sanitizeZipPath(path: String): String {
         val normalized = path.replace('\\', '/').trimStart('/')
         val parts = normalized.split('/').filter { it.isNotBlank() && it != "." }
-        if (parts.any { it == ".." }) throw IOException("Archiwum zawiera niebezpieczną ścieżkę.")
+        if (parts.any { it == ".." }) throw IOException(text(R.string.err_zip_unsafe))
         return parts.joinToString("/") + if (normalized.endsWith('/')) "/" else ""
     }
 
@@ -306,7 +306,7 @@ class FileRepository(private val context: Context) : FileOps {
             built = if (built.isBlank()) part else "$built/$part"
             current = cache[built] ?: createFolderBlocking(current, part)
                 ?.also { cache[built] = it }
-                ?: throw IOException("Nie udało się utworzyć folderu: $part")
+                ?: throw IOException(text(R.string.err_folder_create_named, part))
         }
         return current
     }
@@ -359,7 +359,7 @@ class FileRepository(private val context: Context) : FileOps {
                 val mime = c.getString(mimeIx) ?: "application/octet-stream"
                 out += FileItem(
                     uri = DocumentsContract.buildDocumentUriUsingTree(parent, c.getString(idIx)),
-                    name = c.getString(nameIx) ?: "(bez nazwy)",
+                    name = c.getString(nameIx) ?: text(R.string.common_unnamed),
                     mimeType = mime,
                     size = if (c.isNull(sizeIx)) 0 else c.getLong(sizeIx),
                     lastModified = if (c.isNull(dateIx)) 0 else c.getLong(dateIx),
@@ -404,7 +404,7 @@ class FileRepository(private val context: Context) : FileOps {
         isDirectory = file.isDirectory
     )
 
-    private fun fileFor(uri: Uri): File = File(uri.path ?: throw IOException("Nieprawidłowa ścieżka lokalna."))
+    private fun fileFor(uri: Uri): File = File(uri.path ?: throw IOException(text(R.string.err_local_path)))
 
     private fun uniqueChild(parent: File, requestedName: String, directory: Boolean): File {
         var candidate = File(parent, requestedName)

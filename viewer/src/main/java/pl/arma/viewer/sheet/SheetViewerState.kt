@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import pl.arma.viewer.R
 import kotlinx.coroutines.CancellationException
 
 /** Akcja gospodarza w menu przeglądarki (udostępnij, ulubione…). */
@@ -102,18 +103,18 @@ fun rememberSheetViewerState(key: Any, open: suspend (Context) -> SheetDocument)
             val document = currentOpen(context)
             if (document.pageCount == 0) {
                 document.close()
-                state.error = "Dokument nie zawiera nic do pokazania."
+                state.error = context.getString(R.string.viewer_empty_document)
             } else {
                 state.document = document
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: SecurityException) {
-            state.error = "Plik jest zabezpieczony hasłem lub używa nieobsługiwanego szyfrowania."
+            state.error = context.getString(R.string.viewer_encrypted)
         } catch (failure: OutOfMemoryError) {
-            state.error = "Plik jest za duży, żeby go otworzyć na tym urządzeniu."
+            state.error = context.getString(R.string.viewer_too_large)
         } catch (failure: Exception) {
-            state.error = failure.message ?: "Nie udało się otworzyć pliku."
+            state.error = failure.message ?: context.getString(R.string.viewer_open_failed)
         }
         state.loading = false
     }

@@ -53,6 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import pl.arma.files.text.OutlineEntry
@@ -84,7 +86,7 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
     LaunchedEffect(item.uri, item.lastModified) {
         error = null
         document = runCatching { vm.readDocument(item) }
-            .onFailure { error = it.message ?: "Nie udało się odczytać pliku." }
+            .onFailure { error = it.message ?: text(R.string.text_read_failed) }
             .getOrNull()
     }
 
@@ -103,10 +105,7 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
             Spacer(Modifier.width(6.dp))
             document?.let { doc ->
                 Text(
-                    buildString {
-                        append("${doc.lineCount} linii · ${doc.charset.name()}")
-                        if (doc.truncated) append(" · pokazano początek")
-                    },
+                    pluralStringResource(R.plurals.n_lines, doc.lineCount, doc.lineCount) + " · " + doc.charset.name() + (if (doc.truncated) stringResource(R.string.text_shows_beginning) else ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -118,7 +117,7 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
             if (outline.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { showOutline = true }) {
-                        Icon(Icons.Default.FormatListBulleted, "Spis treści")
+                        Icon(Icons.Default.FormatListBulleted, stringResource(R.string.text_outline))
                     }
                     OutlineMenu(
                         entries = outline,
@@ -134,14 +133,14 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
             IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
                 Icon(
                     Icons.Default.Search,
-                    "Szukaj w pliku",
+                    stringResource(R.string.text_search),
                     tint = if (searching) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             IconButton(onClick = { wrap = !wrap }) {
                 Icon(
                     Icons.Default.WrapText,
-                    "Zawijanie wierszy",
+                    stringResource(R.string.text_wrap),
                     tint = if (wrap) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -155,7 +154,7 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
                         onValueChange = { query = it },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        placeholder = { Text("Szukaj w pliku") },
+                        placeholder = { Text(stringResource(R.string.text_search)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -173,10 +172,10 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
                             matches.firstOrNull()?.let { line ->
                                 scope.launch { listState.animateScrollToItem(line) }
                             }
-                        }) { Icon(Icons.Default.Search, "Przejdź do pierwszego trafienia") }
+                        }) { Icon(Icons.Default.Search, stringResource(R.string.text_first_match)) }
                     }
                     IconButton(onClick = { searching = false; query = "" }) {
-                        Icon(Icons.Default.Close, "Zamknij wyszukiwanie")
+                        Icon(Icons.Default.Close, stringResource(R.string.common_close_search))
                     }
                 }
             }

@@ -54,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import pl.arma.files.net.DiscoveredHost
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
@@ -90,10 +91,9 @@ fun AccountList(
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text("Połączenia sieciowe", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.accounts_title), fontWeight = FontWeight.SemiBold)
             Text(
-                "FTP, SFTP, SMB i WebDAV. Połączeń tego samego typu może być " +
-                    "kilka — osobno dom, firma i kopie zapasowe.",
+                stringResource(R.string.accounts_text),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -122,7 +122,7 @@ fun AccountList(
                             if (account.configured) {
                                 "${typeLabel(account.type)} · ${account.summary}"
                             } else {
-                                "${typeLabel(account.type)} · wymaga uzupełnienia"
+                                stringResource(R.string.accounts_incomplete, typeLabel(account.type))
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -134,14 +134,14 @@ fun AccountList(
                         checked = account.enabled,
                         onCheckedChange = { onEnabled(account, it) }
                     )
-                    TextButton(onClick = { onEdit(account) }) { Text("Edytuj") }
+                    TextButton(onClick = { onEdit(account) }) { Text(stringResource(R.string.accounts_edit)) }
                 }
                 HorizontalDivider()
             }
 
             if (accounts.isEmpty()) {
                 Text(
-                    "Brak połączeń.",
+                    stringResource(R.string.accounts_none),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -150,12 +150,12 @@ fun AccountList(
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = onAdd, modifier = Modifier.weight(1f)) {
-                    Text("Dodaj połączenie")
+                    Text(stringResource(R.string.accounts_add))
                 }
                 FilledTonalButton(onClick = onDiscover, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Search, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Szukaj w sieci")
+                    Text(stringResource(R.string.accounts_discover))
                 }
             }
         }
@@ -189,7 +189,7 @@ fun AccountEditorSheet(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                if (isNew) "Nowe połączenie" else "Edycja połączenia",
+                if (isNew) stringResource(R.string.accounts_new) else stringResource(R.string.accounts_editing),
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -214,21 +214,21 @@ fun AccountEditorSheet(
             OutlinedTextField(
                 value = draft.label,
                 onValueChange = { draft = draft.copy(label = it) },
-                label = { Text("Nazwa (np. NAS Dom)") },
+                label = { Text(stringResource(R.string.accounts_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = draft.host,
                 onValueChange = { draft = draft.copy(host = it) },
-                label = { Text("Adres serwera") },
+                label = { Text(stringResource(R.string.accounts_host)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = draft.port.toString(),
                 onValueChange = { value -> value.toIntOrNull()?.let { draft = draft.copy(port = it) } },
-                label = { Text("Port") },
+                label = { Text(stringResource(R.string.accounts_port)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
@@ -238,14 +238,14 @@ fun AccountEditorSheet(
                 OutlinedTextField(
                     value = draft.share,
                     onValueChange = { draft = draft.copy(share = it) },
-                    label = { Text("Nazwa udziału") },
+                    label = { Text(stringResource(R.string.accounts_share)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = draft.domain,
                     onValueChange = { draft = draft.copy(domain = it) },
-                    label = { Text("Domena (opcjonalnie)") },
+                    label = { Text(stringResource(R.string.accounts_domain)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -254,14 +254,14 @@ fun AccountEditorSheet(
             OutlinedTextField(
                 value = draft.username,
                 onValueChange = { draft = draft.copy(username = it) },
-                label = { Text("Użytkownik") },
+                label = { Text(stringResource(R.string.accounts_user)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = draft.password,
                 onValueChange = { draft = draft.copy(password = it) },
-                label = { Text("Hasło") },
+                label = { Text(stringResource(R.string.accounts_password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
@@ -269,7 +269,7 @@ fun AccountEditorSheet(
             OutlinedTextField(
                 value = draft.rootPath,
                 onValueChange = { draft = draft.copy(rootPath = it) },
-                label = { Text("Katalog startowy (opcjonalnie)") },
+                label = { Text(stringResource(R.string.accounts_root)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -288,15 +288,14 @@ fun AccountEditorSheet(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        if (draft.type == RemoteType.FTP) "Szyfrowanie TLS (FTPS)" else "HTTPS",
+                        if (draft.type == RemoteType.FTP) stringResource(R.string.accounts_ftps) else "HTTPS",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
             if (draft.type == RemoteType.SFTP) {
                 Text(
-                    "SFTP jest zawsze szyfrowany i działa przez jedno połączenie, " +
-                        "więc nie wymaga trybu pasywnego ani otwierania portów.",
+                    stringResource(R.string.accounts_sftp_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -322,20 +321,20 @@ fun AccountEditorSheet(
                         Icon(Icons.Default.NetworkCheck, null, Modifier.size(18.dp))
                     }
                     Spacer(Modifier.width(6.dp))
-                    Text("Testuj")
+                    Text(stringResource(R.string.accounts_test))
                 }
                 Button(
                     onClick = { onSave(draft); onDismiss() },
                     enabled = draft.configured,
                     modifier = Modifier.weight(1f)
-                ) { Text("Zapisz") }
+                ) { Text(stringResource(R.string.common_save)) }
             }
 
             if (!isNew) {
                 TextButton(onClick = { confirmDelete = true }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Delete, null, Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Usuń połączenie")
+                    Text(stringResource(R.string.accounts_delete))
                 }
             }
         }
@@ -344,11 +343,10 @@ fun AccountEditorSheet(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Usunąć ${initial.label.ifBlank { typeLabel(initial.type) }}?") },
+            title = { Text(stringResource(R.string.accounts_delete_title, initial.label.ifBlank { typeLabel(initial.type) })) },
             text = {
                 Text(
-                    "Zniknie z listy źródeł razem z zapisanym hasłem. Pliki na " +
-                        "serwerze zostają nietknięte."
+                    stringResource(R.string.accounts_delete_text)
                 )
             },
             confirmButton = {
@@ -356,9 +354,9 @@ fun AccountEditorSheet(
                     confirmDelete = false
                     onDelete(initial.id)
                     onDismiss()
-                }) { Text("Usuń") }
+                }) { Text(stringResource(R.string.common_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Anuluj") } }
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.common_cancel)) } }
         )
     }
 }
@@ -374,10 +372,10 @@ fun DiscoverySheet(
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
-            Text("Serwery w sieci lokalnej", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.discovery_title), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                "Sprawdzamy, które urządzenia w Twojej sieci mają otwarty port SMB (445).",
+                stringResource(R.string.discovery_text),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -387,12 +385,11 @@ fun DiscoverySheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(10.dp))
-                    Text("Szukam…", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.discovery_searching), style = MaterialTheme.typography.bodyMedium)
                 }
             } else if (hosts.isEmpty()) {
                 Text(
-                    "Nie znaleziono serwerów. Sieci gościnne i Wi-Fi z izolacją klientów " +
-                        "blokują taki ruch — wtedy adres trzeba wpisać ręcznie.",
+                    stringResource(R.string.discovery_none),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -415,7 +412,7 @@ fun DiscoverySheet(
                                 )
                             }
                         }
-                        AssistChip(onClick = { onUse(host) }, label = { Text("Dodaj") })
+                        AssistChip(onClick = { onUse(host) }, label = { Text(stringResource(R.string.common_add)) })
                     }
                     HorizontalDivider()
                 }

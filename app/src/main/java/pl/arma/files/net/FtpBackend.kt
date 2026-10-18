@@ -1,6 +1,8 @@
 package pl.arma.files.net
 
 import org.apache.commons.net.ftp.FTP
+import pl.arma.files.R
+import pl.arma.files.text
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPReply
 import org.apache.commons.net.ftp.FTPSClient
@@ -27,7 +29,7 @@ class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : Re
     )
 
     private fun connect(account: RemoteAccount): FTPClient {
-        if (account.host.isBlank()) throw IOException("FTP: brak adresu serwera.")
+        if (account.host.isBlank()) throw IOException(text(R.string.ftp_no_host))
         val client: FTPClient = if (account.secure) {
             // Nazwę serwera sprawdza CertificatePins — przy zapamiętanym
             // certyfikacie NAS-u z adresem IP zwykła weryfikacja by go odrzuciła.
@@ -46,7 +48,7 @@ class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : Re
         client.connect(account.host, account.port)
         if (!client.login(account.username, account.password)) {
             client.disconnect()
-            throw IOException("FTP: błędny login lub hasło.")
+            throw IOException(text(R.string.ftp_auth))
         }
         if (client is FTPSClient) {
             client.execPBSZ(0)
@@ -67,9 +69,9 @@ class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : Re
                 // vsftpd i FileZilla Server domyślnie wymagają wznowienia sesji
                 // TLS na kanale danych, czego commons-net nie potrafi.
                 client is FTPSClient && (reply.contains("reuse", true) || client.replyCode == 522 || client.replyCode == 425) ->
-                    "FTPS: serwer wymaga wznawiania sesji TLS na kanale danych, którego aplikacja nie obsługuje. Użyj SFTP albo wyłącz to wymaganie na serwerze (vsftpd: require_ssl_reuse=NO)."
-                reply.startsWith("550") -> "FTP: plik lub katalog nie istnieje albo brak dostępu."
-                else -> "FTP: serwer odpowiedział: $reply"
+                    text(R.string.ftps_reuse)
+                reply.startsWith("550") -> text(R.string.ftp_missing)
+                else -> text(R.string.ftp_reply, reply)
             }
         )
     }
@@ -113,7 +115,7 @@ class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : Re
     override fun createFolder(account: RemoteAccount, path: String) {
         pool.use(account) { client ->
             if (!client.makeDirectory(path(account, path))) {
-                throw IOException("FTP: nie udało się utworzyć folderu.")
+                throw IOException(text(R.string.ftp_mkdir))
             }
         }
     }
@@ -148,7 +150,7 @@ class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : Re
                 var failure: Throwable? = null
                 runCatching { super.close() }.onFailure { failure = it }
                 runCatching {
-                    if (!client.completePendingCommand()) throw IOException("FTP: transfer nie został zakończony.")
+                    if (!client.completePendingCommand()) throw IOException(text(R.string.ftp_transfer_incomplete))
                 }.onFailure { if (failure == null) failure = it }
                 close(client)
                 failure?.let { throw it }
@@ -171,7 +173,7 @@ class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : Re
                 var failure: Throwable? = null
                 runCatching { super.close() }.onFailure { failure = it }
                 runCatching {
-                    if (!client.completePendingCommand()) throw IOException("FTP: zapis nie został zakończony.")
+                    if (!client.completePendingCommand()) throw IOException(text(R.string.ftp_write_incomplete))
                 }.onFailure { if (failure == null) failure = it }
                 close(client)
                 failure?.let { throw it }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">DWG чертежът не можа да се обработи — файлът е твърде голям или повреден.</string>
+    <string name="dwg_no_result">Преобразуването на DWG не даде резултат.</string>
+    <string name="dwg_start_failed">Преобразуването на DWG не можа да се стартира.</string>
+</resources>

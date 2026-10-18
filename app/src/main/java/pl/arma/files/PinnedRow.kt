@@ -45,6 +45,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
 import pl.arma.files.ui.theme.LocalFileTypeColors
@@ -144,9 +146,9 @@ fun PinnedFolderRow(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Column {
-                        Text("Dodaj folder", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.pinned_add_folder), fontWeight = FontWeight.SemiBold)
                         Text(
-                            "SAF / dostawca plików",
+                            stringResource(R.string.pinned_add_folder_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -168,7 +170,7 @@ private fun PinnedCard(
     onUnpin: () -> Unit
 ) {
     var menu by remember { mutableStateOf(false) }
-    val photos = folder.label.equals("Zdjęcia", ignoreCase = true)
+    val photos = folder.rootUri.path.orEmpty().contains("/DCIM")
     val icon = if (photos) Icons.Default.Image else Icons.Default.Folder
     val tint = LocalFileTypeColors.current.let { if (photos) it.image else it.folder }
     Card(
@@ -185,20 +187,20 @@ private fun PinnedCard(
                     // Krzyżyk na kaflu folderu czytał się jak „usuń folder";
                     // menu jest jednoznaczne i mieści resztę akcji.
                     IconButton(onClick = { menu = true }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.MoreVert, "Więcej", Modifier.size(18.dp))
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.common_more), Modifier.size(18.dp))
                     }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
-                            text = { Text("Otwórz") },
+                            text = { Text(stringResource(R.string.common_open)) },
                             onClick = { menu = false; onClick() }
                         )
                         DropdownMenuItem(
-                            text = { Text("Otwórz w nowej karcie") },
+                            text = { Text(stringResource(R.string.pinned_open_new_tab)) },
                             onClick = { menu = false; onOpenInNewTab() }
                         )
                         HorizontalDivider()
                         DropdownMenuItem(
-                            text = { Text("Odepnij") },
+                            text = { Text(stringResource(R.string.pinned_unpin)) },
                             onClick = { menu = false; onUnpin() }
                         )
                     }
@@ -207,7 +209,7 @@ private fun PinnedCard(
             Column(Modifier.fillMaxWidth()) {
                 Text(folder.label, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    stat?.let { (count, bytes) -> "$count plików · ${formatSize(bytes)}" }
+                    stat?.let { (count, bytes) -> pluralStringResource(R.plurals.n_files, count, count) + " · " + formatSize(bytes) }
                         ?: folder.subtitle.substringAfterLast('/').ifBlank { folder.subtitle },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

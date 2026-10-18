@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Vizatimi DWG nuk u përpunua dot — skedari është shumë i madh ose i dëmtuar.</string>
+    <string name="dwg_no_result">Konvertimi i DWG nuk dha rezultat.</string>
+    <string name="dwg_start_failed">Konvertimi i DWG nuk u nis dot.</string>
+</resources>

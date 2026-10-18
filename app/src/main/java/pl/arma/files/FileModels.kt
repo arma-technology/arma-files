@@ -57,7 +57,8 @@ data class DeviceStorage(
     val rootUri: Uri,
     val totalBytes: Long,
     val freeBytes: Long,
-    val removable: Boolean
+    val removable: Boolean,
+    val usb: Boolean = false
 )
 
 data class PinnedFolder(

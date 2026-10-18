@@ -1,5 +1,7 @@
 package pl.arma.viewer.sheet
 
+import androidx.annotation.StringRes
+import pl.arma.viewer.R
 import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.max
@@ -7,17 +9,17 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 /** Rodzaj punktu, do którego przyciągnął się kursor pomiaru. */
-enum class SnapKind(val label: String) {
-    END("koniec"),
-    INTERSECTION("przecięcie"),
-    CENTER("środek okręgu"),
-    INSERTION("punkt wstawienia"),
-    PERPENDICULAR("prostopadle"),
-    AXIS_INTERSECTION("oś × linia"),
-    MIDPOINT("środek"),
-    NEAREST("na linii"),
-    AXIS("oś"),
-    NONE("")
+enum class SnapKind(@StringRes val label: Int) {
+    END(R.string.viewer_snap_end),
+    INTERSECTION(R.string.viewer_snap_intersection),
+    CENTER(R.string.viewer_snap_center),
+    INSERTION(R.string.viewer_snap_insertion),
+    PERPENDICULAR(R.string.viewer_snap_perpendicular),
+    AXIS_INTERSECTION(R.string.viewer_snap_axis_intersection),
+    MIDPOINT(R.string.viewer_snap_midpoint),
+    NEAREST(R.string.viewer_snap_nearest),
+    AXIS(R.string.viewer_snap_axis),
+    NONE(0)
 }
 
 /** Wynik przyciągania w jednostkach strony. */

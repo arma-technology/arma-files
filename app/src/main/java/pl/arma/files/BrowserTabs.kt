@@ -55,6 +55,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 
 /** Zaokrąglenie tylko u góry — dolna krawędź styka się z treścią. */
 private val TabShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
@@ -139,7 +141,7 @@ fun BrowserTabStrip(
                 ) {
                     Icon(
                         if (dualPane) Icons.Default.Fullscreen else Icons.Default.VerticalSplit,
-                        if (dualPane) "Jeden panel" else "Dwa panele",
+                        if (dualPane) stringResource(R.string.tabs_single_pane) else stringResource(R.string.tabs_dual_pane),
                         Modifier.size(20.dp),
                         tint = if (dualPane) {
                             MaterialTheme.colorScheme.primary
@@ -220,19 +222,19 @@ private fun BrowserTab(
                 Modifier.size(26.dp).clip(CircleShape).clickable(onClick = onClose),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Close, "Zamknij kartę", Modifier.size(16.dp), tint = label)
+                Icon(Icons.Default.Close, stringResource(R.string.tabs_close), Modifier.size(16.dp), tint = label)
             }
         }
 
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(
-                text = { Text("Duplikuj kartę") },
+                text = { Text(stringResource(R.string.tabs_duplicate)) },
                 leadingIcon = { Icon(Icons.Default.ContentCopy, null) },
                 onClick = { menu = false; onDuplicate() }
             )
             if (!tab.atHome) {
                 DropdownMenuItem(
-                    text = { Text("Przypnij folder") },
+                    text = { Text(stringResource(R.string.tabs_pin_folder)) },
                     leadingIcon = { Icon(Icons.Default.PushPin, null) },
                     onClick = { menu = false; onPin() }
                 )
@@ -240,14 +242,14 @@ private fun BrowserTab(
             if (canCloseOthers) {
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Zamknij pozostałe") },
+                    text = { Text(stringResource(R.string.tabs_close_others)) },
                     leadingIcon = { Icon(Icons.Default.ClearAll, null) },
                     onClick = { menu = false; onCloseOthers() }
                 )
             }
             if (closable) {
                 DropdownMenuItem(
-                    text = { Text("Zamknij kartę") },
+                    text = { Text(stringResource(R.string.tabs_close)) },
                     leadingIcon = { Icon(Icons.Default.Close, null) },
                     onClick = { menu = false; onClose() }
                 )
@@ -270,7 +272,7 @@ private fun NewTabButton(onNew: () -> Unit) {
     ) {
         Icon(
             Icons.Default.Add,
-            "Nowa karta",
+            stringResource(R.string.tabs_new),
             Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )

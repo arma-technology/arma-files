@@ -4,6 +4,21 @@
 
 - aplikacja jest wolnym oprogramowaniem na licencji GPL-3.0-or-later; w
   Ustawieniach karta „O aplikacji” z licencją, linkiem do kodu i listą bibliotek
+- 21 języków: angielski (domyślny), polski, albański, białoruski, bośniacki,
+  bułgarski, chorwacki, czeski, estoński, litewski, łotewski, macedoński,
+  niderlandzki, niemiecki, rosyjski, rumuński, serbski, słowacki, słoweński,
+  ukraiński, węgierski; wybór w Ustawieniach → Język (oraz w ustawieniach
+  systemu na Androidzie 13+), poprawna odmiana liczebników w każdym języku
+- separator dziesiętny pomiarów zgodny z językiem; skala z tabelki
+  rozpoznawana także jako „Maßstab”, „měřítko”, „масштаб” itd.
+- analiza pamięci: „Stare pliki” pokazują datę zmiany zamiast ścieżki opisanej
+  jako data
+- pendrive i karta SD pojawiają się na ekranie „Mój komputer” od razu po
+  podłączeniu (pendrive z ikoną USB); po wyjęciu nośnika zamykają się jego
+  karty i znikają jego pliki z wyników wyszukiwania i analizy
+- katalog główny pamięci podpisany nazwą nośnika zamiast „0”
+- po zmianie języka aplikacja zostaje na bieżącym ekranie, a tytuły kart
+  przechodzą na nowy język
 
 Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
 

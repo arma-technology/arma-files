@@ -3,13 +3,22 @@ package pl.arma.viewer.sheet
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.Locale
 
 class MeasureTest {
 
     @Test
-    fun `dlugosc w milimetrach i metrach`() {
-        assertEquals("845 mm", MeasureFormat.length(845.2))
-        assertEquals("3,245 m", MeasureFormat.length(3245.0))
+    fun `dlugosc w milimetrach i metrach z separatorem jezyka`() {
+        val previous = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("pl-PL"))
+            assertEquals("845 mm", MeasureFormat.length(845.2))
+            assertEquals("3,245 m", MeasureFormat.length(3245.0))
+            Locale.setDefault(Locale.ENGLISH)
+            assertEquals("3.245 m", MeasureFormat.length(3245.0))
+        } finally {
+            Locale.setDefault(previous)
+        }
     }
 
     @Test
@@ -47,5 +56,13 @@ class MeasureTest {
         assertEquals(304.8, MeasureFormat.mmPerUnit("ft")!!, 1e-9)
         assertEquals(1000.0, MeasureFormat.mmPerUnit("M")!!, 1e-9)
         assertNull(MeasureFormat.mmPerUnit("furlong"))
+    }
+
+    @Test
+    fun `skala opisana w innych jezykach`() {
+        assertEquals(50, MeasureFormat.detectScale("Maßstab 1:50"))
+        assertEquals(100, MeasureFormat.detectScale("MĚŘÍTKO 1:100"))
+        assertEquals(200, MeasureFormat.detectScale("МАСШТАБ 1:200"))
+        assertEquals(25, MeasureFormat.detectScale("Méretarány: 1:25"))
     }
 }

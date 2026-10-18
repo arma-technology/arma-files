@@ -35,16 +35,16 @@ class PaneRulesTest {
 
     @Test
     fun `tytul karty bierze sie z nazwy katalogu`() {
-        assertEquals("Mój komputer", PaneRules.tabTitle(null))
-        assertEquals("Camera", PaneRules.tabTitle("/storage/emulated/0/DCIM/Camera"))
-        assertEquals("Camera", PaneRules.tabTitle("/storage/emulated/0/DCIM/Camera/"))
-        assertEquals("Katalog główny", PaneRules.tabTitle("/"))
+        assertEquals("Mój komputer", PaneRules.tabTitle(null, "Mój komputer", "Katalog główny"))
+        assertEquals("Camera", PaneRules.tabTitle("/storage/emulated/0/DCIM/Camera", "", ""))
+        assertEquals("Camera", PaneRules.tabTitle("/storage/emulated/0/DCIM/Camera/", "", ""))
+        assertEquals("Katalog główny", PaneRules.tabTitle("/", "Mój komputer", "Katalog główny"))
     }
 
     @Test
     fun `tytul karty SAF pomija identyfikator dokumentu`() {
         // SAF trzyma w sciezce cos w rodzaju "tree/primary:DCIM/document/primary:DCIM"
-        assertEquals("DCIM", PaneRules.tabTitle("/tree/primary:DCIM/document/primary:DCIM"))
-        assertEquals("Faktury", PaneRules.tabTitle("/tree/primary:Dokumenty/document/primary:Faktury"))
+        assertEquals("DCIM", PaneRules.tabTitle("/tree/primary:DCIM/document/primary:DCIM", "", ""))
+        assertEquals("Faktury", PaneRules.tabTitle("/tree/primary:Dokumenty/document/primary:Faktury", "", ""))
     }
 }

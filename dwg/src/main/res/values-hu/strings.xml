@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Nem sikerült feldolgozni a DWG-rajzot — a fájl túl nagy vagy sérült.</string>
+    <string name="dwg_no_result">A DWG-átalakítás nem adott eredményt.</string>
+    <string name="dwg_start_failed">Nem sikerült elindítani a DWG-átalakítást.</string>
+</resources>

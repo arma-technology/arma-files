@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">DWG-joonist ei õnnestunud töödelda — fail on liiga suur või kahjustatud.</string>
+    <string name="dwg_no_result">DWG teisendamine ei andnud tulemust.</string>
+    <string name="dwg_start_failed">DWG teisendamist ei õnnestunud käivitada.</string>
+</resources>

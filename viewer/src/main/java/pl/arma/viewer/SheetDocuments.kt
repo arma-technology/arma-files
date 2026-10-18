@@ -31,7 +31,7 @@ object SheetDocuments {
     suspend fun open(context: Context, file: File, name: String): SheetDocument = when (extension(name)) {
         "dxf" -> CadDocument.open(context, file, "DXF")
         "dwg" -> {
-            val converter = dwgConverter ?: error("Ta wersja aplikacji nie obsługuje plików DWG.")
+            val converter = dwgConverter ?: error(context.getString(R.string.viewer_dwg_unsupported))
             CadDocument.open(context, converter.toDxf(context, file), "DWG")
         }
         else -> PdfDocument.open(context, file)

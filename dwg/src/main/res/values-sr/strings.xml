@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">DWG цртеж није могао да се обради — датотека је превелика или оштећена.</string>
+    <string name="dwg_no_result">Конверзија DWG-а није дала резултат.</string>
+    <string name="dwg_start_failed">Конверзија DWG-а није могла да се покрене.</string>
+</resources>

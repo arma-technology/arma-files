@@ -100,10 +100,10 @@ class FileOperationService : Service() {
         val details = listOfNotNull(
             progress.currentName.takeIf { it.isNotBlank() },
             speed,
-            remaining?.let { "pozostało $it" }
+            remaining?.let { getString(R.string.ops_remaining, it) }
         ).joinToString(" · ")
 
-        builder.setContentTitle(if (paused) "${operation.label} — wstrzymane" else operation.label)
+        builder.setContentTitle(if (paused) getString(R.string.ops_paused_suffix, operation.label) else operation.label)
             .setContentText(details)
             .setSubText("${progress.filesDone}/${progress.filesTotal}")
 
@@ -121,7 +121,7 @@ class FileOperationService : Service() {
                 .putExtra(EXTRA_OPERATION_ID, operation.id),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        builder.addAction(0, "Anuluj", cancel)
+        builder.addAction(0, getString(R.string.common_cancel), cancel)
 
         return builder
     }
@@ -130,10 +130,10 @@ class FileOperationService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Operacje na plikach",
+            getString(R.string.notif_channel),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Postęp kopiowania, przenoszenia i usuwania"
+            description = getString(R.string.notif_channel_desc)
             setShowBadge(false)
         }
         notificationManager().createNotificationChannel(channel)

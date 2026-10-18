@@ -20,12 +20,15 @@ object PaneRules {
         return remaining[index.coerceAtMost(remaining.lastIndex)]
     }
 
-    /** Nazwa karty na podstawie ścieżki; null oznacza ekran „Mój komputer". */
-    fun tabTitle(path: String?): String {
-        if (path == null) return "Mój komputer"
+    /**
+     * Nazwa karty na podstawie ścieżki; null oznacza ekran „Mój komputer".
+     * Obie nazwy zastępcze podaje wołający, w języku aplikacji.
+     */
+    fun tabTitle(path: String?, home: String, root: String): String {
+        if (path == null) return home
         return path.trimEnd('/')
             .substringAfterLast('/')
             .substringAfterLast(':')
-            .ifBlank { "Katalog główny" }
+            .ifBlank { root }
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Nepavyko apdoroti DWG brėžinio — failas per didelis arba sugadintas.</string>
+    <string name="dwg_no_result">DWG konvertavimas nedavė rezultato.</string>
+    <string name="dwg_start_failed">Nepavyko paleisti DWG konvertavimo.</string>
+</resources>

@@ -1,5 +1,7 @@
 package pl.arma.viewer.sheet
 
+import androidx.annotation.StringRes
+import pl.arma.viewer.R
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -24,15 +26,15 @@ data class SheetScale(val mmPerUnit: Double, val label: String, val source: Scal
     }
 }
 
-enum class ScaleSource(val label: String) {
+enum class ScaleSource(@StringRes val label: Int) {
     /** Słownik pomiarowy zapisany w PDF przez program CAD. */
-    DOCUMENT("z pliku"),
+    DOCUMENT(R.string.viewer_scale_from_file),
     /** Skala odczytana z tekstu tabelki rysunkowej — do potwierdzenia. */
-    TITLE_BLOCK("z tabelki"),
+    TITLE_BLOCK(R.string.viewer_scale_from_title_block),
     /** Jednostki zapisane w rysunku CAD. */
-    UNITS("jednostki rysunku"),
-    USER("ustawiona"),
-    CALIBRATION("kalibracja")
+    UNITS(R.string.viewer_scale_from_units),
+    USER(R.string.viewer_scale_user),
+    CALIBRATION(R.string.viewer_scale_calibration)
 }
 
 /** Odcinek pomiaru w jednostkach strony. */
@@ -47,7 +49,7 @@ data class Measurement(
 }
 
 object MeasureFormat {
-    private val polish = Locale("pl", "PL")
+    /** Separator dziesiętny z języka aplikacji: „2,997 m” po polsku, „2.997 m” po angielsku. */
 
     /**
      * Długość czytelna na budowie: do metra w milimetrach, dalej w metrach
@@ -55,19 +57,23 @@ object MeasureFormat {
      */
     fun length(mm: Double): String = when {
         mm.isNaN() -> "—"
-        abs(mm) < 1000 -> String.format(polish, "%.0f mm", mm)
-        else -> String.format(polish, "%.3f m", mm / 1000.0)
+        abs(mm) < 1000 -> String.format(Locale.getDefault(), "%.0f mm", mm)
+        else -> String.format(Locale.getDefault(), "%.3f m", mm / 1000.0)
     }
 
-    fun area(mm2: Double): String = String.format(polish, "%.2f m²", mm2 / 1_000_000.0)
+    fun area(mm2: Double): String = String.format(Locale.getDefault(), "%.2f m²", mm2 / 1_000_000.0)
 
     /**
      * Skala „1:N” z tekstu strony. Najpierw opisane wprost („skala 1:50”,
      * „scale 1:100”), potem samotne „1:N” — ale tylko typowe skale rysunków,
      * bo „1:3” trafia się też w opisach mieszanek.
      */
+    /** „Skala” w językach, w których bywają opisane tabelki rysunkowe. */
+    private const val SCALE_WORDS = "skala|scale|sk\\.|maßstab|massstab|měřítko|meritko|mierka|méretarány|meretarany|" +
+        "масштаб|scara|merilo|mjerilo|razmera|размера|mastelis|mērogs|merogs|mõõtkava|shkalla|мерило"
+
     fun detectScale(text: String): Int? {
-        val labelled = Regex("""(?i)(?:skala|scale|sk\.)\s*[:=]?\s*1\s*[:/]\s*(\d{1,5})""")
+        val labelled = Regex("""(?iu)(?:$SCALE_WORDS)\s*[:=]?\s*1\s*[:/]\s*(\d{1,5})""")
             .findAll(text).mapNotNull { it.groupValues[1].toIntOrNull() }.filter { it > 0 }.toList()
         if (labelled.isNotEmpty()) return labelled.groupingBy { it }.eachCount().maxByOrNull { it.value }!!.key
         val bare = Regex("""(?<![\d.,:])1\s*:\s*(\d{1,4})(?!\d|[.,:]\d)""")

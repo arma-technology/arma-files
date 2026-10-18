@@ -1,6 +1,8 @@
 package pl.arma.files.net
 
 import java.io.InputStream
+import pl.arma.files.R
+import pl.arma.files.text
 import java.io.OutputStream
 
 /** Pozycja katalogu widziana przez backend, jeszcze bez URI aplikacji. */
@@ -38,7 +40,7 @@ object RemotePaths {
     /** Zawsze `/a/b`, bez końcowego ukośnika (poza samym korzeniem). */
     fun normalize(path: String): String {
         val parts = path.replace('\\', '/').split('/').filter { it.isNotBlank() && it != "." }
-        if (parts.any { it == ".." }) throw IllegalArgumentException("Niedozwolona ścieżka: $path")
+        if (parts.any { it == ".." }) throw IllegalArgumentException(text(R.string.err_path_forbidden, path))
         return "/" + parts.joinToString("/")
     }
 
@@ -63,7 +65,7 @@ object RemotePaths {
 
     fun child(parent: String, name: String): String {
         if (name.contains('/') || name.contains('\\') || name == ".." || name == ".") {
-            throw IllegalArgumentException("Niedozwolona nazwa: $name")
+            throw IllegalArgumentException(text(R.string.err_name_forbidden, name))
         }
         val base = normalize(parent)
         return if (base == "/") "/$name" else "$base/$name"

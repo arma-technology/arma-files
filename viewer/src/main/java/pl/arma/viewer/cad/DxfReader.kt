@@ -116,7 +116,7 @@ class DxfReader(input: InputStream) : Closeable {
                 b == '-'.code -> sign = -1
                 b in '0'.code..'9'.code -> { c = c * 10 + (b - '0'.code); any = true }
                 b == ' '.code || b == '\t'.code -> Unit
-                else -> throw IOException("Niepoprawny kod grupy DXF")
+                else -> throw IOException("Invalid DXF group code")
             }
         }
         if (!any) {
@@ -224,7 +224,7 @@ class DxfReader(input: InputStream) : Closeable {
         var off = 0
         while (off < size) {
             val n = stream.read(buffer, off, size - off)
-            if (n < 0) throw IOException("Ucięty plik DXF")
+            if (n < 0) throw IOException("Truncated DXF file")
             off += n
         }
         length = size
@@ -233,7 +233,7 @@ class DxfReader(input: InputStream) : Closeable {
     private fun readShort(): Int {
         val a = stream.read()
         val b = stream.read()
-        if (a < 0 || b < 0) throw IOException("Ucięty plik DXF")
+        if (a < 0 || b < 0) throw IOException("Truncated DXF file")
         return a or (b shl 8)
     }
 
@@ -241,7 +241,7 @@ class DxfReader(input: InputStream) : Closeable {
         var v = 0
         for (i in 0 until 4) {
             val b = stream.read()
-            if (b < 0) throw IOException("Ucięty plik DXF")
+            if (b < 0) throw IOException("Truncated DXF file")
             v = v or (b shl (8 * i))
         }
         return v
@@ -251,7 +251,7 @@ class DxfReader(input: InputStream) : Closeable {
         var v = 0L
         for (i in 0 until 8) {
             val b = stream.read()
-            if (b < 0) throw IOException("Ucięty plik DXF")
+            if (b < 0) throw IOException("Truncated DXF file")
             v = v or (b.toLong() shl (8 * i))
         }
         return v

@@ -1,5 +1,7 @@
 package pl.arma.viewer.pdf
 
+import pl.arma.viewer.R
+import pl.arma.viewer.ViewerText
 import android.content.Context
 import android.graphics.RectF
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -92,7 +94,7 @@ internal class PdfStructure(private val original: File, private val workDir: Fil
             val groups = properties.optionalContentGroups.toList()
             layerDefaults = groups.map { properties.isGroupEnabled(it) }
             layers.value = groups.mapIndexed { index, group ->
-                SheetLayer("ocg:$index", group.name ?: "Warstwa ${index + 1}", layerDefaults[index])
+                SheetLayer("ocg:$index", group.name ?: ViewerText.get(R.string.viewer_pdf_layer, index + 1), layerDefaults[index])
             }
         }
         refreshComments(loaded)
@@ -590,6 +592,7 @@ internal class PdfStructure(private val original: File, private val workDir: Fil
         fun init(context: Context) {
             if (initialized) return
             PDFBoxResourceLoader.init(context.applicationContext)
+            ViewerText.init(context)
             initialized = true
         }
 
@@ -603,25 +606,28 @@ internal class PdfStructure(private val original: File, private val workDir: Fil
         }
 
         fun typeLabel(annotation: PDAnnotation): String = when (annotation.subtype) {
-            "Text" -> "Notatka"
-            "FreeText" -> "Tekst"
-            "Line" -> if ((annotation.cosObject.getNameAsString("IT") ?: "").contains("Dimension")) "Wymiar" else "Linia"
-            "Square" -> "Prostokąt"
-            "Circle" -> "Elipsa"
-            "Polygon" -> if ((annotation.cosObject.getNameAsString("IT") ?: "").contains("Dimension")) "Pole" else "Wielokąt"
-            "PolyLine" -> if ((annotation.cosObject.getNameAsString("IT") ?: "").contains("Dimension")) "Obwód" else "Łamana"
-            "Highlight" -> "Wyróżnienie"
-            "Underline" -> "Podkreślenie"
-            "StrikeOut" -> "Przekreślenie"
-            "Squiggly" -> "Falista linia"
-            "Ink" -> "Odręczny rysunek"
-            "Stamp" -> "Pieczątka"
-            "FileAttachment" -> "Załącznik"
-            "Caret" -> "Wstawienie"
-            "Sound" -> "Dźwięk"
-            "Redact" -> "Do usunięcia"
-            else -> annotation.subtype ?: "Adnotacja"
+            "Text" -> ViewerText.get(R.string.viewer_annot_note)
+            "FreeText" -> ViewerText.get(R.string.viewer_annot_text)
+            "Line" -> ViewerText.get(if (isDimension(annotation)) R.string.viewer_annot_dimension else R.string.viewer_annot_line)
+            "Square" -> ViewerText.get(R.string.viewer_annot_rectangle)
+            "Circle" -> ViewerText.get(R.string.viewer_annot_ellipse)
+            "Polygon" -> ViewerText.get(if (isDimension(annotation)) R.string.viewer_annot_area else R.string.viewer_annot_polygon)
+            "PolyLine" -> ViewerText.get(if (isDimension(annotation)) R.string.viewer_annot_perimeter else R.string.viewer_annot_polyline)
+            "Highlight" -> ViewerText.get(R.string.viewer_annot_highlight)
+            "Underline" -> ViewerText.get(R.string.viewer_annot_underline)
+            "StrikeOut" -> ViewerText.get(R.string.viewer_annot_strikeout)
+            "Squiggly" -> ViewerText.get(R.string.viewer_annot_squiggly)
+            "Ink" -> ViewerText.get(R.string.viewer_annot_ink)
+            "Stamp" -> ViewerText.get(R.string.viewer_annot_stamp)
+            "FileAttachment" -> ViewerText.get(R.string.viewer_annot_attachment)
+            "Caret" -> ViewerText.get(R.string.viewer_annot_caret)
+            "Sound" -> ViewerText.get(R.string.viewer_annot_sound)
+            "Redact" -> ViewerText.get(R.string.viewer_annot_redact)
+            else -> annotation.subtype ?: ViewerText.get(R.string.viewer_annot_other)
         }
+
+        private fun isDimension(annotation: PDAnnotation) =
+            (annotation.cosObject.getNameAsString("IT") ?: "").contains("Dimension")
 
         /** „D:20250314153000+01'00'” → „14.03.2025 15:30”. */
         fun formatPdfDate(raw: String?): String? {

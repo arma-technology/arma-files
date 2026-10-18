@@ -45,7 +45,7 @@ object LibreDwgConverter : SheetDocuments.DwgConverter {
             partial.delete()
             throw IllegalStateException(error)
         }
-        check(partial.length() > 0) { "Konwersja DWG nie dała wyniku." }
+        check(partial.length() > 0) { context.getString(R.string.dwg_no_result) }
         partial.renameTo(target)
         trim(cache, keep = target)
         target
@@ -102,12 +102,12 @@ object LibreDwgConverter : SheetDocuments.DwgConverter {
                 override fun onServiceDisconnected(name: ComponentName?) {
                     if (continuation.isActive) {
                         runCatching { app.unbindService(this) }
-                        continuation.resume("Nie udało się przetworzyć rysunku DWG — plik jest zbyt duży lub uszkodzony.")
+                        continuation.resume(app.getString(R.string.dwg_crashed))
                     }
                 }
             }
             val bound = app.bindService(Intent(app, DwgConversionService::class.java), connection, Context.BIND_AUTO_CREATE)
-            if (!bound) continuation.resume("Nie udało się uruchomić konwersji DWG.")
+            if (!bound) continuation.resume(app.getString(R.string.dwg_start_failed))
             continuation.invokeOnCancellation { runCatching { app.unbindService(connection) } }
         }
 

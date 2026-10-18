@@ -1,6 +1,8 @@
 package pl.arma.files.net
 
 import okhttp3.internal.tls.OkHostnameVerifier
+import pl.arma.files.R
+import pl.arma.files.text
 import java.io.File
 import java.security.KeyStore
 import java.security.MessageDigest
@@ -44,10 +46,10 @@ class CertificatePins(private val file: File?) {
         val key = "$host:$port"
         return object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<out X509Certificate>, authType: String) =
-                throw CertificateException("Nie dotyczy klienta.")
+                throw CertificateException("Client certificates are not checked here.")
 
             override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String) {
-                val leaf = chain.firstOrNull() ?: throw CertificateException("Serwer nie przedstawił certyfikatu.")
+                val leaf = chain.firstOrNull() ?: throw CertificateException(text(R.string.cert_none))
                 val publiclyTrusted = runCatching { system.checkServerTrusted(chain, authType) }.isSuccess &&
                     OkHostnameVerifier.verify(host, leaf)
                 if (publiclyTrusted) return
@@ -56,8 +58,7 @@ class CertificatePins(private val file: File?) {
                     null -> save(key, fingerprint)
                     fingerprint -> Unit
                     else -> throw CertificateException(
-                        "Certyfikat serwera $key się zmienił (był ${known.take(23)}…, jest ${fingerprint.take(23)}…). " +
-                            "Jeśli serwer nie dostał nowego certyfikatu, ktoś może podszywać się pod niego."
+                        text(R.string.cert_changed, key, known.take(23), fingerprint.take(23))
                     )
                 }
             }

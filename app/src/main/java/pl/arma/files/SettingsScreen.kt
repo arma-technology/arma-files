@@ -13,10 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import pl.arma.files.net.RemoteAccount
 
 @Composable
@@ -41,7 +44,7 @@ fun SettingsScreen(
         item { SettingsHero() }
         item {
             Text(
-                "Źródła plików",
+                stringResource(R.string.settings_file_sources),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp)
@@ -90,9 +93,9 @@ fun SettingsScreen(
                     Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(12.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Dostęp i prywatność", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.settings_privacy_title), fontWeight = FontWeight.SemiBold)
                         Text(
-                            "Źródła chmurowe korzystają z systemowego dostępu Androida. Hasła FTP/SMB są szyfrowane lokalnie kluczem przechowywanym w Android Keystore i nie są wysyłane do usług pośrednich.",
+                            stringResource(R.string.settings_privacy_text),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -101,7 +104,64 @@ fun SettingsScreen(
             }
         }
 
+        item { LanguageCard() }
         item { AboutCard() }
+    }
+}
+
+/** Język aplikacji; nazwy języków zawsze w ich własnym brzmieniu. */
+@Composable
+private fun LanguageCard() {
+    val activity = LocalContext.current as? android.app.Activity ?: return
+    val current = remember { AppLanguage.current(activity) }
+    var picking by remember { mutableStateOf(false) }
+    val systemLabel = stringResource(R.string.settings_language_system)
+    val currentLabel = AppLanguage.options.firstOrNull { current != null && current.startsWith(it.tag) }?.name ?: systemLabel
+    Surface(
+        onClick = { picking = true },
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Language, null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.settings_language), fontWeight = FontWeight.SemiBold)
+                Text(currentLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+    if (picking) {
+        AlertDialog(
+            onDismissRequest = { picking = false },
+            title = { Text(stringResource(R.string.settings_language)) },
+            text = {
+                LazyColumn {
+                    val choices = listOf<AppLanguage.Option?>(null) + AppLanguage.options
+                    items(choices.size) { index ->
+                        val option = choices[index]
+                        val selected = if (option == null) current == null else current?.startsWith(option.tag) == true
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    picking = false
+                                    if (!selected) AppLanguage.set(activity, option?.tag)
+                                }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = selected, onClick = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(option?.name ?: systemLabel)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { picking = false }) { Text(stringResource(R.string.common_cancel)) } }
+        )
     }
 }
 
@@ -113,7 +173,6 @@ private val bundledLibraries = listOf(
     "Kotlin, kotlinx.coroutines" to "Apache 2.0",
     "Coil" to "Apache 2.0",
     "OkHttp" to "Apache 2.0",
-    "AppAuth" to "Apache 2.0",
     "Apache Commons Net" to "Apache 2.0",
     "SSHJ" to "Apache 2.0",
     "jcifs-ng" to "LGPL-2.1",
@@ -134,7 +193,7 @@ private fun AboutCard() {
                 Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("O aplikacji", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_about), fontWeight = FontWeight.SemiBold)
                     Text(
                         "ARMA Files ${BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.bodySmall,
@@ -143,7 +202,7 @@ private fun AboutCard() {
                 }
             }
             Text(
-                "Wolne oprogramowanie na licencji GNU GPL 3.0 lub nowszej. Możesz je używać, zmieniać i rozpowszechniać na jej warunkach. Aplikacja jest dostarczana bez jakiejkolwiek gwarancji.",
+                stringResource(R.string.settings_about_license),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -151,15 +210,15 @@ private fun AboutCard() {
                 FilledTonalButton(onClick = { uriHandler.openUri(BuildConfig.SOURCE_URL) }, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Code, null)
                     Spacer(Modifier.width(6.dp))
-                    Text("Kod źródłowy")
+                    Text(stringResource(R.string.settings_source_code))
                 }
                 OutlinedButton(
                     onClick = { uriHandler.openUri("https://www.gnu.org/licenses/gpl-3.0.html") },
                     modifier = Modifier.weight(1f)
-                ) { Text("Licencja") }
+                ) { Text(stringResource(R.string.settings_license)) }
             }
             TextButton(onClick = { showLibraries = !showLibraries }) {
-                Text(if (showLibraries) "Ukryj biblioteki" else "Biblioteki i ich licencje")
+                Text(if (showLibraries) stringResource(R.string.settings_hide_libraries) else stringResource(R.string.settings_libraries))
             }
             AnimatedVisibility(showLibraries) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -194,8 +253,8 @@ private fun SettingsHero() {
             }
             Spacer(Modifier.width(14.dp))
             Column {
-                Text("Źródła i połączenia", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
-                Text("Włączaj tylko te miejsca, których używasz", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .78f))
+                Text(stringResource(R.string.settings_hero_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(stringResource(R.string.settings_hero_subtitle), color = MaterialTheme.colorScheme.onPrimary.copy(alpha = .78f))
             }
         }
     }
@@ -218,9 +277,9 @@ private fun LocalAccessCard(
                 SourceIcon(Icons.Default.Smartphone)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Pamięć urządzenia", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_device_storage), fontWeight = FontWeight.SemiBold)
                     Text(
-                        if (allFilesAccess) "Pełny dostęp aktywny" else "Tryb ograniczony / SAF",
+                        if (allFilesAccess) stringResource(R.string.settings_full_access_on) else stringResource(R.string.settings_limited_access),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -233,7 +292,7 @@ private fun LocalAccessCard(
             }
             HorizontalDivider()
             Text(
-                "Pełny dostęp pozwala używać ekranu „Mój komputer” z pamięcią wbudowaną i kartą SD. SAF pozostaje alternatywą do podpinania pojedynczych folderów.",
+                stringResource(R.string.settings_full_access_text),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -242,34 +301,15 @@ private fun LocalAccessCard(
                     Button(onClick = onGrantAllFilesAccess, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.AdminPanelSettings, null)
                         Spacer(Modifier.width(6.dp))
-                        Text("Pełny dostęp")
+                        Text(stringResource(R.string.settings_full_access))
                     }
                 }
                 FilledTonalButton(onClick = onPickLocalFolder, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.FolderOpen, null)
                     Spacer(Modifier.width(6.dp))
-                    Text(if (safConfigured) "Zmień folder SAF" else "Folder SAF")
+                    Text(if (safConfigured) stringResource(R.string.settings_change_saf) else stringResource(R.string.settings_saf_folder))
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun StaticSourceCard(icon: ImageVector, title: String, subtitle: String) {
-    Surface(
-        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            SourceIcon(icon)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.SemiBold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Icon(Icons.Default.CheckCircle, null, tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -288,7 +328,7 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
                 Column(Modifier.weight(1f)) {
                     Text(source.label, fontWeight = FontWeight.SemiBold)
                     Text(
-                        if (source.enabled) source.subtitle else "Wyłączone",
+                        if (source.enabled) source.subtitle else stringResource(R.string.settings_disabled),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -304,13 +344,7 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
                         Icon(if (source.configured) Icons.Default.Link else Icons.Default.LinkOff, null, Modifier.size(19.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(9.dp))
                         Text(
-                            if (source.configured) {
-                                "Podłączone: ${source.subtitle}"
-                            } else {
-                                "Wybierz folder tego dostawcy w systemowym oknie Androida. " +
-                                    "Aby podpiąć cały dysk, zaznacz najwyższy poziom (np. „Mój dysk”) " +
-                                    "i potwierdź, zamiast wchodzić do podfolderu."
-                            },
+                            if (source.configured) stringResource(R.string.settings_attached, source.subtitle) else stringResource(R.string.settings_attach_hint),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.weight(1f)
                         )
@@ -319,7 +353,7 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
                     FilledTonalButton(onClick = onConnect, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.FolderOpen, null)
                         Spacer(Modifier.width(8.dp))
-                        Text(if (source.configured) "Zmień podłączony folder" else "Podłącz folder")
+                        Text(if (source.configured) stringResource(R.string.settings_change_attached) else stringResource(R.string.settings_attach_folder))
                     }
                 }
             }
@@ -328,72 +362,6 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
 }
 
 
-
-@Composable
-private fun ExpandableNetworkCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    enabled: Boolean,
-    onEnabled: (Boolean) -> Unit,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SourceIcon(icon)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(title, fontWeight = FontWeight.SemiBold)
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = enabled, onCheckedChange = onEnabled)
-            }
-            AnimatedVisibility(enabled) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Spacer(Modifier.height(4.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(2.dp))
-                    content()
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingField(label: String, value: String, onValue: (String) -> Unit, placeholder: String, password: Boolean = false) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValue,
-        label = { Text(label) },
-        placeholder = { Text(placeholder) },
-        singleLine = true,
-        visualTransformation = if (password) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(15.dp)
-    )
-}
-
-@Composable
-private fun NetworkButtons(canSave: Boolean, onSave: () -> Unit, onTest: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FilledTonalButton(onClick = onTest, modifier = Modifier.weight(1f)) {
-            Icon(Icons.Default.NetworkCheck, null)
-            Spacer(Modifier.width(7.dp))
-            Text("Test")
-        }
-        Button(onClick = onSave, enabled = canSave, modifier = Modifier.weight(1f)) {
-            Icon(Icons.Default.Save, null)
-            Spacer(Modifier.width(7.dp))
-            Text("Zapisz")
-        }
-    }
-}
 
 @Composable
 private fun SourceIcon(icon: ImageVector) {

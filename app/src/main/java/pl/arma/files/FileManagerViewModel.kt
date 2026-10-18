@@ -45,6 +45,10 @@ import pl.arma.files.ops.TrashEntry
 import pl.arma.files.text.TextDocument
 import pl.arma.files.text.TextReader
 
+/** Nazwy domyślnych kafelków zapisane w ustawieniach od pierwszych wersji. */
+private const val DOWNLOADS_KEY = "Pobrane"
+private const val PHOTOS_KEY = "Zdjęcia"
+
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as ArmaFilesApp).repository
     private val prefs = StoragePrefs(app)
@@ -173,7 +177,22 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun secondary(): Pane? = secondaryPaneId?.let { id -> panes.firstOrNull { it.id == id } }
 
-    private fun paneTitle(pane: Pane): String = PaneRules.tabTitle(pane.currentDir?.path)
+    private fun paneTitle(pane: Pane): String =
+        // Katalog główny nośnika ma nazwę nośnika, a nie „0” z /storage/emulated/0.
+        _deviceStorages.value.firstOrNull { it.rootUri == pane.currentDir }?.label
+            ?: tabTitle(pane.currentDir?.path)
+
+    private fun tabTitle(path: String?) = PaneRules.tabTitle(path, text(R.string.home_title), text(R.string.panes_root))
+
+    /**
+     * Po zmianie języka aktywność powstaje od nowa, a ten ViewModel zostaje —
+     * teksty wyliczone wcześniej (tytuły kart, źródła) trzeba przeliczyć.
+     */
+    fun onLocaleChanged() {
+        syncPanes()
+        updateSources()
+        refreshDeviceLocations()
+    }
 
     /** Przepisuje stan aktywnego panelu do przepływów, z których czyta ekran. */
     private fun syncPanes() {
@@ -247,12 +266,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun pinTabFolder(id: String) {
         val pane = panes.firstOrNull { it.id == id } ?: return
         val dir = pane.currentDir ?: run {
-            _error.value = "Ta karta nie ma otwartego katalogu."
+            _error.value = text(R.string.err_tab_no_folder)
             return
         }
         viewModelScope.launch {
             val item = runCatching { repo.itemInfo(dir) }.getOrNull()
-                ?: FileItem(dir, PaneRules.tabTitle(dir.path), DIRECTORY_MIME, 0, 0, true)
+                ?: FileItem(dir, tabTitle(dir.path), DIRECTORY_MIME, 0, 0, true)
             pinFolder(item)
         }
     }
@@ -314,7 +333,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun sendToOtherPane(items: List<FileItem>, move: Boolean) {
         val target = secondary()?.currentDir
         if (target == null) {
-            _error.value = "Drugi panel nie ma otwartego katalogu."
+            _error.value = text(R.string.err_pane_no_folder)
             return
         }
         if (items.isEmpty()) return
@@ -352,7 +371,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             prefs.treeUri = tree
             updateSources()
             openSource(SourceType.LOCAL)
-        }.onFailure { _error.value = it.message ?: "Nie udało się uzyskać dostępu." }
+        }.onFailure { _error.value = it.message ?: text(R.string.err_access_failed) }
     }
 
     fun setCloudTree(type: SourceType, tree: Uri) {
@@ -363,7 +382,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             networkPrefs.setEnabled(type, true)
             updateSources()
             openSource(type)
-        }.onFailure { _error.value = it.message ?: "Nie udało się podłączyć źródła." }
+        }.onFailure { _error.value = it.message ?: text(R.string.err_attach_failed) }
     }
 
     fun setSourceEnabled(type: SourceType, enabled: Boolean) {
@@ -429,8 +448,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             }
             _testingAccount.value = false
             _accountTestResult.value = result.fold(
-                onSuccess = { count -> AccountTestResult(true, "Połączenie działa • $count elementów w katalogu startowym") },
-                onFailure = { AccountTestResult(false, it.message ?: "Nie udało się połączyć.") }
+                onSuccess = { count -> AccountTestResult(true, text(R.string.accounts_test_ok, plural(R.plurals.n_items, count, count))) },
+                onFailure = { AccountTestResult(false, it.message ?: text(R.string.accounts_test_failed)) }
             )
         }
     }
@@ -448,7 +467,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             val found = runCatching { LanScanner.findSmbHosts() }.getOrDefault(emptyList())
             _discovered.value = found
             _scanning.value = false
-            if (found.isEmpty()) _notice.value = "Nie znaleziono serwerów SMB w tej sieci"
+            if (found.isEmpty()) _notice.value = text(R.string.discovery_none_notice)
         }
     }
 
@@ -472,7 +491,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun openSource(source: StorageSource) {
         val rootUri = source.rootUri
         if (!source.configured || rootUri == null) {
-            _error.value = "To połączenie wymaga jeszcze konfiguracji."
+            _error.value = text(R.string.err_needs_config)
             return
         }
         val pane = active()
@@ -487,12 +506,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val source = _sources.value.firstOrNull { it.type == type }
         val rootUri = source?.rootUri
         if (source == null || !source.configured || rootUri == null) {
-            _error.value = "Najpierw skonfiguruj źródło."
+            _error.value = text(R.string.err_configure_first)
             return
         }
         launchOperation {
             val count = repo.listChildren(rootUri).size
-            _notice.value = "Połączenie działa • $count elementów w katalogu startowym"
+            _notice.value = text(R.string.accounts_test_ok, plural(R.plurals.n_items, count, count))
         }
     }
 
@@ -502,10 +521,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val rootUri = source.rootUri
         if (!source.configured || rootUri == null) {
             _error.value = when (type) {
-                SourceType.LOCAL -> "Najpierw wybierz katalog pamięci urządzenia."
-                SourceType.FTP -> "Skonfiguruj połączenie FTP w Ustawieniach."
-                SourceType.SMB -> "Skonfiguruj udział SMB w Ustawieniach."
-                else -> "Podłącz to źródło w Ustawieniach."
+                SourceType.LOCAL -> text(R.string.err_pick_local_first)
+                SourceType.FTP -> text(R.string.err_configure_ftp)
+                SourceType.SMB -> text(R.string.err_configure_smb)
+                else -> text(R.string.err_attach_in_settings)
             }
             return
         }
@@ -528,7 +547,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             _busy.value = true
             runCatching { repo.listChildren(dir) }
                 .onSuccess { pane.files = it }
-                .onFailure { _error.value = "Nie można odczytać katalogu: ${it.message}" }
+                .onFailure { _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty()) }
             _busy.value = false
             syncPanes()
         }
@@ -569,7 +588,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openLocalLocation(uri: Uri) {
         if (uri.scheme == "file" && !hasBroadStorageAccess()) {
-            _error.value = "ARMA Files potrzebuje dostępu do wszystkich plików, aby otworzyć pamięć urządzenia lub kartę SD."
+            _error.value = text(R.string.err_needs_all_files)
             return
         }
         val pane = active()
@@ -600,23 +619,23 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun createFolder(name: String) {
         val parent = _currentDir.value ?: return
-        launchOperation(success = "Utworzono folder") {
-            repo.createFolder(parent, validatedName(name)) ?: error("Nie udało się utworzyć folderu.")
+        launchOperation(success = text(R.string.notice_folder_created)) {
+            repo.createFolder(parent, validatedName(name)) ?: error(text(R.string.err_folder_create))
             refresh()
         }
     }
 
     fun createFile(name: String) {
         val parent = _currentDir.value ?: return
-        launchOperation(success = "Utworzono plik") {
+        launchOperation(success = text(R.string.notice_file_created)) {
             val safe = validatedName(name)
-            repo.createFile(parent, safe, guessMime(safe)) ?: error("Nie udało się utworzyć pliku.")
+            repo.createFile(parent, safe, guessMime(safe)) ?: error(text(R.string.err_file_create))
             refresh()
         }
     }
 
     fun rename(item: FileItem, name: String) {
-        launchOperation(success = "Zmieniono nazwę") {
+        launchOperation(success = text(R.string.notice_renamed)) {
             val newUri = repo.rename(item, validatedName(name))
             if (newUri != null) prefs.replaceUri(item.uri, newUri)
             refresh()
@@ -626,9 +645,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun validatedName(name: String): String {
         val trimmed = name.trim()
-        if (trimmed.isBlank()) error("Nazwa nie może być pusta.")
-        if (trimmed == "." || trimmed == "..") error("Nieprawidłowa nazwa.")
-        if (trimmed.any { it == '/' || it == '\\' }) error("Nazwa nie może zawierać \"/\" ani \"\\\".")
+        if (trimmed.isBlank()) error(text(R.string.err_name_empty))
+        if (trimmed == "." || trimmed == "..") error(text(R.string.err_name_invalid))
+        if (trimmed.any { it == '/' || it == '\\' }) error(text(R.string.err_name_slash))
         return trimmed
     }
 
@@ -680,7 +699,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val entries = trash.entries()
             if (entries.isEmpty()) {
-                _notice.value = "Kosz jest pusty"
+                _notice.value = text(R.string.notice_trash_empty)
                 return@launch
             }
             val items = entries.mapNotNull { entry ->
@@ -809,7 +828,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun setClipboard(items: List<FileItem>, cut: Boolean) {
         if (items.isNotEmpty()) {
             _clipboard.value = ClipboardPayload(items.distinctBy { it.uri.toString() }, cut)
-            _notice.value = if (cut) "Wybrano do przeniesienia: ${items.size}" else "Skopiowano do schowka: ${items.size}"
+            _notice.value = if (cut) text(R.string.notice_selected_move, items.size) else text(R.string.notice_copied, items.size)
         }
     }
 
@@ -836,7 +855,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun createArchive(items: List<FileItem>, name: String) {
         val parent = _currentDir.value ?: return
         if (items.isEmpty()) return
-        launchOperation(success = "Utworzono archiwum ZIP") {
+        launchOperation(success = text(R.string.notice_zip_created)) {
             repo.createZip(items, parent, name)
             refresh()
         }
@@ -844,7 +863,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun extractArchive(item: FileItem) {
         val parent = _currentDir.value ?: return
-        launchOperation(success = "Rozpakowano ${item.name}") {
+        launchOperation(success = text(R.string.notice_unzipped, item.name)) {
             repo.extractZip(item, parent)
             refresh()
         }
@@ -880,7 +899,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun readDocument(item: FileItem): TextDocument = withContext(Dispatchers.IO) {
         val bytes = repo.readBytes(item.uri, TextReader.DEFAULT_LIMIT)
         if (TextReader.looksBinary(bytes)) {
-            throw IllegalArgumentException("To nie jest plik tekstowy.")
+            throw IllegalArgumentException(text(R.string.err_not_text))
         }
         TextReader.read(bytes, totalBytes = item.size, limit = TextReader.DEFAULT_LIMIT)
     }
@@ -924,7 +943,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             while (maxOf(bounds.outWidth, bounds.outHeight) / sample > targetMaxSide * 2) sample *= 2
             val options = BitmapFactory.Options().apply { inSampleSize = sample.coerceAtLeast(1) }
             BitmapFactory.decodeFile(file.absolutePath, options)
-                ?: throw IllegalArgumentException("Android nie potrafi zdekodować tego obrazu.")
+                ?: throw IllegalArgumentException(text(R.string.err_image_decode))
         }
     }
 
@@ -935,7 +954,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun preparePreviewFile(item: FileItem, folderName: String): File {
-        if (item.uri.scheme == "file") return File(item.uri.path ?: error("Brak ścieżki pliku."))
+        if (item.uri.scheme == "file") return File(item.uri.path ?: error(text(R.string.err_no_path)))
         val cache = File(getApplication<Application>().cacheDir, folderName).apply { mkdirs() }
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "preview.bin" }
         val signature = "${item.uri}|${item.size}|${item.lastModified}".hashCode()
@@ -982,9 +1001,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 val total = stat?.totalBytes ?: 0L
                 val free = stat?.availableBytes ?: 0L
                 val label = when {
-                    volume.isPrimary -> "Pamięć wbudowana"
-                    volume.isRemovable -> volume.getDescription(context).ifBlank { "Karta pamięci" }
-                    else -> volume.getDescription(context).ifBlank { "Pamięć ${index + 1}" }
+                    volume.isPrimary -> text(R.string.storage_internal)
+                    volume.isRemovable -> volume.getDescription(context).ifBlank { text(R.string.storage_sd) }
+                    else -> volume.getDescription(context).ifBlank { text(R.string.storage_n, index + 1) }
                 }
                 roots[dir.absolutePath] = DeviceStorage(
                     id = dir.absolutePath,
@@ -992,7 +1011,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                     rootUri = Uri.fromFile(dir),
                     totalBytes = total,
                     freeBytes = free,
-                    removable = volume.isRemovable
+                    removable = volume.isRemovable,
+                    usb = volume.isRemovable && isUsbVolume(volume.getDescription(context))
                 )
             }
         } else {
@@ -1005,7 +1025,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 val stat = runCatching { StatFs(dir.absolutePath) }.getOrNull()
                 roots[dir.absolutePath] = DeviceStorage(
                     id = dir.absolutePath,
-                    label = if (index == 0) "Pamięć wbudowana" else "Karta pamięci",
+                    label = if (index == 0) text(R.string.storage_internal) else text(R.string.storage_sd),
                     rootUri = Uri.fromFile(dir),
                     totalBytes = stat?.totalBytes ?: 0L,
                     freeBytes = stat?.availableBytes ?: 0L,
@@ -1019,16 +1039,112 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             val stat = runCatching { StatFs(dir.absolutePath) }.getOrNull()
             roots[dir.absolutePath] = DeviceStorage(
                 id = dir.absolutePath,
-                label = "Pamięć wbudowana",
+                label = text(R.string.storage_internal),
                 rootUri = Uri.fromFile(dir),
                 totalBytes = stat?.totalBytes ?: 0L,
                 freeBytes = stat?.availableBytes ?: 0L,
                 removable = false
             )
         }
+        val previous = _deviceStorages.value
         _deviceStorages.value = roots.values.toList()
+        syncPanes()
+        onVolumesChanged(previous, _deviceStorages.value)
 
         loadPinned()
+    }
+
+    /**
+     * System nie mówi wprost, że nośnik to pendrive — zostaje opis woluminu,
+     * który dla dysków USB zawiera „USB” w każdym języku („Dysk USB SanDisk”).
+     */
+    private fun isUsbVolume(description: String): Boolean = description.contains("USB", ignoreCase = true)
+
+    /**
+     * Po włożeniu nośnika — krótka informacja; po wyjęciu karty otwarte na nim
+     * są zamykane, bo każda operacja kończyłaby się błędem odczytu.
+     */
+    private fun onVolumesChanged(previous: List<DeviceStorage>, current: List<DeviceStorage>) {
+        if (previous.isEmpty()) return
+        val currentIds = current.map { it.id }.toSet()
+        val removed = previous.filter { it.id !in currentIds }
+        val added = current.filter { storage -> previous.none { it.id == storage.id } }
+        added.firstOrNull()?.let { _notice.value = text(R.string.notice_volume_mounted, it.label) }
+        if (removed.isEmpty()) return
+
+        fun onRemoved(uri: Uri?): Boolean {
+            val path = uri?.takeIf { it.scheme == "file" }?.path ?: return false
+            return removed.any { path == it.id || path.startsWith(it.id + "/") }
+        }
+        for (pane in panes.toList()) {
+            if (!onRemoved(pane.currentDir) && !onRemoved(pane.root)) continue
+            if (panes.size > 1) {
+                closeTab(pane.id)
+            } else {
+                pane.currentDir = null
+                pane.root = null
+                pane.navStack.clear()
+                pane.files = emptyList()
+            }
+        }
+        if (onRemoved(_clipboard.value?.items?.firstOrNull()?.uri)) _clipboard.value = null
+        _searchResults.value = _searchResults.value.filterNot { onRemoved(it.uri) }
+        syncPanes()
+        _notice.value = text(R.string.notice_volume_removed, removed.first().label)
+    }
+
+    /**
+     * Indeks pamięta pliki z pendrive'a także po jego wyjęciu; w wynikach
+     * pokazujemy tylko to, co leży na podłączonych nośnikach.
+     */
+    private fun onPresentVolume(uri: Uri): Boolean {
+        val path = uri.takeIf { it.scheme == "file" }?.path ?: return true
+        return _deviceStorages.value.any { path == it.id || path.startsWith(it.id + "/") }
+    }
+
+    /** Włożenie i wyjęcie karty SD albo pendrive'a, gdy aplikacja jest otwarta. */
+    private val volumeWatcher: Any? = run {
+        val context = getApplication<Application>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            object : StorageManager.StorageVolumeCallback() {
+                override fun onStateChanged(volume: android.os.storage.StorageVolume) {
+                    viewModelScope.launch { refreshDeviceLocations() }
+                }
+            }.also { callback ->
+                context.getSystemService(StorageManager::class.java)
+                    .registerStorageVolumeCallback(context.mainExecutor, callback)
+            }
+        } else {
+            object : android.content.BroadcastReceiver() {
+                override fun onReceive(c: android.content.Context, intent: android.content.Intent) {
+                    refreshDeviceLocations()
+                }
+            }.also { receiver ->
+                val filter = android.content.IntentFilter().apply {
+                    addAction(android.content.Intent.ACTION_MEDIA_MOUNTED)
+                    addAction(android.content.Intent.ACTION_MEDIA_UNMOUNTED)
+                    addAction(android.content.Intent.ACTION_MEDIA_REMOVED)
+                    addAction(android.content.Intent.ACTION_MEDIA_BAD_REMOVAL)
+                    addDataScheme("file")
+                }
+                context.registerReceiver(receiver, filter)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        val context = getApplication<Application>()
+        when (val watcher = volumeWatcher) {
+            is android.content.BroadcastReceiver -> runCatching { context.unregisterReceiver(watcher) }
+            null -> Unit
+            else -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                runCatching {
+                    context.getSystemService(StorageManager::class.java)
+                        .unregisterStorageVolumeCallback(watcher as StorageManager.StorageVolumeCallback)
+                }
+            }
+        }
+        super.onCleared()
     }
 
     private val _pinnedStats = MutableStateFlow<Map<String, Pair<Int, Long>>>(emptyMap())
@@ -1060,7 +1176,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             val parsed = Uri.parse(uri)
             PinnedFolder(
                 id = uri,
-                label = label,
+                label = displayPinnedLabel(uri, label),
                 rootUri = parsed,
                 subtitle = parsed.path ?: label
             )
@@ -1078,11 +1194,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val pictures = Uri.fromFile(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         ).toString()
-        if (stored.none { it.first == pictures && it.second == "Zdjęcia" }) return stored
+        if (stored.none { it.first == pictures && it.second == PHOTOS_KEY }) return stored
 
-        val camera = defaultPinned().first { it.label == "Zdjęcia" }
+        val camera = defaultPinned().first { it.label == PHOTOS_KEY }
         val migrated = stored.map { entry ->
-            if (entry.first == pictures && entry.second == "Zdjęcia") {
+            if (entry.first == pictures && entry.second == PHOTOS_KEY) {
                 camera.rootUri.toString() to camera.label
             } else {
                 entry
@@ -1090,6 +1206,19 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
         prefs.setPinned(migrated)
         return migrated
+    }
+
+    /**
+     * Domyślne kafelki zapisane są pod polskimi nazwami z pierwszych wersji —
+     * to klucze, nie napisy; na ekranie pokazujemy je w języku aplikacji.
+     */
+    private fun displayPinnedLabel(uri: String, label: String): String {
+        val default = defaultPinned().firstOrNull { it.rootUri.toString() == uri && it.label == label } ?: return label
+        return when (default.label) {
+            DOWNLOADS_KEY -> text(R.string.pinned_downloads)
+            PHOTOS_KEY -> text(R.string.pinned_photos)
+            else -> label
+        }
     }
 
     private fun defaultPinned(): List<PinnedFolder> {
@@ -1101,8 +1230,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val dcim = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
         val camera = File(dcim, "Camera").takeIf { it.isDirectory } ?: dcim
         return listOf(
-            PinnedFolder(downloads.absolutePath, "Pobrane", Uri.fromFile(downloads), downloads.absolutePath),
-            PinnedFolder(camera.absolutePath, "Zdjęcia", Uri.fromFile(camera), camera.absolutePath)
+            PinnedFolder(downloads.absolutePath, DOWNLOADS_KEY, Uri.fromFile(downloads), downloads.absolutePath),
+            PinnedFolder(camera.absolutePath, PHOTOS_KEY, Uri.fromFile(camera), camera.absolutePath)
         )
     }
 
@@ -1111,12 +1240,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val current = prefs.pinned().orEmpty()
         val uri = item.uri.toString()
         if (current.any { it.first == uri }) {
-            _notice.value = "Ten folder jest już przypięty"
+            _notice.value = text(R.string.notice_already_pinned)
             return
         }
         prefs.setPinned(current + (uri to item.name))
         loadPinned()
-        _notice.value = "Przypięto ${item.name}"
+        _notice.value = text(R.string.notice_pinned, item.name)
     }
 
     fun unpinFolder(id: String) {
@@ -1147,7 +1276,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun isRemote(uri: Uri): Boolean = RemoteRepository.isRemoteScheme(uri.scheme)
 
     fun itemFromUri(uri: Uri): FileItem? {
-        val name = repo.displayName(uri) ?: uri.lastPathSegment ?: "plik"
+        val name = repo.displayName(uri) ?: uri.lastPathSegment ?: text(R.string.common_file)
         val mime = getApplication<Application>().contentResolver.getType(uri) ?: guessMime(name)
         return FileItem(uri, name, mime, 0, 0, mime == DIRECTORY_MIME)
     }
@@ -1161,7 +1290,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
         fun doc(tree: Uri?): Uri? = tree?.let { runCatching { repo.treeToDocumentUri(it) }.getOrNull() }
         _sources.value = listOf(
-            StorageSource(SourceType.LOCAL, "Folder lokalny", true, localTree != null, doc(localTree), "Dostęp przez Android SAF"),
+            StorageSource(SourceType.LOCAL, text(R.string.source_local_folder), true, localTree != null, doc(localTree), text(R.string.source_local_folder_hint)),
             StorageSource(SourceType.GOOGLE_DRIVE, "Google Drive", networkPrefs.isEnabled(SourceType.GOOGLE_DRIVE), googleTree != null, doc(googleTree), attachedLabel(googleTree)),
             StorageSource(SourceType.ONEDRIVE, "OneDrive", networkPrefs.isEnabled(SourceType.ONEDRIVE), oneDriveTree != null, doc(oneDriveTree), attachedLabel(oneDriveTree)),
             StorageSource(SourceType.DROPBOX, "Dropbox", networkPrefs.isEnabled(SourceType.DROPBOX), dropboxTree != null, doc(dropboxTree), attachedLabel(dropboxTree)),
@@ -1172,7 +1301,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 enabled = account.enabled,
                 configured = account.configured,
                 rootUri = repo.remoteRoot(account),
-                subtitle = if (account.configured) account.summary else "Brak konfiguracji",
+                subtitle = if (account.configured) account.summary else text(R.string.source_not_configured),
                 accountId = account.id
             )
         }
@@ -1185,20 +1314,20 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
      * to, co da się podpiąć, zależy od aplikacji dostawcy.
      */
     private fun attachedLabel(tree: Uri?): String {
-        if (tree == null) return "Wymaga wybrania folderu"
+        if (tree == null) return text(R.string.source_pick_folder)
         val name = runCatching { repo.displayName(repo.treeToDocumentUri(tree)) }.getOrNull()
-        return name?.takeIf { it.isNotBlank() } ?: "Podłączony"
+        return name?.takeIf { it.isNotBlank() } ?: text(R.string.source_attached)
     }
 
     /** Uruchamia budowanie indeksu dla wszystkich nośników urządzenia. */
     fun buildIndex() {
         if (!hasBroadStorageAccess()) {
-            _error.value = "Indeksowanie wymaga dostępu do wszystkich plików."
+            _error.value = text(R.string.err_index_needs_access)
             return
         }
         val roots = _deviceStorages.value.map { it.rootUri }
         if (roots.isEmpty()) {
-            _error.value = "Nie wykryto nośników do zindeksowania."
+            _error.value = text(R.string.err_index_no_storage)
             return
         }
         indexer.start(roots)
@@ -1219,7 +1348,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             val found = withContext(Dispatchers.IO) { index.search(query) }
-            _searchResults.value = found.map(::toFileItem)
+            _searchResults.value = found.map(::toFileItem).filter { onPresentVolume(it.uri) }
         }
     }
 
@@ -1227,7 +1356,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun browseCategory(category: IndexCategory) {
         viewModelScope.launch {
             val found = withContext(Dispatchers.IO) { index.byCategory(category) }
-            _searchResults.value = found.map(::toFileItem)
+            _searchResults.value = found.map(::toFileItem).filter { onPresentVolume(it.uri) }
             _globalSearch.value = true
         }
     }
@@ -1240,9 +1369,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 StorageAnalysis(
                     usageByCategory = index.usageByCategory(),
                     stats = index.stats(),
-                    largestFiles = index.largestFiles(30).map(::toFileItem),
-                    largestFolders = index.largestFolders(20),
-                    oldFiles = index.olderThan(monthsAgo, 30).map(::toFileItem)
+                    largestFiles = index.largestFiles(30).map(::toFileItem).filter { onPresentVolume(it.uri) },
+                    largestFolders = index.largestFolders(20).filter { onPresentVolume(Uri.parse(it.parentUri)) },
+                    oldFiles = index.olderThan(monthsAgo, 30).map(::toFileItem).filter { onPresentVolume(it.uri) }
                 )
             }
             _analysis.value = result
@@ -1334,7 +1463,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 block()
                 if (success != null) _notice.value = success
             } catch (e: Exception) {
-                _error.value = e.message ?: "Operacja nie powiodła się."
+                _error.value = e.message ?: text(R.string.err_operation_failed)
             } finally {
                 _busy.value = false
             }

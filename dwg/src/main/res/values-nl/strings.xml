@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">De DWG-tekening kon niet worden verwerkt — het bestand is te groot of beschadigd.</string>
+    <string name="dwg_no_result">De DWG-conversie leverde geen resultaat op.</string>
+    <string name="dwg_start_failed">De DWG-conversie kon niet worden gestart.</string>
+</resources>

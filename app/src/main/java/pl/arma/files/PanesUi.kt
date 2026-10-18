@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 
 /**
  * Drugi panel obok głównego. Ma własną nawigację, ale świadomie uproszczoną
@@ -59,17 +61,17 @@ fun SecondaryPane(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Wstecz") }
+                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, stringResource(R.string.panes_back)) }
                 Text(
-                    dir?.path?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { "Katalog główny" }
-                        ?: "Mój komputer",
+                    dir?.path?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { stringResource(R.string.panes_root) }
+                        ?: stringResource(R.string.home_title),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = onSwap) { Icon(Icons.Default.SwapHoriz, "Zamień panele") }
-                IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Zamknij panel") }
+                IconButton(onClick = onSwap) { Icon(Icons.Default.SwapHoriz, stringResource(R.string.panes_swap)) }
+                IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.panes_close)) }
             }
 
             if (selectionCount > 0 && dir != null) {
@@ -80,12 +82,12 @@ fun SecondaryPane(
                     TextButton(onClick = onCopyHere, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.ContentCopy, null, Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Kopiuj tu ($selectionCount)")
+                        Text(stringResource(R.string.panes_copy_here, selectionCount))
                     }
                     TextButton(onClick = onMoveHere, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.DriveFileMove, null, Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Przenieś tu")
+                        Text(stringResource(R.string.panes_move_here))
                     }
                 }
             }
@@ -93,7 +95,7 @@ fun SecondaryPane(
             if (dir == null) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "Otwórz katalog w tym panelu,\nwybierając kartę z paska powyżej.",
+                        stringResource(R.string.panes_empty),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -92,6 +92,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -119,6 +121,10 @@ import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private val vm: FileManagerViewModel by viewModels()
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.wrap(newBase))
+    }
     // Uri razem z chwilą otwarcia: ten sam plik otwarty z zewnątrz drugi raz
     // to ten sam Uri, a podgląd ma się otworzyć mimo to.
     private val externalOpen = mutableStateOf<Pair<Uri, Long>?>(null)
@@ -126,6 +132,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (savedInstanceState != null) vm.onLocaleChanged()
         externalOpen.value = intent?.data?.let { it to System.nanoTime() }
         setContent {
             val open = externalOpen.value
@@ -185,7 +192,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val discovered by vm.discovered.collectAsStateWithLifecycle()
     val scanning by vm.scanning.collectAsStateWithLifecycle()
 
-    var tab by remember { mutableStateOf(Tab.FILES) }
+    var tab by rememberSaveable { mutableStateOf(Tab.FILES) }
     var query by remember { mutableStateOf("") }
     // Sortowanie należy do folderu: wraca przy każdym wejściu, także po restarcie.
     var sort by remember(tab, currentDir) { mutableStateOf(vm.sortMode(tab, currentDir)) }
@@ -297,15 +304,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         val record = operationHistory.firstOrNull() ?: return@LaunchedEffect
         if (!record.undoable) return@LaunchedEffect
         val what = when (record.kind) {
-            pl.arma.files.ops.OperationKind.COPY -> "Skopiowano"
-            pl.arma.files.ops.OperationKind.MOVE -> "Przeniesiono"
-            pl.arma.files.ops.OperationKind.TRASH -> "Przeniesiono do kosza"
-            else -> "Gotowe"
+            pl.arma.files.ops.OperationKind.COPY -> R.string.undo_copied
+            pl.arma.files.ops.OperationKind.MOVE -> R.string.undo_moved
+            pl.arma.files.ops.OperationKind.TRASH -> R.string.undo_trashed
+            else -> R.string.undo_done
         }
-        val skipped = if (record.skipped > 0) ", pominięto ${record.skipped}" else ""
+        val skipped = if (record.skipped > 0) context.getString(R.string.undo_skipped_suffix, record.skipped) else ""
         val result = snackbarHostState.showSnackbar(
-            message = "$what ${record.itemCount}$skipped",
-            actionLabel = "Cofnij",
+            message = context.getString(what, record.itemCount) + skipped,
+            actionLabel = context.getString(R.string.common_undo),
             duration = SnackbarDuration.Long
         )
         if (result == SnackbarResult.ActionPerformed) vm.undo(record)
@@ -403,16 +410,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 )
                 if (!selectionMode) {
                     NavigationBar(tonalElevation = 0.dp) {
-                    NavItem(Tab.FILES, tab, Icons.Default.Computer, "Mój komputer") {
+                    NavItem(Tab.FILES, tab, Icons.Default.Computer, stringResource(R.string.nav_home)) {
                         tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
                     }
-                    NavItem(Tab.RECENT, tab, Icons.Default.Schedule, "Ostatnie") {
+                    NavItem(Tab.RECENT, tab, Icons.Default.Schedule, stringResource(R.string.nav_recent)) {
                         tab = Tab.RECENT; query = ""; category = FileCategory.ALL
                     }
-                    NavItem(Tab.FAVORITES, tab, Icons.Default.Star, "Ulubione") {
+                    NavItem(Tab.FAVORITES, tab, Icons.Default.Star, stringResource(R.string.nav_favorites)) {
                         tab = Tab.FAVORITES; query = ""; category = FileCategory.ALL
                     }
-                        NavItem(Tab.SETTINGS, tab, Icons.Default.Tune, "Ustawienia") {
+                        NavItem(Tab.SETTINGS, tab, Icons.Default.Tune, stringResource(R.string.nav_settings)) {
                             tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL
                         }
                     }
@@ -427,7 +434,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     onClick = { createDialog = "choose" },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
-                ) { Icon(Icons.Default.Add, "Nowy") }
+                ) { Icon(Icons.Default.Add, stringResource(R.string.fab_new)) }
             }
         }
     ) { padding ->
@@ -532,7 +539,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     Column(Modifier.fillMaxSize()) {
                         FolderHeader(
                             tab = tab,
-                            crumbs = breadcrumbs(root, currentDir),
+                            crumbs = breadcrumbs(root, currentDir, deviceStorages),
                             onCrumb = vm::openPath,
                             searchOpen = searchOpen || query.isNotBlank(),
                             onSearchOpen = { open ->
@@ -550,7 +557,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             onSort = { sort = it; vm.saveSortMode(tab, currentDir, it) },
                             view = viewMode,
                             onView = { viewMode = it },
-                            summary = "${baseFiles.size} elementów · " +
+                            summary = pluralStringResource(R.plurals.n_items, baseFiles.size, baseFiles.size) + " · " +
                                 formatSize(baseFiles.filterNot { it.isDirectory }.sumOf { it.size }),
                             onRefresh = vm::refresh,
                             onPickRoot = { folderPicker.launch(null) }
@@ -666,7 +673,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp)
-                            Text("Przetwarzanie…", fontWeight = FontWeight.Medium)
+                            Text(stringResource(R.string.common_processing), fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -712,16 +719,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 title = item.name,
                 actions = listOf(
                     ViewerAction(
-                        if (favorite) "Usuń z ulubionych" else "Dodaj do ulubionych",
+                        if (favorite) stringResource(R.string.fav_remove) else stringResource(R.string.fav_add),
                         if (favorite) Icons.Default.Star else Icons.Default.StarBorder
                     ) { vm.toggleFavorite(item.uri) },
-                    ViewerAction("Udostępnij", Icons.Default.Share) {
+                    ViewerAction(stringResource(R.string.common_share), Icons.Default.Share) {
                         appScope.launch { shareItems(context, listOf(item), vm) }
                     },
-                    ViewerAction("Otwórz w innej aplikacji", Icons.Default.OpenInNew) {
+                    ViewerAction(stringResource(R.string.open_in_other_app), Icons.Default.OpenInNew) {
                         appScope.launch { openExternal(context, item, vm) }
                     },
-                    ViewerAction("Właściwości", Icons.Default.Info) { preview = null; details = item }
+                    ViewerAction(stringResource(R.string.common_properties), Icons.Default.Info) { preview = null; details = item }
                 )
             )
             return@let
@@ -751,7 +758,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             onDismissRequest = vm::clearError,
             confirmButton = { TextButton(onClick = vm::clearError) { Text("OK") } },
             icon = { Icon(Icons.Default.ErrorOutline, null) },
-            title = { Text("Nie udało się wykonać operacji") },
+            title = { Text(stringResource(R.string.err_operation_title)) },
             text = { Text(it) }
         )
     }
@@ -762,16 +769,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             onFolder = { createDialog = "folder" },
             onFile = { createDialog = "file" }
         )
-        "folder" -> NameDialog("Nowy folder", "Nazwa folderu", onDismiss = { createDialog = null }) {
+        "folder" -> NameDialog(stringResource(R.string.new_folder), stringResource(R.string.folder_name), onDismiss = { createDialog = null }) {
             vm.createFolder(it); createDialog = null
         }
-        "file" -> NameDialog("Nowy plik", "np. notatka.md", onDismiss = { createDialog = null }) {
+        "file" -> NameDialog(stringResource(R.string.new_file), stringResource(R.string.file_name_hint), onDismiss = { createDialog = null }) {
             vm.createFile(it); createDialog = null
         }
     }
 
     renameItem?.let { item ->
-        NameDialog("Zmień nazwę", item.name, item.name, onDismiss = { renameItem = null }) {
+        NameDialog(stringResource(R.string.common_rename), item.name, item.name, onDismiss = { renameItem = null }) {
             vm.rename(item, it); renameItem = null
         }
     }
@@ -781,22 +788,19 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         AlertDialog(
             onDismissRequest = { deleteItems = emptyList() },
             icon = { Icon(Icons.Default.DeleteOutline, null) },
-            title = { Text(if (itemsToDelete.size == 1) "Usunąć ${itemsToDelete.first().name}?" else "Usunąć ${itemsToDelete.size} elementów?") },
+            title = { Text(if (itemsToDelete.size == 1) stringResource(R.string.delete_one_title, itemsToDelete.first().name) else pluralStringResource(R.plurals.delete_n_title, itemsToDelete.size, itemsToDelete.size)) },
             text = {
-                Text(
-                    "Elementy trafią do kosza na tym samym nośniku, więc nie zwolnią miejsca " +
-                        "od razu — za to można je przywrócić."
-                )
+                Text(stringResource(R.string.delete_text))
             },
             confirmButton = {
-                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text("Do kosza") }
+                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text(stringResource(R.string.delete_to_trash)) }
             },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { deleteItems = emptyList() }) { Text("Anuluj") }
+                    TextButton(onClick = { deleteItems = emptyList() }) { Text(stringResource(R.string.common_cancel)) }
                     TextButton(onClick = {
                         vm.deleteForever(itemsToDelete); deleteItems = emptyList()
-                    }) { Text("Usuń trwale") }
+                    }) { Text(stringResource(R.string.delete_forever)) }
                 }
             }
         )
@@ -805,9 +809,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     if (archiveItems.isNotEmpty()) {
         val itemsToArchive = archiveItems
         NameDialog(
-            title = "Utwórz archiwum ZIP",
-            hint = "Nazwa archiwum",
-            initial = if (itemsToArchive.size == 1) itemsToArchive.first().name.substringBeforeLast('.', itemsToArchive.first().name) + ".zip" else "archiwum.zip",
+            title = stringResource(R.string.zip_create_title),
+            hint = stringResource(R.string.zip_name),
+            initial = if (itemsToArchive.size == 1) itemsToArchive.first().name.substringBeforeLast('.', itemsToArchive.first().name) + ".zip" else stringResource(R.string.zip_default_name),
             onDismiss = { archiveItems = emptyList() }
         ) { name ->
             vm.createArchive(itemsToArchive, name)
@@ -822,7 +826,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     apkToInstall?.let { apk ->
         LaunchedEffect(apk.uri) {
             val problem = runCatching { installApk(context, vm.materializeUri(apk)) }
-                .getOrElse { it.message ?: "Nie udało się przygotować pliku APK." }
+                .getOrElse { it.message ?: context.getString(R.string.err_apk_prepare) }
             problem?.let { snackbarHostState.showSnackbar(it) }
             apkToInstall = null
         }
@@ -952,13 +956,13 @@ private fun ComputerHome(
                     ) {
                         Icon(Icons.Default.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
                         Column(Modifier.weight(1f)) {
-                            Text("Pełny dostęp do pamięci", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.access_full_title), fontWeight = FontWeight.SemiBold)
                             Text(
-                                "Włącz go, aby przeglądać pamięć wbudowaną i kartę SD jak w klasycznym menedżerze plików.",
+                                stringResource(R.string.access_full_text),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
-                        Button(onClick = onGrantAccess) { Text("Włącz") }
+                        Button(onClick = onGrantAccess) { Text(stringResource(R.string.common_turn_on)) }
                     }
                 }
             }
@@ -969,14 +973,14 @@ private fun ComputerHome(
                 modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SectionTitle("Przypięte foldery", Modifier.weight(1f))
+                SectionTitle(stringResource(R.string.home_pinned), Modifier.weight(1f))
                 // Same ikony — trzy akcje z podpisami nie mieściły się obok
                 // nagłówka i „Kosz" był ucinany przy krawędzi.
                 IconButton(onClick = onAnalyze) {
-                    Icon(Icons.Default.PieChart, "Analiza pamięci", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.PieChart, stringResource(R.string.analysis_title), tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onOpenHistory) {
-                    Icon(Icons.Default.History, "Historia operacji", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.History, stringResource(R.string.history_title), tint = MaterialTheme.colorScheme.primary)
                 }
                 TrashButton(count = trashCount, onClick = onOpenTrash)
             }
@@ -1010,7 +1014,7 @@ private fun ComputerHome(
         if (searchResults.isNotEmpty()) {
             item {
                 Text(
-                    "Znaleziono ${searchResults.size}",
+                    stringResource(R.string.search_found, searchResults.size),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
@@ -1027,7 +1031,7 @@ private fun ComputerHome(
         }
 
         item {
-            SectionTitle("Ten komputer", Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
+            SectionTitle(stringResource(R.string.home_this_computer), Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
         }
         items(storages, key = { it.id }) { storage ->
             DeviceStorageCard(storage = storage, usage = storageUsage, onClick = { onOpenStorage(storage) })
@@ -1035,7 +1039,7 @@ private fun ComputerHome(
 
         if (connectedSources.isNotEmpty()) {
             item {
-                SectionTitle("Połączone zasoby", Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
+                SectionTitle(stringResource(R.string.home_connected), Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
             }
             items(connectedSources, key = { "source_${it.type.name}" }) { source ->
                 ConnectedSourceCard(source = source, onClick = { onOpenSource(source) })
@@ -1091,20 +1095,20 @@ private fun SearchResultRow(item: FileItem, onOpen: () -> Unit, onReveal: () -> 
                 )
             }
             IconButton(onClick = onReveal) {
-                Icon(Icons.Default.FolderOpen, "Pokaż w katalogu", Modifier.size(20.dp))
+                Icon(Icons.Default.FolderOpen, stringResource(R.string.show_in_folder), Modifier.size(20.dp))
             }
         }
     }
 }
 
 private fun categoryShortLabel(category: pl.arma.files.index.IndexCategory): String = when (category) {
-    pl.arma.files.index.IndexCategory.IMAGE -> "Obrazy"
-    pl.arma.files.index.IndexCategory.VIDEO -> "Filmy"
-    pl.arma.files.index.IndexCategory.AUDIO -> "Audio"
-    pl.arma.files.index.IndexCategory.DOCUMENT -> "Dokumenty"
-    pl.arma.files.index.IndexCategory.ARCHIVE -> "Archiwa"
+    pl.arma.files.index.IndexCategory.IMAGE -> text(R.string.category_images)
+    pl.arma.files.index.IndexCategory.VIDEO -> text(R.string.category_videos)
+    pl.arma.files.index.IndexCategory.AUDIO -> text(R.string.category_audio)
+    pl.arma.files.index.IndexCategory.DOCUMENT -> text(R.string.category_documents)
+    pl.arma.files.index.IndexCategory.ARCHIVE -> text(R.string.category_archives)
     pl.arma.files.index.IndexCategory.APK -> "APK"
-    pl.arma.files.index.IndexCategory.OTHER -> "Inne"
+    pl.arma.files.index.IndexCategory.OTHER -> text(R.string.category_other)
 }
 
 @Composable
@@ -1127,7 +1131,11 @@ private fun DeviceStorageCard(
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Icon(
-                    if (storage.removable) Icons.Default.SdStorage else Icons.Default.Smartphone,
+                    when {
+                        storage.usb -> Icons.Default.Usb
+                        storage.removable -> Icons.Default.SdStorage
+                        else -> Icons.Default.Smartphone
+                    },
                     null,
                     Modifier.padding(9.dp).size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
@@ -1138,10 +1146,12 @@ private fun DeviceStorageCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(storage.label, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     if (storage.removable) {
-                        // Etykieta nośnika pochodzi z opisu systemowego, więc karta SD
-                        // i pendrive USB same się nazywają; chip mówi tylko tyle, ile
-                        // wiemy na pewno — że nośnik jest wymienny.
-                        AssistChip(onClick = {}, label = { Text("Wymienna") }, leadingIcon = { Icon(Icons.Default.Memory, null, Modifier.size(15.dp)) })
+                        // Nazwę nośnika podaje system; chip mówi, czym jest.
+                        AssistChip(
+                            onClick = {},
+                            label = { Text(stringResource(if (storage.usb) R.string.storage_usb else R.string.storage_removable)) },
+                            leadingIcon = { Icon(if (storage.usb) Icons.Default.Usb else Icons.Default.Memory, null, Modifier.size(15.dp)) }
+                        )
                     }
                 }
                 LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)))
@@ -1158,8 +1168,7 @@ private fun DeviceStorageCard(
                 }
                 Text(
                     if (storage.totalBytes > 0) {
-                        "Zajęte ${formatSize(storage.totalBytes - storage.freeBytes)} · " +
-                            "${formatSize(storage.freeBytes)} wolne z ${formatSize(storage.totalBytes)}"
+                        stringResource(R.string.storage_usage, formatSize(storage.totalBytes - storage.freeBytes), formatSize(storage.freeBytes), formatSize(storage.totalBytes))
                     } else storage.rootUri.path.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1186,7 +1195,7 @@ private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(source.label, fontWeight = FontWeight.SemiBold)
-                Text(source.subtitle.ifBlank { "Podłączony" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(source.subtitle.ifBlank { stringResource(R.string.source_attached) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -1198,11 +1207,12 @@ private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
  * Rozbija bieżącą ścieżkę na klikalne człony, licząc od korzenia źródła.
  * Poza korzeniem nie schodzimy — użytkownik nie ma tam dostępu.
  */
-private fun breadcrumbs(root: Uri?, current: Uri?): List<Pair<String, Uri>> {
+private fun breadcrumbs(root: Uri?, current: Uri?, storages: List<DeviceStorage>): List<Pair<String, Uri>> {
     if (current == null) return emptyList()
     val rootPath = root?.path.orEmpty().trimEnd('/')
     val currentPath = current.path.orEmpty().trimEnd('/')
-    val rootName = folderLabel(root)
+    // Katalog główny nośnika podpisany nazwą nośnika, nie „0” z /storage/emulated/0.
+    val rootName = storages.firstOrNull { it.rootUri == root }?.label ?: folderLabel(root)
 
     if (root == null || !currentPath.startsWith(rootPath)) {
         return listOf(folderLabel(current) to current)
@@ -1300,9 +1310,9 @@ private fun FolderHeader(
                         if (query.isEmpty()) {
                             Text(
                                 when {
-                                    globalSearch -> "Szukaj w całej pamięci"
-                                    tab == Tab.FILES -> "Szukaj w tym folderze"
-                                    else -> "Szukaj plików"
+                                    globalSearch -> stringResource(R.string.search_all_storage)
+                                    tab == Tab.FILES -> stringResource(R.string.search_this_folder)
+                                    else -> stringResource(R.string.search_files)
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1320,7 +1330,7 @@ private fun FolderHeader(
                     }
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onQuery("") }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Close, "Wyczyść", Modifier.size(18.dp))
+                            Icon(Icons.Default.Close, stringResource(R.string.common_clear), Modifier.size(18.dp))
                         }
                     }
                 }
@@ -1328,7 +1338,7 @@ private fun FolderHeader(
             IconButton(onClick = { onGlobalSearch(!globalSearch) }) {
                 Icon(
                     if (globalSearch) Icons.Default.TravelExplore else Icons.Default.ManageSearch,
-                    if (globalSearch) "Szukaj tylko tutaj" else "Szukaj w całej pamięci",
+                    if (globalSearch) stringResource(R.string.search_here_only) else stringResource(R.string.search_all_storage),
                     tint = if (globalSearch) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -1336,7 +1346,7 @@ private fun FolderHeader(
                     }
                 )
             }
-            TextButton(onClick = { onSearchOpen(false) }) { Text("Anuluj") }
+            TextButton(onClick = { onSearchOpen(false) }) { Text(stringResource(R.string.common_cancel)) }
             return@Row
         }
 
@@ -1344,7 +1354,7 @@ private fun FolderHeader(
             LocationStrip(crumbs, onCrumb, Modifier.weight(1f))
         } else {
             Text(
-                if (tab == Tab.RECENT) "Ostatnio otwierane" else "Ulubione",
+                if (tab == Tab.RECENT) stringResource(R.string.recent_title) else stringResource(R.string.nav_favorites),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
@@ -1352,10 +1362,10 @@ private fun FolderHeader(
         }
 
         val iconTint = MaterialTheme.colorScheme.onSurfaceVariant
-        IconButton(onClick = { onSearchOpen(true) }) { Icon(Icons.Default.Search, "Szukaj", tint = iconTint) }
+        IconButton(onClick = { onSearchOpen(true) }) { Icon(Icons.Default.Search, stringResource(R.string.common_search), tint = iconTint) }
         var sortMenu by remember { mutableStateOf(false) }
         Box {
-            IconButton(onClick = { sortMenu = true }) { Icon(Icons.Default.SwapVert, "Sortuj", tint = iconTint) }
+            IconButton(onClick = { sortMenu = true }) { Icon(Icons.Default.SwapVert, stringResource(R.string.sort), tint = iconTint) }
             DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                 SortMode.entries.forEach { mode ->
                     DropdownMenuItem(
@@ -1367,11 +1377,11 @@ private fun FolderHeader(
             }
         }
         IconButton(onClick = { onView(if (view == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST) }) {
-            Icon(if (view == ViewMode.LIST) Icons.Default.GridView else Icons.Default.ViewList, "Zmień widok", tint = iconTint)
+            Icon(if (view == ViewMode.LIST) Icons.Default.GridView else Icons.Default.ViewList, stringResource(R.string.change_view), tint = iconTint)
         }
         var more by remember { mutableStateOf(false) }
         Box {
-            IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, "Więcej", tint = iconTint) }
+            IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_more), tint = iconTint) }
             DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
                 Text(
                     summary,
@@ -1382,13 +1392,13 @@ private fun FolderHeader(
                 HorizontalDivider()
                 if (tab == Tab.FILES) {
                     DropdownMenuItem(
-                        text = { Text("Odśwież") },
+                        text = { Text(stringResource(R.string.common_refresh)) },
                         leadingIcon = { Icon(Icons.Default.Refresh, null) },
                         onClick = { more = false; onRefresh() }
                     )
                 }
                 DropdownMenuItem(
-                    text = { Text("Otwórz folder przez SAF") },
+                    text = { Text(stringResource(R.string.open_folder_saf)) },
                     leadingIcon = { Icon(Icons.Default.FolderOpen, null) },
                     onClick = { more = false; onPickRoot() }
                 )
@@ -1467,11 +1477,11 @@ private fun ClipboardCard(payload: ClipboardPayload?, onPaste: () -> Unit, onCan
             Icon(if (payload.cut) Icons.Default.DriveFileMove else Icons.Default.ContentCopy, null)
             Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {
-                Text(if (payload.cut) "Do przeniesienia" else "Do skopiowania", fontWeight = FontWeight.SemiBold)
-                Text("${payload.items.size} elementów", style = MaterialTheme.typography.bodySmall)
+                Text(if (payload.cut) stringResource(R.string.clip_to_move) else stringResource(R.string.clip_to_copy), fontWeight = FontWeight.SemiBold)
+                Text(pluralStringResource(R.plurals.n_items, payload.items.size, payload.items.size), style = MaterialTheme.typography.bodySmall)
             }
-            TextButton(onClick = onCancel) { Text("Anuluj") }
-            Button(onClick = onPaste) { Text("Wklej") }
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.common_cancel)) }
+            Button(onClick = onPaste) { Text(stringResource(R.string.common_paste)) }
         }
     }
 }
@@ -1523,7 +1533,7 @@ private fun FileRow(
             Checkbox(checked = selected, onCheckedChange = { onClick() })
         } else {
             IconButton(onClick = onMenu) {
-                Icon(Icons.Default.MoreVert, "Opcje", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Default.MoreVert, stringResource(R.string.common_options), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -1737,25 +1747,25 @@ private fun MultiSelectionTopBar(
 ) {
     var more by remember { mutableStateOf(false) }
     TopAppBar(
-        title = { Text("Wybrano: $count", fontWeight = FontWeight.SemiBold) },
-        navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Zamknij") } },
+        title = { Text(stringResource(R.string.selected_count, count), fontWeight = FontWeight.SemiBold) },
+        navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close_app)) } },
         actions = {
-            IconButton(onClick = onFavorite) { Icon(Icons.Default.StarBorder, "Ulubione") }
-            IconButton(onClick = onCopy) { Icon(Icons.Default.ContentCopy, "Kopiuj") }
-            IconButton(onClick = onCut) { Icon(Icons.Default.ContentCut, "Wytnij") }
+            IconButton(onClick = onFavorite) { Icon(Icons.Default.StarBorder, stringResource(R.string.nav_favorites)) }
+            IconButton(onClick = onCopy) { Icon(Icons.Default.ContentCopy, stringResource(R.string.common_copy)) }
+            IconButton(onClick = onCut) { Icon(Icons.Default.ContentCut, stringResource(R.string.common_cut)) }
             Box {
-                IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, "Więcej") }
+                IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_more)) }
                 DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
-                    DropdownMenuItem(text = { Text("Zaznacz wszystko") }, leadingIcon = { Icon(Icons.Default.SelectAll, null) }, onClick = { more = false; onSelectAll() })
-                    DropdownMenuItem(text = { Text("Spakuj do ZIP") }, leadingIcon = { Icon(Icons.Default.FolderZip, null) }, onClick = { more = false; onArchive() })
-                    if (canExtract) DropdownMenuItem(text = { Text("Rozpakuj tutaj") }, leadingIcon = { Icon(Icons.Default.Unarchive, null) }, onClick = { more = false; onExtract() })
-                    if (canRename) DropdownMenuItem(text = { Text("Zmień nazwę") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { more = false; onRename() })
-                    if (canRename) DropdownMenuItem(text = { Text("Właściwości") }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { more = false; onDetails() })
-                    if (canPin) DropdownMenuItem(text = { Text("Przypnij do „Mój komputer”") }, leadingIcon = { Icon(Icons.Default.PushPin, null) }, onClick = { more = false; onPin() })
-                    if (canPin) DropdownMenuItem(text = { Text("Otwórz w nowej karcie") }, leadingIcon = { Icon(Icons.Default.Tab, null) }, onClick = { more = false; onOpenInNewTab() })
-                    DropdownMenuItem(text = { Text("Udostępnij") }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { more = false; onShare() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.select_all)) }, leadingIcon = { Icon(Icons.Default.SelectAll, null) }, onClick = { more = false; onSelectAll() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.zip_pack)) }, leadingIcon = { Icon(Icons.Default.FolderZip, null) }, onClick = { more = false; onArchive() })
+                    if (canExtract) DropdownMenuItem(text = { Text(stringResource(R.string.zip_extract_here)) }, leadingIcon = { Icon(Icons.Default.Unarchive, null) }, onClick = { more = false; onExtract() })
+                    if (canRename) DropdownMenuItem(text = { Text(stringResource(R.string.common_rename)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { more = false; onRename() })
+                    if (canRename) DropdownMenuItem(text = { Text(stringResource(R.string.common_properties)) }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { more = false; onDetails() })
+                    if (canPin) DropdownMenuItem(text = { Text(stringResource(R.string.pin_to_home)) }, leadingIcon = { Icon(Icons.Default.PushPin, null) }, onClick = { more = false; onPin() })
+                    if (canPin) DropdownMenuItem(text = { Text(stringResource(R.string.pinned_open_new_tab)) }, leadingIcon = { Icon(Icons.Default.Tab, null) }, onClick = { more = false; onOpenInNewTab() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.common_share)) }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { more = false; onShare() })
                     HorizontalDivider()
-                    DropdownMenuItem(text = { Text("Usuń") }, leadingIcon = { Icon(Icons.Default.DeleteOutline, null) }, onClick = { more = false; onDelete() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.common_delete)) }, leadingIcon = { Icon(Icons.Default.DeleteOutline, null) }, onClick = { more = false; onDelete() })
                 }
             }
         }
@@ -1813,9 +1823,9 @@ private fun PreviewSheet(
                     Text(item.name, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(meta(item), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onFavorite) { Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder, "Ulubione") }
-                IconButton(onClick = onDetails) { Icon(Icons.Default.Info, "Właściwości") }
-                IconButton(onClick = onShare) { Icon(Icons.Default.Share, "Udostępnij") }
+                IconButton(onClick = onFavorite) { Icon(if (favorite) Icons.Default.Star else Icons.Default.StarBorder, stringResource(R.string.nav_favorites)) }
+                IconButton(onClick = onDetails) { Icon(Icons.Default.Info, stringResource(R.string.common_properties)) }
+                IconButton(onClick = onShare) { Icon(Icons.Default.Share, stringResource(R.string.common_share)) }
             }
             HorizontalDivider()
 
@@ -1831,7 +1841,7 @@ private fun PreviewSheet(
                     }
                     if (siblings.size > 1 && position >= 0) {
                         Text(
-                            "${position + 1} z ${siblings.size} · przesuń w bok, aby zmienić zdjęcie",
+                            stringResource(R.string.image_position, position + 1, siblings.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1870,7 +1880,7 @@ private fun PreviewSheet(
                         ) {
                             Icon(Icons.Default.Save, null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Zapisz zmiany")
+                            Text(stringResource(R.string.save_changes))
                         }
                     } else {
                         TextViewer(
@@ -1881,7 +1891,7 @@ private fun PreviewSheet(
                         FilledTonalButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Default.Edit, null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Edytuj")
+                            Text(stringResource(R.string.accounts_edit))
                         }
                     }
                 }
@@ -1889,11 +1899,11 @@ private fun PreviewSheet(
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             FileVisual(item, Modifier.size(92.dp), thumbnail = false)
-                            Text("Ten format zostanie otwarty w kompatybilnej aplikacji.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.unsupported_preview), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Button(onClick = onOpenExternal) {
                                 Icon(Icons.Default.OpenInNew, null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Otwórz")
+                                Text(stringResource(R.string.common_open))
                             }
                         }
                     }
@@ -1923,7 +1933,7 @@ private fun NativeImagePreview(
     LaunchedEffect(item.uri, item.lastModified) {
         error = null
         bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096) }
-            .onFailure { error = it.message ?: "Nie udało się otworzyć obrazu." }
+            .onFailure { error = it.message ?: text(R.string.err_image_open) }
             .getOrNull()
     }
 
@@ -2007,12 +2017,12 @@ private fun NativeImagePreview(
                 IconButton(onClick = {
                     scale = (scale - .25f).coerceAtLeast(1f)
                     if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                }) { Icon(Icons.Default.ZoomOut, "Pomniejsz") }
+                }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.zoom_out)) }
                 Text("${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
-                IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) { Icon(Icons.Default.ZoomIn, "Powiększ") }
-                IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) { Icon(Icons.Default.FitScreen, "Dopasuj") }
+                IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) { Icon(Icons.Default.ZoomIn, stringResource(R.string.zoom_in)) }
+                IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) { Icon(Icons.Default.FitScreen, stringResource(R.string.zoom_fit)) }
                 IconButton(onClick = { fullscreen = true }, enabled = bitmap != null) {
-                    Icon(Icons.Default.Fullscreen, "Pełny ekran")
+                    Icon(Icons.Default.Fullscreen, stringResource(R.string.fullscreen))
                 }
             }
         }
@@ -2063,7 +2073,7 @@ private fun SvgImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: 
                 horizontalArrangement = Arrangement.Center
             ) {
                 IconButton(onClick = { fullscreen = true }, enabled = uri != null) {
-                    Icon(Icons.Default.Fullscreen, "Pełny ekran")
+                    Icon(Icons.Default.Fullscreen, stringResource(R.string.fullscreen))
                 }
             }
         }
@@ -2160,7 +2170,7 @@ private fun FullscreenBitmapViewer(
                     color = Color.Black.copy(alpha = .58f)
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, "Zamknij pełny ekran", tint = Color.White)
+                        Icon(Icons.Default.Close, stringResource(R.string.fullscreen_close), tint = Color.White)
                     }
                 }
 
@@ -2194,16 +2204,16 @@ private fun FullscreenBitmapViewer(
                         IconButton(onClick = {
                             scale = (scale - .25f).coerceAtLeast(1f)
                             if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                        }) { Icon(Icons.Default.ZoomOut, "Pomniejsz", tint = Color.White) }
+                        }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.zoom_out), tint = Color.White) }
                         Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
                         IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
-                            Icon(Icons.Default.ZoomIn, "Powiększ", tint = Color.White)
+                            Icon(Icons.Default.ZoomIn, stringResource(R.string.zoom_in), tint = Color.White)
                         }
                         IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
-                            Icon(Icons.Default.FitScreen, "Dopasuj", tint = Color.White)
+                            Icon(Icons.Default.FitScreen, stringResource(R.string.zoom_fit), tint = Color.White)
                         }
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.FullscreenExit, "Wyjdź z pełnego ekranu", tint = Color.White)
+                            Icon(Icons.Default.FullscreenExit, stringResource(R.string.fullscreen_exit), tint = Color.White)
                         }
                     }
                 }
@@ -2260,7 +2270,7 @@ private fun FullscreenSvgViewer(uri: Uri, name: String, onDismiss: () -> Unit) {
                     color = Color.Black.copy(alpha = .58f)
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, "Zamknij pełny ekran", tint = Color.White)
+                        Icon(Icons.Default.Close, stringResource(R.string.fullscreen_close), tint = Color.White)
                     }
                 }
 
@@ -2277,16 +2287,16 @@ private fun FullscreenSvgViewer(uri: Uri, name: String, onDismiss: () -> Unit) {
                         IconButton(onClick = {
                             scale = (scale - .25f).coerceAtLeast(1f)
                             if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                        }) { Icon(Icons.Default.ZoomOut, "Pomniejsz", tint = Color.White) }
+                        }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.zoom_out), tint = Color.White) }
                         Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
                         IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
-                            Icon(Icons.Default.ZoomIn, "Powiększ", tint = Color.White)
+                            Icon(Icons.Default.ZoomIn, stringResource(R.string.zoom_in), tint = Color.White)
                         }
                         IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
-                            Icon(Icons.Default.FitScreen, "Dopasuj", tint = Color.White)
+                            Icon(Icons.Default.FitScreen, stringResource(R.string.zoom_fit), tint = Color.White)
                         }
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.FullscreenExit, "Wyjdź z pełnego ekranu", tint = Color.White)
+                            Icon(Icons.Default.FullscreenExit, stringResource(R.string.fullscreen_exit), tint = Color.White)
                         }
                     }
                 }
@@ -2305,7 +2315,7 @@ private fun DetailsSheet(item: FileItem, vm: FileManagerViewModel, onDismiss: ()
         if (!item.isDirectory) {
             runCatching { vm.sha256(item.uri) }
                 .onSuccess { checksum = it }
-                .onFailure { checksumError = it.message ?: "Nie udało się obliczyć sumy." }
+                .onFailure { checksumError = it.message ?: text(R.string.err_checksum) }
         }
     }
 
@@ -2316,16 +2326,16 @@ private fun DetailsSheet(item: FileItem, vm: FileManagerViewModel, onDismiss: ()
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(item.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text(if (item.isDirectory) "Folder" else formatSize(item.size), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (item.isDirectory) stringResource(R.string.detail_folder) else formatSize(item.size), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             HorizontalDivider()
-            DetailRow("Typ", item.mimeType)
-            DetailRow("Zmodyfikowano", formatDate(item.lastModified))
-            if (!item.isDirectory) DetailRow("Rozmiar", "${formatSize(item.size)} (${String.format(Locale.getDefault(), "%,d", item.size)} B)")
+            DetailRow(stringResource(R.string.detail_type), item.mimeType)
+            DetailRow(stringResource(R.string.detail_modified), formatDate(item.lastModified))
+            if (!item.isDirectory) DetailRow(stringResource(R.string.detail_size), "${formatSize(item.size)} (${String.format(Locale.getDefault(), "%,d", item.size)} B)")
             DetailRow("URI", item.uri.toString(), monospace = true)
             if (!item.isDirectory) {
-                DetailRow("SHA-256", checksum ?: checksumError ?: "Obliczanie…", monospace = true)
+                DetailRow("SHA-256", checksum ?: checksumError ?: stringResource(R.string.detail_computing), monospace = true)
             }
             Spacer(Modifier.height(18.dp))
         }
@@ -2350,14 +2360,14 @@ private fun ChoiceDialog(onDismiss: () -> Unit, onFolder: () -> Unit, onFile: ()
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.AddCircleOutline, null) },
-        title = { Text("Utwórz nowy element") },
+        title = { Text(stringResource(R.string.create_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 FilledTonalButton(onClick = onFolder, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.CreateNewFolder, null); Spacer(Modifier.width(8.dp)); Text("Folder")
+                    Icon(Icons.Default.CreateNewFolder, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.detail_folder))
                 }
                 FilledTonalButton(onClick = onFile, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.NoteAdd, null); Spacer(Modifier.width(8.dp)); Text("Plik")
+                    Icon(Icons.Default.NoteAdd, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.create_file))
                 }
             }
         },
@@ -2388,7 +2398,7 @@ private fun NameDialog(
             )
         },
         confirmButton = { TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Anuluj") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
     )
 }
 
@@ -2413,16 +2423,16 @@ private fun EmptyStorage(onPick: () -> Unit) {
                 Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) {
                     Icon(Icons.Default.FolderOpen, null, Modifier.padding(18.dp).size(58.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-                Text("Witaj w ARMA Files", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.welcome_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text(
-                    "Wybierz katalog startowy. Android zapamięta dostęp, więc aplikacja będzie mogła wrócić do niego po ponownym uruchomieniu.",
+                    stringResource(R.string.welcome_text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Button(onClick = onPick, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.FolderOpen, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Wybierz katalog")
+                    Text(stringResource(R.string.welcome_pick))
                 }
             }
         }
@@ -2439,11 +2449,11 @@ private fun EmptyFolder(filtered: Boolean, tab: Tab) {
                 Tab.FAVORITES -> Icons.Default.StarBorder
                 Tab.SETTINGS -> Icons.Default.Tune
             }
-            val text = if (filtered) "Nic tu nie pasuje" else when (tab) {
-                Tab.FILES -> "Ten folder jest pusty"
-                Tab.RECENT -> "Brak ostatnio otwieranych plików"
-                Tab.FAVORITES -> "Nie masz jeszcze ulubionych"
-                Tab.SETTINGS -> "Brak ustawień"
+            val text = if (filtered) stringResource(R.string.empty_filtered) else when (tab) {
+                Tab.FILES -> stringResource(R.string.empty_folder)
+                Tab.RECENT -> stringResource(R.string.empty_recent)
+                Tab.FAVORITES -> stringResource(R.string.empty_favorites)
+                Tab.SETTINGS -> stringResource(R.string.empty_settings)
             }
             Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
                 Icon(icon, null, Modifier.padding(18.dp).size(44.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -2459,7 +2469,7 @@ private fun RowScope.NavItem(value: Tab, selected: Tab, icon: ImageVector, label
         selected = value == selected,
         onClick = onClick,
         icon = { Icon(icon, null) },
-        label = { Text(label) }
+        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }
     )
 }
 
@@ -2503,20 +2513,20 @@ private fun fileComparator(sort: SortMode) = Comparator<FileItem> { a, b ->
 }
 
 private fun sortLabel(mode: SortMode) = when (mode) {
-    SortMode.NAME -> "Nazwa"
-    SortMode.DATE -> "Data modyfikacji"
-    SortMode.SIZE -> "Rozmiar"
-    SortMode.TYPE -> "Typ pliku"
+    SortMode.NAME -> text(R.string.sort_name)
+    SortMode.DATE -> text(R.string.sort_date)
+    SortMode.SIZE -> text(R.string.sort_size)
+    SortMode.TYPE -> text(R.string.sort_type)
 }
 
 private fun categoryLabel(category: FileCategory) = when (category) {
-    FileCategory.ALL -> "Wszystko"
-    FileCategory.FOLDERS -> "Foldery"
-    FileCategory.IMAGES -> "Obrazy"
-    FileCategory.VIDEO -> "Wideo"
-    FileCategory.AUDIO -> "Audio"
-    FileCategory.DOCUMENTS -> "Dokumenty"
-    FileCategory.ARCHIVES -> "Archiwa"
+    FileCategory.ALL -> text(R.string.filter_all)
+    FileCategory.FOLDERS -> text(R.string.filter_folders)
+    FileCategory.IMAGES -> text(R.string.category_images)
+    FileCategory.VIDEO -> text(R.string.filter_video)
+    FileCategory.AUDIO -> text(R.string.category_audio)
+    FileCategory.DOCUMENTS -> text(R.string.category_documents)
+    FileCategory.ARCHIVES -> text(R.string.category_archives)
 }
 
 private fun categoryIcon(category: FileCategory): ImageVector = when (category) {
@@ -2540,20 +2550,20 @@ private fun matchesCategory(item: FileItem, category: FileCategory): Boolean = w
 }
 
 private fun folderLabel(uri: Uri?): String {
-    if (uri == null) return "Pamięć plików"
+    if (uri == null) return text(R.string.folder_label_files)
     if (uri.scheme == RemoteRepository.FTP_SCHEME) return uri.path.orEmpty().trim('/').substringAfterLast('/').ifBlank { "FTP" }
     if (uri.scheme == RemoteRepository.SMB_SCHEME) return uri.path.orEmpty().trim('/').substringAfterLast('/').ifBlank { "SMB / Samba" }
-    if (uri.scheme == "file") return uri.path?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { "Pamięć" } ?: "Pamięć"
+    if (uri.scheme == "file") return uri.path?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { text(R.string.folder_label_storage) } ?: text(R.string.folder_label_storage)
     return runCatching {
         val id = DocumentsContract.getDocumentId(uri)
-        id.substringAfterLast('/').substringAfterLast(':').ifBlank { "Katalog główny" }
-    }.getOrDefault(uri.lastPathSegment ?: "Katalog")
+        id.substringAfterLast('/').substringAfterLast(':').ifBlank { text(R.string.panes_root) }
+    }.getOrDefault(uri.lastPathSegment ?: text(R.string.folder_label_folder))
 }
 
 private fun meta(item: FileItem): String {
     val date = formatDate(item.lastModified)
     return if (item.isDirectory) {
-        date.ifBlank { "Folder" }
+        date.ifBlank { text(R.string.detail_folder) }
     } else {
         if (date.isBlank()) formatSize(item.size) else "${formatSize(item.size)}  ·  $date"
     }
@@ -2591,7 +2601,7 @@ private suspend fun shareItems(context: Context, items: List<FileItem>, vm: File
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     }
-    runCatching { context.startActivity(Intent.createChooser(intent, "Udostępnij")) }
+    runCatching { context.startActivity(Intent.createChooser(intent, context.getString(R.string.common_share))) }
 }
 
 private suspend fun openExternal(context: Context, item: FileItem, vm: FileManagerViewModel) {
@@ -2602,5 +2612,5 @@ private suspend fun openExternal(context: Context, item: FileItem, vm: FileManag
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
     }
     runCatching { context.startActivity(intent) }
-        .onFailure { runCatching { context.startActivity(Intent.createChooser(intent, "Otwórz ${item.name}")) } }
+        .onFailure { runCatching { context.startActivity(Intent.createChooser(intent, context.getString(R.string.open_with, item.name))) } }
 }

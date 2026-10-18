@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">DWG crtež nije bilo moguće obraditi — datoteka je prevelika ili oštećena.</string>
+    <string name="dwg_no_result">Pretvorba DWG-a nije dala rezultat.</string>
+    <string name="dwg_start_failed">Pretvorba DWG-a nije se mogla pokrenuti.</string>
+</resources>

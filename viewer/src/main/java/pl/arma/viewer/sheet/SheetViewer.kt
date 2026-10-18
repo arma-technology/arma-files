@@ -62,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import pl.arma.viewer.R
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
@@ -130,7 +132,7 @@ fun SheetViewer(
         state.loading -> Box(modifier, contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 CircularProgressIndicator()
-                Text("Wczytywanie…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.viewer_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         document == null -> Box(modifier, contentAlignment = Alignment.Center) {
@@ -140,9 +142,9 @@ fun SheetViewer(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(Icons.Default.InsertDriveFile, null, Modifier.size(58.dp), tint = MaterialTheme.colorScheme.error)
-                Text("Nie udało się wyświetlić pliku", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.viewer_open_failed_title), fontWeight = FontWeight.SemiBold)
                 Text(state.error.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (onClose != null) TextButton(onClick = onClose) { Text("Zamknij") }
+                if (onClose != null) TextButton(onClick = onClose) { Text(stringResource(R.string.viewer_close)) }
             }
         }
         else -> DocumentView(state, document, modifier, immersive, onClose, title, actions, onSave)
@@ -402,7 +404,7 @@ private fun DocumentView(
             val found = runCatching { document.detectScale(page) }.getOrNull()
             state.detectedScales[page] = found
             if (found != null && state.scales[page] == null) {
-                state.message = "Skala ${found.label} — ${found.source.label}. Sprawdź ją przed pomiarem."
+                state.message = context.getString(R.string.viewer_scale_detected_message, found.label, context.getString(found.source.label))
             } else if (found == null && state.scaleFor(page) == null) {
                 state.scaleDialog = true
             }
@@ -417,7 +419,7 @@ private fun DocumentView(
             return
         }
         if (first.page != point.page) {
-            state.message = "Oba punkty pomiaru muszą leżeć na tej samej stronie."
+            state.message = context.getString(R.string.viewer_points_same_page)
             return
         }
         state.measurements += Measurement(point.page, first.snap.x, first.snap.y, point.snap.x, point.snap.y)
@@ -447,7 +449,7 @@ private fun DocumentView(
                         temp.delete()
                     }
                 }
-                state.message = if (result.isSuccess) "Zapisano w pliku." else "Nie udało się zapisać: ${result.exceptionOrNull()?.message}"
+                state.message = if (result.isSuccess) context.getString(R.string.viewer_saved) else context.getString(R.string.viewer_save_failed, result.exceptionOrNull()?.message.orEmpty())
             }
         }
     } else null
@@ -709,7 +711,7 @@ private fun DocumentView(
                                 document.addMeasurement(m, caption, author)
                             }
                             state.measurements.clear()
-                            state.message = "Pomiary dodane jako adnotacje — zapisz plik, żeby je zachować."
+                            state.message = context.getString(R.string.viewer_measurements_added)
                         }
                     }
                 } else null,

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Języki do wyboru w ustawieniach systemu (Android 13+): Ustawienia → Aplikacje → ARMA Files → Język. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="pl" />
+    <locale android:name="sq" />
+    <locale android:name="be" />
+    <locale android:name="bs" />
+    <locale android:name="bg" />
+    <locale android:name="hr" />
+    <locale android:name="cs" />
+    <locale android:name="nl" />
+    <locale android:name="et" />
+    <locale android:name="de" />
+    <locale android:name="hu" />
+    <locale android:name="lv" />
+    <locale android:name="lt" />
+    <locale android:name="mk" />
+    <locale android:name="ro" />
+    <locale android:name="ru" />
+    <locale android:name="sr" />
+    <locale android:name="sk" />
+    <locale android:name="sl" />
+    <locale android:name="uk" />
+</locale-config>

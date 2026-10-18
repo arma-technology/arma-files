@@ -29,9 +29,9 @@ fun installApk(context: Context, uri: Uri): String? {
             Uri.parse("package:${context.packageName}")
         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return if (runCatching { context.startActivity(settings) }.isSuccess) {
-            "Zezwól ARMA Files na instalowanie aplikacji, potem spróbuj ponownie."
+            context.getString(R.string.apk_allow)
         } else {
-            "Ta wersja Androida nie pozwala instalować plików APK z aplikacji."
+            context.getString(R.string.apk_unsupported)
         }
     }
 
@@ -43,6 +43,6 @@ fun installApk(context: Context, uri: Uri): String? {
     return if (runCatching { context.startActivity(intent) }.isSuccess) {
         null
     } else {
-        "Nie udało się uruchomić instalatora."
+        context.getString(R.string.apk_failed)
     }
 }

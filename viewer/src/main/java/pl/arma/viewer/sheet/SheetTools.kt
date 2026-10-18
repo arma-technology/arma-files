@@ -77,6 +77,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import pl.arma.viewer.R
 import kotlin.math.roundToInt
 
 @Composable
@@ -109,25 +111,25 @@ internal fun SheetTools(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (onClose != null) {
-            IconButton(onClick = onClose, modifier = button) { Icon(Icons.Default.Close, "Zamknij") }
+            IconButton(onClick = onClose, modifier = button) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close)) }
         }
         // Arkusz z CAD to zwykle jedna strona — wtedy strzałki stron są zbędne.
         if (pageCount > 1) {
             IconButton(onClick = onPrevious, enabled = currentPage > 1, modifier = button) {
-                Icon(Icons.Default.KeyboardArrowUp, "Poprzednia strona")
+                Icon(Icons.Default.KeyboardArrowUp, stringResource(R.string.viewer_previous_page))
             }
             TextButton(onClick = onJump, contentPadding = PaddingValues(horizontal = 6.dp)) {
                 Text("$currentPage / $pageCount", fontWeight = FontWeight.SemiBold)
             }
             IconButton(onClick = onNext, enabled = currentPage < pageCount, modifier = button) {
-                Icon(Icons.Default.KeyboardArrowDown, "Następna strona")
+                Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.viewer_next_page))
             }
         }
         if (document.canSearch) {
             IconButton(onClick = {
                 state.focusSearch = true
                 state.searchOpen = true
-            }, modifier = button) { Icon(Icons.Default.Search, "Szukaj tekstu") }
+            }, modifier = button) { Icon(Icons.Default.Search, stringResource(R.string.viewer_search_text)) }
         }
         IconButton(
             onClick = {
@@ -138,38 +140,38 @@ internal fun SheetTools(
         ) {
             Icon(
                 Icons.Default.Straighten,
-                "Pomiar",
+                stringResource(R.string.viewer_measure),
                 tint = if (state.placement == Placement.MEASURE) accent else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         if (commentCount > 0 || document.canAnnotate) {
             IconButton(onClick = { state.commentsOpen = !state.commentsOpen; state.layersOpen = false }, modifier = button) {
                 BadgedBox(badge = { if (commentCount > 0) Badge { Text("$commentCount") } }) {
-                    Icon(Icons.Default.ChatBubbleOutline, "Komentarze", tint = if (state.commentsOpen) accent else MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Default.ChatBubbleOutline, stringResource(R.string.viewer_comments), tint = if (state.commentsOpen) accent else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
         if (hasLayers) {
             IconButton(onClick = { state.layersOpen = !state.layersOpen; state.commentsOpen = false }, modifier = button) {
-                Icon(Icons.Default.Layers, "Warstwy", tint = if (state.layersOpen) accent else MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Default.Layers, stringResource(R.string.viewer_layers), tint = if (state.layersOpen) accent else MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         if (dirty && onSave != null) {
-            IconButton(onClick = onSave, modifier = button) { Icon(Icons.Default.Save, "Zapisz komentarze w pliku", tint = accent) }
+            IconButton(onClick = onSave, modifier = button) { Icon(Icons.Default.Save, stringResource(R.string.viewer_save_comments), tint = accent) }
         }
         Spacer(Modifier.width(4.dp))
         // Mnożnik zamiast stałego kroku: do dużych powiększeń nie da się dojść po 25%.
         IconButton(onClick = onZoomOut, enabled = zoomPercent > 100, modifier = button) {
-            Icon(Icons.Default.ZoomOut, "Pomniejsz")
+            Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_zoom_out))
         }
         Text("$zoomPercent%", style = MaterialTheme.typography.labelLarge)
         IconButton(onClick = onZoomIn, enabled = zoomPercent < (MAX_ZOOM * 100).roundToInt(), modifier = button) {
-            Icon(Icons.Default.ZoomIn, "Powiększ")
+            Icon(Icons.Default.ZoomIn, stringResource(R.string.viewer_zoom_in))
         }
         var menu by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
         Box {
-            IconButton(onClick = { menu = true }, modifier = button) { Icon(Icons.Default.MoreVert, "Więcej") }
+            IconButton(onClick = { menu = true }, modifier = button) { Icon(Icons.Default.MoreVert, stringResource(R.string.viewer_more)) }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 if (title != null) {
                     Text(
@@ -183,7 +185,7 @@ internal fun SheetTools(
                     HorizontalDivider()
                 }
                 DropdownMenuItem(
-                    text = { Text("Dopasuj do ekranu") },
+                    text = { Text(stringResource(R.string.viewer_fit_screen)) },
                     leadingIcon = { Icon(Icons.Default.FitScreen, null) },
                     onClick = { menu = false; onFit() }
                 )
@@ -201,13 +203,13 @@ internal fun SheetTools(
                 }
                 if (document.backgroundModes.isNotEmpty()) HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Skala pomiaru…") },
+                    text = { Text(stringResource(R.string.viewer_measure_scale_menu)) },
                     leadingIcon = { Icon(Icons.Default.SquareFoot, null) },
                     onClick = { menu = false; state.scaleDialog = true }
                 )
                 if (dirty && onSave != null) {
                     DropdownMenuItem(
-                        text = { Text("Zapisz komentarze w pliku") },
+                        text = { Text(stringResource(R.string.viewer_save_comments)) },
                         leadingIcon = { Icon(Icons.Default.Save, null) },
                         onClick = { menu = false; onSave() }
                     )
@@ -254,7 +256,7 @@ internal fun SheetSearchBar(
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
             if (state.query.isEmpty()) {
                 Text(
-                    "Szukaj w dokumencie",
+                    stringResource(R.string.viewer_search_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -282,25 +284,26 @@ internal fun SheetSearchBar(
         Spacer(Modifier.width(8.dp))
         val status = when {
             state.query.isBlank() -> ""
-            state.searching -> if (pageCount > 1) "szukam… ${state.searchedPages}/$pageCount" else "szukam…"
-            state.matches.isEmpty() -> "brak"
-            else -> "${state.currentMatch + 1} z ${state.matches.size}"
+            state.searching -> if (pageCount > 1) stringResource(R.string.viewer_searching_pages, state.searchedPages, pageCount) else stringResource(R.string.viewer_searching)
+            state.matches.isEmpty() -> stringResource(R.string.viewer_no_matches)
+            else -> stringResource(R.string.viewer_match_of, state.currentMatch + 1, state.matches.size)
         }
+        val nothingFound = !state.searching && state.query.isNotBlank() && state.matches.isEmpty()
         Text(
             status,
             style = MaterialTheme.typography.labelLarge,
-            color = if (status == "brak") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (nothingFound) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1
         )
         val hasMatches = state.matches.isNotEmpty()
         IconButton(onClick = onPrevious, enabled = hasMatches, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowUp, "Poprzednie trafienie")
+            Icon(Icons.Default.KeyboardArrowUp, stringResource(R.string.viewer_previous_match))
         }
         IconButton(onClick = onNext, enabled = hasMatches, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowDown, "Następne trafienie")
+            Icon(Icons.Default.KeyboardArrowDown, stringResource(R.string.viewer_next_match))
         }
         IconButton(onClick = onClose, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.Close, "Zamknij wyszukiwanie")
+            Icon(Icons.Default.Close, stringResource(R.string.viewer_close_search))
         }
     }
 }
@@ -343,7 +346,7 @@ private fun SheetThumbnail(document: SheetDocument, revision: Int, pageIndex: In
             bitmap?.let {
                 Image(
                     bitmap = it,
-                    contentDescription = "Miniatura strony ${pageIndex + 1}",
+                    contentDescription = stringResource(R.string.viewer_page_thumbnail, pageIndex + 1),
                     modifier = Modifier.fillMaxSize().padding(2.dp),
                     contentScale = ContentScale.Fit
                 )
@@ -376,19 +379,19 @@ internal fun JumpDialog(pageCount: Int, currentPage: Int, onDismiss: () -> Unit,
     val confirm = { onJump(value.text.toIntOrNull()?.coerceIn(1, pageCount) ?: 1) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Przejdź do strony") },
+        title = { Text(stringResource(R.string.viewer_go_to_page)) },
         text = {
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it.copy(text = it.text.filter(Char::isDigit).take(6)) },
                 singleLine = true,
-                label = { Text("Numer strony (1–$pageCount)") },
+                label = { Text(stringResource(R.string.viewer_page_number, pageCount)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
                 keyboardActions = KeyboardActions(onGo = { confirm() }),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus)
             )
         },
-        confirmButton = { TextButton(onClick = confirm) { Text("Przejdź") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Anuluj") } }
+        confirmButton = { TextButton(onClick = confirm) { Text(stringResource(R.string.viewer_go)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.viewer_cancel)) } }
     )
 }

@@ -8,14 +8,16 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
+import androidx.annotation.StringRes
+import pl.arma.viewer.R
 import kotlin.math.abs
 import kotlin.math.max
 
 /** Tło rysunku: jasne (jak wydruk), ciemne (jak w programie CAD) albo czarno-białe. */
-enum class CadBackground(val label: String, val paper: Int) {
-    LIGHT("Jasne tło", Color.WHITE),
-    DARK("Ciemne tło", 0xFF1E2227.toInt()),
-    MONO("Czarno-białe", Color.WHITE)
+enum class CadBackground(@StringRes val label: Int, val paper: Int) {
+    LIGHT(R.string.viewer_background_light, Color.WHITE),
+    DARK(R.string.viewer_background_dark, 0xFF1E2227.toInt()),
+    MONO(R.string.viewer_background_mono, Color.WHITE)
 }
 
 /**

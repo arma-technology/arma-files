@@ -57,6 +57,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import pl.arma.viewer.R
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.atan2
@@ -65,7 +67,12 @@ import kotlin.math.hypot
 import kotlin.math.sin
 
 /** Pędzle do napisów na płótnie: wymiary i podpis przyciągania. */
-internal class MeasurePaints(val density: Float) {
+internal class MeasurePaints(
+    val density: Float,
+    /** Napisy rysowane na płótnie — zasobów nie da się czytać w DrawScope. */
+    val setScale: String,
+    val snapLabels: Map<SnapKind, String>
+) {
     val label = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         textSize = 13f * density
@@ -78,7 +85,9 @@ internal class MeasurePaints(val density: Float) {
 @Composable
 internal fun rememberMeasurePaints(): MeasurePaints {
     val density = LocalDensity.current.density
-    return remember(density) { MeasurePaints(density) }
+    val setScale = stringResource(R.string.viewer_set_scale_short)
+    val snapLabels = SnapKind.entries.filter { it != SnapKind.NONE }.associateWith { stringResource(it.label) }
+    return remember(density, setScale) { MeasurePaints(density, setScale, snapLabels) }
 }
 
 private val MEASURE = Color(0xFFC62828)
@@ -124,7 +133,7 @@ internal fun DrawScope.drawMeasurements(p: Projection, state: SheetViewerState, 
         val b = p.toScreen(m.page, m.bx, m.by)
         dimension(a, b, MEASURE)
         val scale = state.scaleFor(m.page)
-        val text = scale?.let { MeasureFormat.length(m.lengthUnits * it.mmPerUnit) } ?: "ustaw skalę"
+        val text = scale?.let { MeasureFormat.length(m.lengthUnits * it.mmPerUnit) } ?: paints.setScale
         pill(text, Offset((a.x + b.x) / 2, (a.y + b.y) / 2), paints, paints.background)
     }
 }
@@ -180,7 +189,7 @@ internal fun DrawScope.drawCursor(p: Projection, state: SheetViewerState, cursor
             dimension(a, at, CURSOR, dashed = true)
             val length = hypot((cursor.snap.x - first.snap.x).toDouble(), (cursor.snap.y - first.snap.y).toDouble())
             val scale = state.scaleFor(cursor.page)
-            val text = scale?.let { MeasureFormat.length(length * it.mmPerUnit) } ?: "ustaw skalę"
+            val text = scale?.let { MeasureFormat.length(length * it.mmPerUnit) } ?: paints.setScale
             pill(text, Offset((a.x + at.x) / 2, (a.y + at.y) / 2 - 16.dp.toPx()), paints, paints.cursorBackground)
         }
         drawCircle(MEASURE, 5.dp.toPx(), a)
@@ -189,7 +198,7 @@ internal fun DrawScope.drawCursor(p: Projection, state: SheetViewerState, cursor
 
     if (cursor.snap.kind != SnapKind.NONE) {
         snapMarker(cursor.snap.kind, at)
-        pill(cursor.snap.kind.label, Offset(at.x, at.y + 26.dp.toPx()), paints, paints.cursorBackground)
+        pill(paints.snapLabels[cursor.snap.kind].orEmpty(), Offset(at.x, at.y + 26.dp.toPx()), paints, paints.cursorBackground)
     } else if (state.placement == Placement.MEASURE) {
         drawCircle(CURSOR, 3.dp.toPx(), at)
     }
@@ -252,14 +261,14 @@ internal fun MeasurePanel(
     val scale = state.scaleFor(page)
     val first = state.firstPoint
     val readout = when {
-        state.loadingGeometry[page] == true -> "Wczytuję linie rysunku…"
-        first == null -> "Ustaw celownik na pierwszym punkcie"
-        cursor == null || first.page != cursor.page -> "Drugi punkt musi być na tej samej stronie"
+        state.loadingGeometry[page] == true -> stringResource(R.string.viewer_loading_lines)
+        first == null -> stringResource(R.string.viewer_aim_first_point)
+        cursor == null || first.page != cursor.page -> stringResource(R.string.viewer_second_point_same_page)
         else -> {
             val dx = (cursor.snap.x - first.snap.x).toDouble()
             val dy = (cursor.snap.y - first.snap.y).toDouble()
             if (scale == null) {
-                "Ustaw skalę, żeby zobaczyć wymiar"
+                stringResource(R.string.viewer_set_scale_to_measure)
             } else {
                 val k = scale.mmPerUnit
                 "${MeasureFormat.length(hypot(dx, dy) * k)}   ·   Δx ${MeasureFormat.length(kotlin.math.abs(dx) * k)}   Δy ${MeasureFormat.length(kotlin.math.abs(dy) * k)}"
@@ -284,17 +293,17 @@ internal fun MeasurePanel(
             FilterChip(
                 selected = scale != null,
                 onClick = { state.scaleDialog = true },
-                label = { Text(scale?.let { "Skala ${it.label}" } ?: "Ustaw skalę") }
+                label = { Text(if (scale != null) stringResource(R.string.viewer_scale_chip, scale.label) else stringResource(R.string.viewer_set_scale)) }
             )
             FilterChip(
                 selected = state.snapping,
                 onClick = { state.snapping = !state.snapping },
-                label = { Text("Przyciąganie") }
+                label = { Text(stringResource(R.string.viewer_snapping)) }
             )
             FilterChip(
                 selected = state.axisLock,
                 onClick = { state.axisLock = !state.axisLock },
-                label = { Text("Oś ┼") }
+                label = { Text(stringResource(R.string.viewer_axis_lock)) }
             )
             IconButton(
                 onClick = {
@@ -302,23 +311,23 @@ internal fun MeasurePanel(
                     else if (state.measurements.isNotEmpty()) state.measurements.removeAt(state.measurements.lastIndex)
                 },
                 enabled = state.firstPoint != null || state.measurements.isNotEmpty()
-            ) { Icon(Icons.AutoMirrored.Filled.Undo, "Cofnij") }
+            ) { Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.viewer_undo)) }
             IconButton(onClick = { state.measurements.clear(); state.firstPoint = null }, enabled = state.measurements.isNotEmpty()) {
-                Icon(Icons.Default.DeleteSweep, "Usuń wszystkie pomiary")
+                Icon(Icons.Default.DeleteSweep, stringResource(R.string.viewer_clear_measurements))
             }
             if (onSaveToFile != null) {
                 IconButton(onClick = onSaveToFile, enabled = state.measurements.isNotEmpty()) {
-                    Icon(Icons.Default.Save, "Dodaj pomiary do pliku")
+                    Icon(Icons.Default.Save, stringResource(R.string.viewer_measurements_to_file))
                 }
             }
-            IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Zakończ pomiar") }
+            IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_finish_measuring)) }
         }
     }
     val pointButton: @Composable (Modifier) -> Unit = { modifier ->
         Button(onClick = onPoint, modifier = modifier, enabled = cursor != null) {
             Icon(Icons.Default.GpsFixed, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text(if (state.firstPoint == null) "Pierwszy punkt" else "Drugi punkt", maxLines = 1)
+            Text(if (state.firstPoint == null) stringResource(R.string.viewer_first_point) else stringResource(R.string.viewer_second_point), maxLines = 1)
         }
     }
     BoxWithConstraints(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -362,8 +371,8 @@ internal fun CommentPlacementPanel(
             ViewerPreferences.setAuthor(context, author)
             scope.launch {
                 runCatching { document.addComment(point.page, point.snap.x, point.snap.y, text.trim(), author.trim()) }
-                    .onSuccess { state.message = "Komentarz dodany — zapisz plik, żeby go zachować." }
-                    .onFailure { state.message = "Nie udało się dodać komentarza: ${it.message}" }
+                    .onSuccess { state.message = context.getString(R.string.viewer_comment_added) }
+                    .onFailure { state.message = context.getString(R.string.viewer_comment_failed, it.message.orEmpty()) }
             }
             onDone()
         }
@@ -372,7 +381,7 @@ internal fun CommentPlacementPanel(
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            label = { Text("Treść komentarza") },
+            label = { Text(stringResource(R.string.viewer_comment_text)) },
             maxLines = 3,
             modifier = modifier
         )
@@ -381,7 +390,7 @@ internal fun CommentPlacementPanel(
         OutlinedTextField(
             value = author,
             onValueChange = { author = it },
-            label = { Text("Podpis") },
+            label = { Text(stringResource(R.string.viewer_comment_author)) },
             singleLine = true,
             modifier = modifier
         )
@@ -390,28 +399,28 @@ internal fun CommentPlacementPanel(
         Button(onClick = add, enabled = text.isNotBlank() && cursor != null) {
             Icon(Icons.Default.AddLocationAlt, null, Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Dodaj tutaj", maxLines = 1)
+            Text(stringResource(R.string.viewer_add_here), maxLines = 1)
         }
     }
     BoxWithConstraints(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
         if (maxWidth >= 720.dp) {
             // W poziomie jeden rząd — inaczej panel zasłania celownik pośrodku.
             Column(Modifier.widthIn(max = 980.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Ustaw celownik tam, gdzie ma stać komentarz", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.viewer_aim_comment), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     textField(Modifier.weight(1f))
                     authorField(Modifier.width(200.dp))
-                    TextButton(onClick = onDone) { Text("Anuluj") }
+                    TextButton(onClick = onDone) { Text(stringResource(R.string.viewer_cancel)) }
                     addButton()
                 }
             }
         } else {
             Column(Modifier.widthIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Ustaw celownik tam, gdzie ma stać komentarz", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.viewer_aim_comment), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 textField(Modifier.fillMaxWidth())
                 authorField(Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onDone) { Text("Anuluj") }
+                    TextButton(onClick = onDone) { Text(stringResource(R.string.viewer_cancel)) }
                     Spacer(Modifier.weight(1f))
                     addButton()
                 }
@@ -426,6 +435,7 @@ internal fun CommentPlacementPanel(
  */
 @Composable
 internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page: Int, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     val detected = state.detectedScales[page]
     val current = state.scaleFor(page)
     val lastMeasurement = state.measurements.lastOrNull { it.page == page }
@@ -441,24 +451,24 @@ internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page:
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Skala pomiaru") },
+        title = { Text(stringResource(R.string.viewer_measure_scale)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (detected != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Wykryto ${detected.label} (${detected.source.label})",
+                            stringResource(R.string.viewer_detected_scale, detected.label, stringResource(detected.source.label)),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        TextButton(onClick = { apply(detected) }) { Text("Użyj") }
+                        TextButton(onClick = { apply(detected) }) { Text(stringResource(R.string.viewer_use)) }
                     }
                     HorizontalDivider()
                 }
                 if (document.modelUnits) {
-                    Text("Jednostka rysunku", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.viewer_drawing_unit), style = MaterialTheme.typography.labelLarge)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        for ((label, mm) in listOf("mm" to 1.0, "cm" to 10.0, "m" to 1000.0, "cal" to 25.4, "stopa" to 304.8)) {
+                        for ((label, mm) in listOf("mm" to 1.0, "cm" to 10.0, "m" to 1000.0, stringResource(R.string.viewer_unit_inch) to 25.4, stringResource(R.string.viewer_unit_foot) to 304.8)) {
                             FilterChip(
                                 selected = choice?.mmPerUnit == mm,
                                 onClick = { choice = SheetScale(mm, label, ScaleSource.USER) },
@@ -467,7 +477,7 @@ internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page:
                         }
                     }
                 } else {
-                    Text("Skala rysunku", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.viewer_drawing_scale), style = MaterialTheme.typography.labelLarge)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         for (ratio in MeasureFormat.COMMON) {
                             val option = SheetScale.pdfRatio(ratio.toDouble(), ScaleSource.USER)
@@ -487,17 +497,17 @@ internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page:
                             }
                         },
                         prefix = { Text("1 : ") },
-                        label = { Text("Inna skala") },
+                        label = { Text(stringResource(R.string.viewer_other_scale)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
                 HorizontalDivider()
-                Text("Kalibracja z wymiaru", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.viewer_calibration), style = MaterialTheme.typography.labelLarge)
                 if (lastMeasurement == null) {
                     Text(
-                        "Zmierz odcinek o znanej długości (np. zwymiarowaną ścianę), a potem wpisz tu jego długość.",
+                        stringResource(R.string.viewer_calibration_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -505,9 +515,9 @@ internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page:
                     OutlinedTextField(
                         value = known,
                         onValueChange = { known = it },
-                        label = { Text("Ostatni pomiar ma naprawdę…") },
-                        placeholder = { Text("np. 3,25 m albo 1200") },
-                        supportingText = { Text("Bez jednostki: milimetry") },
+                        label = { Text(stringResource(R.string.viewer_calibration_known)) },
+                        placeholder = { Text(stringResource(R.string.viewer_calibration_example)) },
+                        supportingText = { Text(stringResource(R.string.viewer_calibration_unit)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         modifier = Modifier.fillMaxWidth()
@@ -521,7 +531,7 @@ internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page:
                     MeasureFormat.parseLength(known)?.takeIf { m.lengthUnits > 0 }?.let { realMm ->
                         val mmPerUnit = realMm / m.lengthUnits
                         val label = if (document.modelUnits) {
-                            String.format(Locale("pl", "PL"), "%.4g mm/j.", mmPerUnit)
+                            context.getString(R.string.viewer_mm_per_unit, String.format(Locale.getDefault(), "%.4g", mmPerUnit))
                         } else {
                             "1:" + SheetScale.formatRatio(mmPerUnit / SheetScale.MM_PER_POINT)
                         }
@@ -529,9 +539,9 @@ internal fun ScaleDialog(state: SheetViewerState, document: SheetDocument, page:
                     }
                 }
                 (calibrated ?: choice)?.let(::apply) ?: onDismiss()
-            }) { Text("Zastosuj") }
+            }) { Text(stringResource(R.string.viewer_apply)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Anuluj") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.viewer_cancel)) } }
     )
 }
 

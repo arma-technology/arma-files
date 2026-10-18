@@ -49,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import pl.arma.viewer.R
 import kotlinx.coroutines.launch
 
 /** Boczny panel komentarzy albo warstw, wysuwany nad treścią. */
@@ -88,7 +90,7 @@ private fun PanelHeader(title: String, onClose: () -> Unit, trailing: @Composabl
     Row(Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
         trailing()
-        IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Zamknij panel") }
+        IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close_panel)) }
     }
 }
 
@@ -100,7 +102,7 @@ private fun CommentsPanel(
     onShowComment: (SheetComment) -> Unit
 ) {
     Column(Modifier.fillMaxHeight()) {
-        PanelHeader("Komentarze (${comments.size})", onClose = { state.commentsOpen = false })
+        PanelHeader(stringResource(R.string.viewer_comments_count, comments.size), onClose = { state.commentsOpen = false })
         if (document.canAnnotate) {
             TextButton(
                 onClick = {
@@ -112,13 +114,13 @@ private fun CommentsPanel(
             ) {
                 Icon(Icons.Default.AddComment, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Dodaj komentarz")
+                Text(stringResource(R.string.viewer_add_comment))
             }
         }
         HorizontalDivider()
         if (comments.isEmpty()) {
             Text(
-                "W tym pliku nie ma komentarzy.",
+                stringResource(R.string.viewer_no_comments),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp)
             )
@@ -133,17 +135,15 @@ private fun CommentsPanel(
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        val pageSuffix = if (document.pageCount > 1) stringResource(R.string.viewer_comment_page, comment.page + 1) else ""
                         Text(
-                            buildString {
-                                append(comment.type)
-                                if (document.pageCount > 1) append(" · str. ${comment.page + 1}")
-                            },
+                            comment.type + pageSuffix,
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                         if (comment.pending) {
-                            Text("niezapisany", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                            Text(stringResource(R.string.viewer_unsaved), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                         }
                     }
                     val meta = listOfNotNull(comment.author, comment.modified).joinToString(" · ")
@@ -165,17 +165,17 @@ private fun LayersPanel(state: SheetViewerState, document: SheetDocument, layers
     val scope = rememberCoroutineScope()
     var filter by remember { mutableStateOf("") }
     Column(Modifier.fillMaxHeight()) {
-        PanelHeader("Warstwy (${layers.size})", onClose = { state.layersOpen = false })
+        PanelHeader(stringResource(R.string.viewer_layers_count, layers.size), onClose = { state.layersOpen = false })
         Row(Modifier.padding(horizontal = 8.dp)) {
-            TextButton(onClick = { scope.launch { document.setAllLayersVisible(true) } }) { Text("Wszystkie") }
-            TextButton(onClick = { scope.launch { document.setAllLayersVisible(false) } }) { Text("Żadna") }
+            TextButton(onClick = { scope.launch { document.setAllLayersVisible(true) } }) { Text(stringResource(R.string.viewer_layers_all)) }
+            TextButton(onClick = { scope.launch { document.setAllLayersVisible(false) } }) { Text(stringResource(R.string.viewer_layers_none)) }
         }
         // Rysunki CAD mają nieraz setki warstw — bez filtra nie da się ich przejrzeć.
         if (layers.size > 12) {
             OutlinedTextField(
                 value = filter,
                 onValueChange = { filter = it },
-                placeholder = { Text("Filtruj warstwy") },
+                placeholder = { Text(stringResource(R.string.viewer_filter_layers)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
             )
@@ -224,11 +224,11 @@ internal fun CommentBubble(comment: SheetComment, canDelete: Boolean, onDelete: 
                         val meta = listOfNotNull(comment.author, comment.modified).joinToString(" · ")
                         if (meta.isNotEmpty()) Text(meta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    if (canDelete) IconButton(onClick = onDelete) { Icon(Icons.Default.DeleteOutline, "Usuń komentarz") }
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, "Zamknij") }
+                    if (canDelete) IconButton(onClick = onDelete) { Icon(Icons.Default.DeleteOutline, stringResource(R.string.viewer_delete_comment)) }
+                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close)) }
                 }
                 Text(
-                    comment.text ?: "(bez treści)",
+                    comment.text ?: stringResource(R.string.viewer_no_content),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())
                 )

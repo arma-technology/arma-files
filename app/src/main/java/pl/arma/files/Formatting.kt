@@ -19,6 +19,6 @@ fun formatRemaining(seconds: Long?): String? {
     return when {
         seconds < 60 -> "$seconds s"
         seconds < 3600 -> "${seconds / 60} min ${seconds % 60} s"
-        else -> "${seconds / 3600} godz ${(seconds % 3600) / 60} min"
+        else -> "${seconds / 3600} h ${(seconds % 3600) / 60} min"
     }
 }

@@ -1,5 +1,8 @@
 package pl.arma.files.text
 
+import pl.arma.files.R
+import pl.arma.files.text
+
 /**
  * Rozpoznanie rodzaju pliku tekstowego. Wzorowane na profilach z TextForge,
  * ale zawężone do tego, czego potrzebuje czytnik: etykieta, sposób podglądu
@@ -66,7 +69,7 @@ data class TextProfile(
                 "csv", "tsv" -> TextProfile(extension.uppercase(), Kind.DATA, code = true)
                 "log", "diff", "patch" -> TextProfile(extension.uppercase(), Kind.PLAIN, code = true)
                 in CODE_EXTENSIONS -> TextProfile(extension.uppercase(), Kind.CODE, code = true)
-                "txt", "nfo", "asc", "" -> TextProfile("TEKST", Kind.PLAIN, code = false)
+                "txt", "nfo", "asc", "" -> TextProfile(text(R.string.text_profile_plain), Kind.PLAIN, code = false)
                 else -> TextProfile(extension.uppercase(), Kind.PLAIN, code = false)
             }
         }

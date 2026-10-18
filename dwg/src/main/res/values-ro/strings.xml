@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Desenul DWG nu a putut fi procesat — fișierul este prea mare sau deteriorat.</string>
+    <string name="dwg_no_result">Conversia DWG nu a dat niciun rezultat.</string>
+    <string name="dwg_start_failed">Conversia DWG nu a putut fi pornită.</string>
+</resources>

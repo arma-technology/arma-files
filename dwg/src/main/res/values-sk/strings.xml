@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Výkres DWG sa nepodarilo spracovať — súbor je príliš veľký alebo poškodený.</string>
+    <string name="dwg_no_result">Prevod DWG nedal žiadny výsledok.</string>
+    <string name="dwg_start_failed">Prevod DWG sa nepodarilo spustiť.</string>
+</resources>

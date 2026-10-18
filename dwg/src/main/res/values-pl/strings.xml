@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dwg_crashed">Nie udało się przetworzyć rysunku DWG — plik jest zbyt duży lub uszkodzony.</string>
+    <string name="dwg_no_result">Konwersja DWG nie dała wyniku.</string>
+    <string name="dwg_start_failed">Nie udało się uruchomić konwersji DWG.</string>
+</resources>

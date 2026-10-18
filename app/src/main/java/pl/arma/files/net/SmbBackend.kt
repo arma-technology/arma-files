@@ -1,6 +1,8 @@
 package pl.arma.files.net
 
 import jcifs.CIFSContext
+import pl.arma.files.R
+import pl.arma.files.text
 import jcifs.config.PropertyConfiguration
 import jcifs.context.BaseContext
 import jcifs.smb.NtlmPasswordAuthenticator
@@ -41,7 +43,7 @@ class SmbBackend : RemoteBackend {
      */
     private fun file(account: RemoteAccount, path: String, directory: Boolean = false): SmbFile {
         if (account.host.isBlank() || account.share.isBlank()) {
-            throw IOException("SMB: podaj serwer i nazwę udziału.")
+            throw IOException(text(R.string.smb_need_share))
         }
         val host = if (account.port == 445) account.host else "${account.host}:${account.port}"
         val segments = RemotePaths.absolute(account.rootPath, path).split('/').filter { it.isNotBlank() }
@@ -55,7 +57,7 @@ class SmbBackend : RemoteBackend {
 
     override fun list(account: RemoteAccount, path: String): List<RemoteEntry> =
         file(account, path, directory = true).use { dir ->
-            if (!dir.exists()) throw IOException("SMB: udział lub katalog nie istnieje.")
+            if (!dir.exists()) throw IOException(text(R.string.smb_missing))
             dir.listFiles().map { child ->
                 child.use {
                     RemoteEntry(

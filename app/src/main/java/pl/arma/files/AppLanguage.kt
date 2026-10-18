@@ -30,6 +30,7 @@ object AppLanguage {
         Option("bg", "Български"),
         Option("hr", "Hrvatski"),
         Option("cs", "Čeština"),
+        Option("nl", "Nederlands"),
         Option("et", "Eesti"),
         Option("de", "Deutsch"),
         Option("hu", "Magyar"),
