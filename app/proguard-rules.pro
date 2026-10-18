@@ -35,10 +35,6 @@
 -keep class org.apache.commons.net.** { *; }
 -dontwarn org.apache.commons.net.**
 
-# --- AppAuth (logowanie Google) ----------------------------------------------
-# Odpowiedzi z serwera odwzorowywane są na pola po nazwie.
--keep class net.openid.appauth.** { *; }
--dontwarn net.openid.appauth.**
 
 # --- OkHttp ------------------------------------------------------------------
 -dontwarn okhttp3.**

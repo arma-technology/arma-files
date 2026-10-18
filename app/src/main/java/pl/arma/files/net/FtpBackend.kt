@@ -2,6 +2,7 @@ package pl.arma.files.net
 
 import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
+import org.apache.commons.net.ftp.FTPReply
 import org.apache.commons.net.ftp.FTPSClient
 import java.io.FilterInputStream
 import java.io.FilterOutputStream
@@ -10,7 +11,14 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.time.Duration
 
-class FtpBackend : RemoteBackend {
+class FtpBackend(private val pins: CertificatePins = CertificatePins(null)) : RemoteBackend {
+
+    /**
+     * Katalog, w którym serwer stawia użytkownika po zalogowaniu. Bez
+     * chroota to np. /home/jan, a „/” byłby katalogiem głównym całego
+     * serwera — z cudzymi plikami i bez prawa zapisu.
+     */
+    private val homes = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     private val pool = ConnectionPool(
         create = ::connect,
@@ -21,7 +29,12 @@ class FtpBackend : RemoteBackend {
     private fun connect(account: RemoteAccount): FTPClient {
         if (account.host.isBlank()) throw IOException("FTP: brak adresu serwera.")
         val client: FTPClient = if (account.secure) {
-            FTPSClient(false).apply { setEndpointCheckingEnabled(true) }
+            // Nazwę serwera sprawdza CertificatePins — przy zapamiętanym
+            // certyfikacie NAS-u z adresem IP zwykła weryfikacja by go odrzuciła.
+            FTPSClient(false).apply {
+                trustManager = pins.trustManager(account.host, account.port)
+                setEndpointCheckingEnabled(false)
+            }
         } else {
             FTPClient()
         }
@@ -41,7 +54,24 @@ class FtpBackend : RemoteBackend {
         }
         client.enterLocalPassiveMode()
         client.setFileType(FTP.BINARY_FILE_TYPE)
+        if (account.rootPath.isBlank()) {
+            homes.computeIfAbsent(account.id) { client.printWorkingDirectory()?.takeIf { it.startsWith("/") } ?: "/" }
+        }
         return client
+    }
+
+    private fun replyError(client: FTPClient): IOException {
+        val reply = client.replyString?.trim().orEmpty()
+        return IOException(
+            when {
+                // vsftpd i FileZilla Server domyślnie wymagają wznowienia sesji
+                // TLS na kanale danych, czego commons-net nie potrafi.
+                client is FTPSClient && (reply.contains("reuse", true) || client.replyCode == 522 || client.replyCode == 425) ->
+                    "FTPS: serwer wymaga wznawiania sesji TLS na kanale danych, którego aplikacja nie obsługuje. Użyj SFTP albo wyłącz to wymaganie na serwerze (vsftpd: require_ssl_reuse=NO)."
+                reply.startsWith("550") -> "FTP: plik lub katalog nie istnieje albo brak dostępu."
+                else -> "FTP: serwer odpowiedział: $reply"
+            }
+        )
     }
 
     private fun close(client: FTPClient) {
@@ -49,17 +79,26 @@ class FtpBackend : RemoteBackend {
         runCatching { if (client.isConnected) client.disconnect() }
     }
 
-    private fun path(account: RemoteAccount, path: String) = RemotePaths.absolute(account.rootPath, path)
+    private fun path(account: RemoteAccount, path: String) =
+        RemotePaths.absolute(account.rootPath.ifBlank { homes[account.id] ?: "/" }, path)
 
     override fun list(account: RemoteAccount, path: String): List<RemoteEntry> =
         pool.use(account) { client ->
-            client.listFiles(path(account, path))
+            val directory = path(account, path)
+            val files = client.listFiles(directory)
+            // Nieudany listing commons-net zwraca jako pustą tablicę; bez tego
+            // odmowa serwera wyglądała jak pusty katalog.
+            if (!FTPReply.isPositiveCompletion(client.replyCode)) throw replyError(client)
+            files
                 .filter { it.name != "." && it.name != ".." }
                 .map {
+                    // Dowiązanie może wskazywać katalog; sprawdzamy, czy da się do niego wejść.
+                    val isDirectory = it.isDirectory ||
+                        (it.isSymbolicLink && client.changeWorkingDirectory("${directory.trimEnd('/')}/${it.name}"))
                     RemoteEntry(
                         name = it.name,
-                        isDirectory = it.isDirectory,
-                        size = if (it.isDirectory) 0L else it.size,
+                        isDirectory = isDirectory,
+                        size = if (isDirectory) 0L else it.size,
                         modified = it.timestamp?.timeInMillis ?: 0L
                     )
                 }
@@ -100,8 +139,9 @@ class FtpBackend : RemoteBackend {
     override fun openInput(account: RemoteAccount, path: String): InputStream {
         val client = connect(account)
         val stream = client.retrieveFileStream(path(account, path)) ?: run {
+            val error = replyError(client)
             close(client)
-            throw IOException("FTP: nie można otworzyć pliku.")
+            throw error
         }
         return object : FilterInputStream(stream) {
             override fun close() {
@@ -119,10 +159,14 @@ class FtpBackend : RemoteBackend {
     override fun openOutput(account: RemoteAccount, path: String): OutputStream {
         val client = connect(account)
         val stream = client.storeFileStream(path(account, path)) ?: run {
+            val error = replyError(client)
             close(client)
-            throw IOException("FTP: nie można zapisać pliku.")
+            throw error
         }
         return object : FilterOutputStream(stream) {
+            // FilterOutputStream domyślnie pisze tablicę bajt po bajcie.
+            override fun write(b: ByteArray, off: Int, len: Int) = out.write(b, off, len)
+
             override fun close() {
                 var failure: Throwable? = null
                 runCatching { super.close() }.onFailure { failure = it }

@@ -229,21 +229,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             vm.openLocalLocation(uri)
         }
     }
-    var pendingGoogleAccount by remember { mutableStateOf<RemoteAccount?>(null) }
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val target = pendingGoogleAccount
-        pendingGoogleAccount = null
-        val data = result.data
-        if (target == null || data == null) return@rememberLauncherForActivityResult
-        appScope.launch {
-            vm.googleSignIn.completeSignIn(context, data)
-                .onSuccess { vm.completeGoogleSignIn(target.id, target.label, it) }
-                .onFailure { snackbarHostState.showSnackbar(it.message ?: "Logowanie nie powiodło się.") }
-        }
-    }
-
     val legacyStorageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         vm.refreshDeviceLocations()
         pendingLocalUri?.let { uri ->
@@ -876,19 +861,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             onTest = vm::testAccount,
             onSave = vm::saveAccount,
             onDelete = vm::deleteAccount,
-            onDismiss = { editedAccount = null; vm.clearAccountTest() },
-            signInAvailable = vm.googleSignIn.available,
-            onGoogleSignIn = { target ->
-                pendingGoogleAccount = target
-                runCatching { googleSignInLauncher.launch(vm.googleSignIn.authorizationIntent(context)) }
-                    .onFailure {
-                        appScope.launch {
-                            snackbarHostState.showSnackbar(
-                                "Nie udało się otworzyć okna logowania Google."
-                            )
-                        }
-                    }
-            }
+            onDismiss = { editedAccount = null; vm.clearAccountTest() }
         )
     }
 

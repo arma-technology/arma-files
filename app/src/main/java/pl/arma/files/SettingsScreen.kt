@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -95,6 +96,78 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+            }
+        }
+
+        item { AboutCard() }
+    }
+}
+
+/** Biblioteki dołączone do aplikacji i ich licencje — wszystkie zgodne z GPL-3.0. */
+private val bundledLibraries = listOf(
+    "LibreDWG" to "GPL-3.0-or-later",
+    "PdfBox-Android" to "Apache 2.0",
+    "AndroidX, Jetpack Compose" to "Apache 2.0",
+    "Kotlin, kotlinx.coroutines" to "Apache 2.0",
+    "Coil" to "Apache 2.0",
+    "OkHttp" to "Apache 2.0",
+    "AppAuth" to "Apache 2.0",
+    "Apache Commons Net" to "Apache 2.0",
+    "SSHJ" to "Apache 2.0",
+    "jcifs-ng" to "LGPL-2.1",
+    "SLF4J" to "MIT"
+)
+
+@Composable
+private fun AboutCard() {
+    val uriHandler = LocalUriHandler.current
+    var showLibraries by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("O aplikacji", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "ARMA Files ${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                "Wolne oprogramowanie na licencji GNU GPL 3.0 lub nowszej. Możesz je używać, zmieniać i rozpowszechniać na jej warunkach. Aplikacja jest dostarczana bez jakiejkolwiek gwarancji.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = { uriHandler.openUri(BuildConfig.SOURCE_URL) }, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Code, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Kod źródłowy")
+                }
+                OutlinedButton(
+                    onClick = { uriHandler.openUri("https://www.gnu.org/licenses/gpl-3.0.html") },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Licencja") }
+            }
+            TextButton(onClick = { showLibraries = !showLibraries }) {
+                Text(if (showLibraries) "Ukryj biblioteki" else "Biblioteki i ich licencje")
+            }
+            AnimatedVisibility(showLibraries) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    bundledLibraries.forEach { (name, license) ->
+                        Row {
+                            Text(name, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Text(license, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }

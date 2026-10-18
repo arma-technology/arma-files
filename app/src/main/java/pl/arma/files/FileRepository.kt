@@ -27,7 +27,7 @@ import java.util.zip.ZipOutputStream
 class FileRepository(private val context: Context) : FileOps {
     private val resolver: ContentResolver get() = context.contentResolver
     private val accounts = AccountStore(context)
-    private val remote = RemoteRepository(accounts)
+    private val remote = RemoteRepository(accounts, java.io.File(context.filesDir, "known_hosts"))
 
     override suspend fun listChildren(parent: Uri): List<FileItem> = withContext(Dispatchers.IO) {
         listChildrenBlocking(parent)
@@ -239,7 +239,7 @@ class FileRepository(private val context: Context) : FileOps {
      * przekazania konta wprost, zamiast szukania go po URI.
      */
     fun probeAccount(account: RemoteAccount): Int =
-        RemoteRepository { id -> account.takeIf { it.id == id } }
+        RemoteRepository({ id -> account.takeIf { it.id == id } }, java.io.File(context.filesDir, "known_hosts"))
             .listChildren(RemoteRepository.rootOf(account))
             .size
 

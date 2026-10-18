@@ -2,7 +2,7 @@ package pl.arma.files
 
 import android.net.Uri
 import pl.arma.files.net.AccountStore
-import pl.arma.files.net.DriveBackend
+import pl.arma.files.net.CertificatePins
 import pl.arma.files.net.FtpBackend
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteBackend
@@ -20,9 +20,13 @@ import java.io.OutputStream
  * Wspólne wejście do zasobów sieciowych. Sam nie zna protokołów — rozpoznaje
  * konto po autorytecie URI i przekazuje pracę odpowiedniemu backendowi.
  */
-class RemoteRepository(private val lookup: (String?) -> RemoteAccount?) {
+class RemoteRepository(
+    private val lookup: (String?) -> RemoteAccount?,
+    /** Zapamiętane klucze serwerów SSH; null tylko w testach. */
+    private val knownHosts: java.io.File? = null
+) {
 
-    constructor(accounts: AccountStore) : this({ id -> accounts.get(id) })
+    constructor(accounts: AccountStore, knownHosts: java.io.File) : this({ id -> accounts.get(id) }, knownHosts)
 
     companion object {
         /** Schemat dla nowych kont; protokół wynika z konta, nie z adresu. */
@@ -57,11 +61,10 @@ class RemoteRepository(private val lookup: (String?) -> RemoteAccount?) {
     private fun backend(type: RemoteType): RemoteBackend = synchronized(backends) {
         backends.getOrPut(type) {
             when (type) {
-                RemoteType.FTP -> FtpBackend()
-                RemoteType.SFTP -> SftpBackend()
+                RemoteType.FTP -> FtpBackend(CertificatePins(knownHosts?.resolveSibling("known_certificates")))
+                RemoteType.SFTP -> SftpBackend(knownHosts)
                 RemoteType.SMB -> SmbBackend()
                 RemoteType.WEBDAV -> WebDavBackend()
-                RemoteType.GDRIVE -> DriveBackend(pl.arma.files.BuildConfig.DRIVE_CLIENT_ID)
             }
         }
     }

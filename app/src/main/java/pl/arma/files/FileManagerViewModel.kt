@@ -30,8 +30,6 @@ import pl.arma.files.index.IndexProgress
 import pl.arma.files.index.IndexedFile
 import pl.arma.files.net.AccountStore
 import pl.arma.files.net.DiscoveredHost
-import pl.arma.files.net.GoogleSession
-import pl.arma.files.net.GoogleSignIn
 import pl.arma.files.net.LanScanner
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
@@ -77,8 +75,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _remoteAccounts = MutableStateFlow<List<RemoteAccount>>(emptyList())
     val remoteAccounts: StateFlow<List<RemoteAccount>> = _remoteAccounts.asStateFlow()
 
-    private val _accountTestResult = MutableStateFlow<String?>(null)
-    val accountTestResult: StateFlow<String?> = _accountTestResult.asStateFlow()
+    private val _accountTestResult = MutableStateFlow<AccountTestResult?>(null)
+    val accountTestResult: StateFlow<AccountTestResult?> = _accountTestResult.asStateFlow()
 
     private val _testingAccount = MutableStateFlow(false)
     val testingAccount: StateFlow<Boolean> = _testingAccount.asStateFlow()
@@ -412,32 +410,6 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         updateSources()
     }
 
-    val googleSignIn = GoogleSignIn(
-        clientId = BuildConfig.DRIVE_CLIENT_ID,
-        redirectScheme = BuildConfig.DRIVE_REDIRECT_SCHEME
-    )
-
-    /** Zapisuje konto Drive po udanym logowaniu. */
-    fun completeGoogleSignIn(accountId: String, label: String, session: GoogleSession) {
-        val existing = accounts.get(accountId)
-        accounts.save(
-            RemoteAccount(
-                id = accountId,
-                type = RemoteType.GDRIVE,
-                label = label.ifBlank { session.email.ifBlank { "Google Drive" } },
-                host = "",
-                port = 443,
-                username = session.email,
-                // Token odświeżania trafia do SecretStore, tak jak hasła.
-                password = session.refreshToken,
-                rootPath = existing?.rootPath.orEmpty(),
-                enabled = true
-            )
-        )
-        updateSources()
-        _notice.value = "Podłączono Google Drive" + session.email.let { if (it.isBlank()) "" else " ($it)" }
-    }
-
     fun newAccountDraft(type: RemoteType = RemoteType.SMB): RemoteAccount = RemoteAccount(
         id = RemoteAccount.newId(),
         type = type,
@@ -457,8 +429,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             }
             _testingAccount.value = false
             _accountTestResult.value = result.fold(
-                onSuccess = { count -> "Połączenie działa • $count elementów w katalogu startowym" },
-                onFailure = { it.message ?: "Nie udało się połączyć." }
+                onSuccess = { count -> AccountTestResult(true, "Połączenie działa • $count elementów w katalogu startowym") },
+                onFailure = { AccountTestResult(false, it.message ?: "Nie udało się połączyć.") }
             )
         }
     }

@@ -1,13 +1,16 @@
 package pl.arma.files.net
 
 import okhttp3.Credentials
+import okhttp3.HttpUrl
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
-import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -27,26 +30,24 @@ class WebDavBackend : RemoteBackend {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    private fun baseUrl(account: RemoteAccount): String {
-        if (account.host.isBlank()) throw IOException("WebDAV: brak adresu serwera.")
-        val scheme = if (account.secure) "https" else "http"
-        val defaultPort = if (account.secure) 443 else 80
-        val host = if (account.port == defaultPort) account.host else "${account.host}:${account.port}"
-        return "$scheme://$host"
-    }
-
-    /** Pełny adres zasobu; każdy segment ścieżki kodowany osobno. */
+    /**
+     * Pełny adres zasobu w czystym ASCII. Polskie litery muszą być zakodowane
+     * procentowo: OkHttp zrobi to sam w adresie żądania, ale nie w nagłówku
+     * Destination, więc zmiana nazwy na „ąę” kończyła się wyjątkiem.
+     */
     private fun url(account: RemoteAccount, path: String, directory: Boolean = false): String {
-        val segments = RemotePaths.absolute(account.rootPath, path)
+        if (account.host.isBlank()) throw IOException("WebDAV: brak adresu serwera.")
+        val builder = HttpUrl.Builder()
+            .scheme(if (account.secure) "https" else "http")
+            .host(account.host)
+            .port(account.port)
+        RemotePaths.absolute(account.rootPath, path)
             .split('/')
             .filter { it.isNotBlank() }
-            .joinToString("/") { encodeSegment(it) }
-        val base = baseUrl(account) + "/" + segments
-        return if (directory && !base.endsWith("/")) "$base/" else base
+            .forEach { builder.addPathSegment(it) }
+        if (directory) builder.addPathSegment("")
+        return builder.build().toString()
     }
-
-    private fun encodeSegment(value: String): String =
-        URI(null, null, value, null).rawPath.replace("?", "%3F").replace("#", "%23")
 
     private fun request(account: RemoteAccount, url: String): Request.Builder {
         val builder = Request.Builder().url(url)
@@ -185,16 +186,25 @@ class WebDavBackend : RemoteBackend {
     }
 
     /**
-     * WebDAV nie ma dopisywania strumieniem — PUT wysyła całą zawartość naraz,
-     * więc zapis buforujemy w pamięci i wysyłamy przy zamknięciu strumienia.
+     * WebDAV nie ma dopisywania strumieniem — PUT wysyła całą zawartość naraz.
+     * Zapis idzie do pliku tymczasowego (w pamięci film zabrałby całą stertę)
+     * i wysyłany jest przy zamknięciu strumienia, ze znaną długością.
      */
     override fun openOutput(account: RemoteAccount, path: String): OutputStream {
         val target = url(account, path)
-        return object : ByteArrayOutputStream() {
+        val temp = File.createTempFile("webdav", ".part")
+        return object : FilterOutputStream(temp.outputStream().buffered()) {
+            private var closed = false
+            override fun write(b: ByteArray, off: Int, len: Int) = out.write(b, off, len)
             override fun close() {
-                super.close()
-                val body: RequestBody = toByteArray().toRequestBody(null)
-                execute(request(account, target).put(body).build()) { }
+                if (closed) return
+                closed = true
+                try {
+                    super.close()
+                    execute(request(account, target).put(temp.asRequestBody(null)).build()) { }
+                } finally {
+                    temp.delete()
+                }
             }
         }
     }

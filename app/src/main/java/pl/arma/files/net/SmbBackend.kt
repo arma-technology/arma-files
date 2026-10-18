@@ -12,7 +12,6 @@ import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.URLEncoder
 
 class SmbBackend : RemoteBackend {
 
@@ -35,24 +34,24 @@ class SmbBackend : RemoteBackend {
         }
     }
 
-    private fun encode(value: String): String =
-        URLEncoder.encode(value, Charsets.UTF_8.name()).replace("+", "%20")
-
-    private fun url(account: RemoteAccount, path: String, directory: Boolean): String {
+    /**
+     * Katalog udziału jako adres, a dalsze segmenty jako nazwy dzieci. jCIFS
+     * nie dekoduje procentów w adresie, więc zakodowane „ż” albo spacja
+     * wskazywały nieistniejący plik; dziecko przyjmuje nazwę dosłownie.
+     */
+    private fun file(account: RemoteAccount, path: String, directory: Boolean = false): SmbFile {
         if (account.host.isBlank() || account.share.isBlank()) {
             throw IOException("SMB: podaj serwer i nazwę udziału.")
         }
         val host = if (account.port == 445) account.host else "${account.host}:${account.port}"
-        val segments = RemotePaths.absolute(account.rootPath, path)
-            .split('/')
-            .filter { it.isNotBlank() }
-            .joinToString("/") { encode(it) }
-        val base = "smb://$host/${encode(account.share)}/$segments"
-        return if (directory) "$base/" else base.trimEnd('/')
+        val segments = RemotePaths.absolute(account.rootPath, path).split('/').filter { it.isNotBlank() }
+        var current = SmbFile("smb://$host/${account.share.trim('/')}/", context(account))
+        segments.forEachIndexed { index, name ->
+            val last = index == segments.lastIndex
+            current = SmbFile(current, if (!last || directory) "$name/" else name)
+        }
+        return current
     }
-
-    private fun file(account: RemoteAccount, path: String, directory: Boolean = false) =
-        SmbFile(url(account, path, directory), context(account))
 
     override fun list(account: RemoteAccount, path: String): List<RemoteEntry> =
         file(account, path, directory = true).use { dir ->
@@ -116,6 +115,9 @@ class SmbBackend : RemoteBackend {
     override fun openOutput(account: RemoteAccount, path: String): OutputStream {
         val target = file(account, path)
         return object : FilterOutputStream(SmbFileOutputStream(target, false)) {
+            // FilterOutputStream pisze tablicę bajt po bajcie, a jCIFS wysyła
+            // każdy bajt osobnym żądaniem — 2 MB szły ponad minutę.
+            override fun write(b: ByteArray, off: Int, len: Int) = out.write(b, off, len)
             override fun close() { try { super.close() } finally { target.close() } }
         }
     }

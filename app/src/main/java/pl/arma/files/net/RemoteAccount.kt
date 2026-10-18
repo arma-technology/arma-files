@@ -2,10 +2,7 @@ package pl.arma.files.net
 
 import pl.arma.files.ops.Escaping
 
-enum class RemoteType { FTP, SFTP, SMB, WEBDAV, GDRIVE }
-
-/** Konta, do których nie wpisuje się adresu ani hasła, tylko loguje przez OAuth. */
-val RemoteType.usesOAuth: Boolean get() = this == RemoteType.GDRIVE
+enum class RemoteType { FTP, SFTP, SMB, WEBDAV }
 
 /**
  * Jedno połączenie sieciowe. W odróżnieniu od poprzedniej wersji, w której
@@ -33,9 +30,6 @@ data class RemoteAccount(
 ) {
     val configured: Boolean
         get() = when {
-            // Drive nie ma adresu serwera — liczy się to, czy jest token po
-            // zalogowaniu. Trzymamy go w polu hasła, czyli w SecretStore.
-            type.usesOAuth -> password.isNotBlank()
             type == RemoteType.SMB -> host.isNotBlank() && share.isNotBlank()
             else -> host.isNotBlank()
         }
@@ -43,7 +37,6 @@ data class RemoteAccount(
     /** Podpis do pokazania na liście źródeł. */
     val summary: String
         get() = when (type) {
-            RemoteType.GDRIVE -> username.ifBlank { "Zalogowano" }
             RemoteType.SMB -> "$host/$share"
             RemoteType.WEBDAV -> "${if (secure) "https" else "http"}://$host$rootPath"
             else -> "$host:$port"
@@ -55,7 +48,6 @@ data class RemoteAccount(
             RemoteType.SFTP -> 22
             RemoteType.SMB -> 445
             RemoteType.WEBDAV -> if (secure) 443 else 80
-            RemoteType.GDRIVE -> 443
         }
 
         /**

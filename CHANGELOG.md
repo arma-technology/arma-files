@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.10.1 (w toku)
+
+- aplikacja jest wolnym oprogramowaniem na licencji GPL-3.0-or-later; w
+  Ustawieniach karta „O aplikacji” z licencją, linkiem do kodu i listą bibliotek
+
+Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
+
+- SMB łączy się znowu — od wykluczenia starszego BouncyCastle brakowało
+  jCIFS klasy DERApplicationSpecific i każde połączenie kończyło się błędem
+  i zawieszeniem (jcifs-ng 2.1.10)
+- SFTP działa na Androidzie — wbudowany w system okrojony BouncyCastle nie ma
+  X25519, którym serwery SSH wymieniają klucze
+- zapis na SMB i FTP szedł bajt po bajcie: 2 MB na SMB ponad minutę, teraz
+  ułamek sekundy
+- SMB otwiera pliki z polskimi znakami i spacją w nazwie
+- FTP i SFTP bez katalogu startowego otwierają katalog domowy użytkownika, nie
+  katalog główny serwera
+- dowiązania do katalogów (FTP, SFTP) otwierają się jak katalogi
+- SFTP: zapamiętany klucz serwera i ostrzeżenie przy jego zmianie, logowanie
+  „keyboard-interactive”, limit czasu przy serwerze bez SFTP (wcześniej
+  aplikacja czekała bez końca), szybszy transfer
+- FTPS: zapamiętany certyfikat serwera (NAS z adresem IP i własnym
+  certyfikatem wcześniej się nie łączył, a dowolny certyfikat z pasującą
+  nazwą był przyjmowany), czytelny komunikat, gdy serwer wymaga wznawiania
+  sesji TLS
+- odmowa serwera FTP pokazuje błąd zamiast pustego katalogu
+- WebDAV: zmiana nazwy na nazwę z polskimi znakami, zapis dużych plików przez
+  plik tymczasowy zamiast pamięci
+- usunięte logowanie do Google Drive przez API (wymagało własnego projektu
+  Google i audytu przy publikacji); Google Drive działa przez aplikację Dysk
+  w Ustawieniach → Źródła plików
+- edytor połączenia: błąd testu na czerwono, arkusz nie opada do połowy
+
 ## 0.10.0
 
 Przeglądarka PDF i CAD (moduły `:viewer` i `:dwg`):

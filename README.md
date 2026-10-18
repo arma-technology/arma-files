@@ -1,121 +1,79 @@
-# ARMA Files v0.4.1
+# ARMA Files
 
-ARMA Files to nowoczesny menedżer plików dla Androida z lokalną pamięcią urządzenia, kartami SD, zasobami chmurowymi i sieciowymi oraz wbudowanymi podglądami plików.
+Menedżer plików dla Androida z przeglądarką PDF i rysunków CAD. Pamięć
+urządzenia i karty SD, Google Drive, OneDrive, Dropbox, FTP/FTPS, SFTP i SMB
+w jednym miejscu, z podglądem większości plików bez wychodzenia z aplikacji.
 
-## Poprawki w v0.4.1
+Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md)
 
-- podgląd obrazów w dolnym arkuszu jest kotwiczony do górnej krawędzi zamiast centrowany w pionie,
-- pionowe obrazy zaczynają się bezpośrednio pod paskiem informacji o pliku,
-- dodano rzeczywisty przycisk **Pełny ekran** dla obrazów rastrowych oraz SVG,
-- pełny ekran działa w osobnym, bezramkowym widoku zamiast wewnątrz `ModalBottomSheet`,
-- podczas pełnego ekranu paski systemowe są ukrywane i mogą zostać chwilowo pokazane gestem od krawędzi,
-- pełny ekran zachowuje pinch-to-zoom, przesuwanie, przyciski zoomu i dopasowanie obrazu,
-- wyjście z pełnego ekranu działa przez przycisk zamknięcia, ikonę `FullscreenExit` oraz systemowy Back,
-- dolny pasek kontrolek podglądu respektuje pasek nawigacyjny Androida i nie powinien być przez niego zasłaniany.
+## Co potrafi
 
-## Najważniejsze zmiany z v0.4.0
+**Pliki**
+- ekran „Mój komputer”: przypięte foldery, pamięć wbudowana, karty SD,
+  podłączone zasoby sieciowe i chmurowe
+- kopiowanie i przenoszenie między dowolnymi źródłami w tle, kosz, ZIP,
+  zmiana nazwy, SHA-256, Ostatnie i Ulubione
+- indeks plików z wyszukiwaniem i statystykami folderów
+- sortowanie zapamiętywane osobno dla każdego folderu
 
-### Ekran „Mój komputer”
-Główny ekran został przebudowany na wzór klasycznego widoku „Mój komputer” z PC:
+**Podglądy**
+- obrazy (także SVG) i pliki tekstowe z rozpoznawaniem kodowania; pozostałe
+  typy otwiera aplikacja systemowa
+- **PDF**: powiększenie do 6400%, wyszukiwanie tekstu, warstwy, komentarze
+  (oglądanie, dodawanie, zapis), pomiary
+- **CAD**: DXF natywnie, DWG przez [LibreDWG](https://www.gnu.org/software/libredwg/);
+  warstwy, rodzaje linii, kreskowania, wymiary, wyszukiwanie tekstu
+- **pomiary w PDF i CAD**: przyciąganie do końców, przecięć, środków
+  i prostopadłej, tryb osi do mierzenia odległości od ściany; skala odczytana
+  z pliku, z tabelki rysunkowej albo z kalibracji
 
-1. **Przypięte foldery** – na górze znajdują się skróty do `Pobrane` i `Zdjęcia` oraz przycisk dodania folderu przez SAF.
-2. **Ten komputer** – osobne karty pamięci wbudowanej i wykrytych kart SD. Karty pokazują wolne miejsce, całkowitą pojemność i pasek zajętości.
-3. **Połączone zasoby** – Google Drive, OneDrive, Dropbox, FTP/FTPS, SMB/Samba oraz opcjonalny folder SAF. Sekcja jest wyświetlana tylko wtedy, gdy istnieje aktywne i skonfigurowane źródło. Wyłączone lub nieskonfigurowane zasoby nie zajmują miejsca na ekranie.
-
-### Pełny dostęp lokalny
-Dla Androida 11+ ARMA Files może korzystać ze specjalnego uprawnienia `MANAGE_EXTERNAL_STORAGE`, ponieważ podstawową funkcją aplikacji jest zarządzanie plikami. Po jego przyznaniu aplikacja może przeglądać pamięć współdzieloną i kartę SD przez lokalny backend `file://`.
-
-SAF nadal pozostaje dostępny jako tryb alternatywny do przypinania pojedynczych folderów i do integracji z dostawcami dokumentów.
-
-> Publikacja aplikacji z `MANAGE_EXTERNAL_STORAGE` w Google Play podlega dodatkowym zasadom Google Play. Dla prywatnej instalacji APK uprawnienie jest przyznawane przez systemowy ekran „Dostęp do wszystkich plików”.
-
-### Natywna obsługa obrazów
-- JPEG / PNG / WebP / GIF / BMP / HEIF / HEIC / AVIF są dekodowane natywnie przez Androida.
-- Podgląd obrazu ma zoom do 800%, pinch-to-zoom, przesuwanie oraz „dopasuj”.
-- Obrazy z FTP, SMB i chmur są buforowane lokalnie przed dekodowaniem.
-- SVG pozostaje obsługiwany przez Coil SVG.
-- Miniatury nie są już kadrowane do kwadratu. `ContentScale.Fit` pokazuje cały obraz z zachowaniem proporcji.
-- Miniatury rastrowe są generowane także dla źródeł FTP/SMB, a nie tylko URI `content://`.
-
-### PDF – czytnik ciągły
-- ciągłe pionowe przewijanie wszystkich stron,
-- leniwe renderowanie stron – bitmapy powstają dopiero dla widocznych stron,
-- pasek miniaturek stron,
-- kliknięcie miniatury przewija do strony,
-- licznik `bieżąca / wszystkie` jest przyciskiem skoku do numeru strony,
-- przyciski poprzednia / następna,
-- zoom 100–400%, przewijanie poziome powiększonego dokumentu,
-- pinch-to-zoom wykonywany dwoma palcami bez blokowania zwykłego przewijania,
-- PDF z Google Drive, OneDrive, Dropbox, FTP/FTPS i SMB jest obsługiwany przez ten sam viewer.
-
-Renderowanie nadal korzysta z systemowego Android `PdfRenderer`.
-
-### Dynamiczna liczba kolumn
-W katalogu można zmieniać gęstość widoku gestem poziomym:
-
-- przeciągnięcie **w lewo**: lista → 2 kolumny → 3 → 4 → 5,
-- przeciągnięcie **w prawo**: 5 → 4 → 3 → 2 → lista.
-
-Przycisk lista/siatka nadal pozostaje dostępny.
-
-## Źródła plików
-
-Opcjonalne źródła są zarządzane w **Ustawienia → Źródła plików**:
-
-- Google Drive przez Android Storage Access Framework,
-- OneDrive przez Android Storage Access Framework,
-- Dropbox przez Android Storage Access Framework,
-- FTP / FTPS,
-- SMB / Samba.
-
-Wyłączenie źródła zachowuje jego konfigurację, ale usuwa je z widoku „Mój komputer”, Ostatnich i Ulubionych.
-
-## Operacje plikowe
-
-Wspólna warstwa repozytorium obsługuje teraz SAF, `file://`, FTP i SMB. Dostępne są m.in.:
-
-- kopiowanie i przenoszenie pomiędzy różnymi źródłami,
-- tworzenie folderów i plików,
-- zmiana nazwy,
-- usuwanie,
-- ZIP i rozpakowywanie z ochroną przed ZIP Slip,
-- edycja tekstu,
-- SHA-256,
-- Ostatnie i Ulubione,
-- udostępnianie i otwieranie w zewnętrznych aplikacjach przez FileProvider.
-
-## Bezpieczeństwo
-
-- hasła FTP/SMB są szyfrowane AES-GCM,
-- klucz jest przechowywany w Android Keystore,
-- SMB1 pozostaje wyłączony,
-- FTPS używa TLS,
-- ZIP zachowuje ochronę przed ścieżkami `../`,
-- lokalne pliki przekazywane innym aplikacjom są kopiowane do prywatnego cache i wystawiane przez FileProvider zamiast `file://`.
+Przeglądarka PDF i CAD to osobne moduły (`viewer/`, `dwg/`), które można
+przenieść do innej aplikacji — opis w [viewer/README.md](viewer/README.md).
 
 ## Budowanie
 
+Wymagania: JDK 17, Android SDK 35, NDK 28.2 i CMake 3.31 (dla modułu `dwg`),
+[Git LFS](https://git-lfs.com) — skompilowane biblioteki LibreDWG są w LFS.
+
 ```bash
-chmod +x gradlew
-./gradlew assembleDebug
+git lfs install
+git clone https://github.com/arturotolinski/aplikacje-android-arma-files.git
+cd aplikacje-android-arma-files
+./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+scripts/test.sh                # testy jednostkowe
 ```
 
-APK:
+Biblioteki LibreDWG można zbudować samodzielnie: `dwg/build-libredwg.sh`.
 
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
+Opcjonalnie w `local.properties` (plik poza repozytorium):
 
-## Stos
+| Klucz | Do czego |
+|---|---|
+| `storeFile`, `storePassword`, `keyAlias`, `keyPassword` | podpis wydania |
+| `sourceUrl` | adres kodu źródłowego pokazywany w aplikacji (dla forków) |
 
-- Kotlin 2.1.21
-- Jetpack Compose + Material 3
-- Android Gradle Plugin 8.10.1
-- Gradle 8.11.1
-- minSdk 26
-- targetSdk / compileSdk 35
-- Android PdfRenderer
-- Android ImageDecoder / BitmapFactory
-- Coil 3 + SVG
-- Apache Commons Net 3.13.0
-- jcifs-ng 2.1.9
+## Uprawnienia
+
+Na Androidzie 11+ aplikacja prosi o „Dostęp do wszystkich plików”
+(`MANAGE_EXTERNAL_STORAGE`), bo zarządzanie plikami to jej podstawowa funkcja.
+Bez niego działa w trybie ograniczonym przez systemowy wybór folderów (SAF).
+Hasła do FTP/SFTP/SMB są szyfrowane AES-GCM kluczem z Android Keystore.
+
+## Zgłaszanie błędów
+
+Błędy i pomysły zgłaszaj w Issues. Przy błędzie podglądu najbardziej pomaga
+plik, na którym występuje — jeśli nie może być publiczny, wystarczy opis,
+wersja aplikacji i model telefonu.
+
+## Licencja
+
+Copyright © ARMA
+
+Program jest wolnym oprogramowaniem: możesz go rozpowszechniać i modyfikować
+na warunkach [GNU General Public License](LICENSE) w wersji 3 lub (według
+Twojego wyboru) dowolnej późniejszej. Rozpowszechniany jest bez jakiejkolwiek
+gwarancji.
+
+Dołączone biblioteki mają licencje zgodne z GPL-3.0: LibreDWG (GPL-3.0+),
+PdfBox-Android, AndroidX, Coil, OkHttp, AppAuth, Commons Net, SSHJ
+(Apache 2.0), jcifs-ng (LGPL-2.1), SLF4J (MIT).

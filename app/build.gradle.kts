@@ -6,11 +6,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-// Client ID projektu Google Cloud. Nie jest tajemnicą (identyfikuje aplikację,
-// a nie użytkownika), ale nie trzymamy go w repozytorium, żeby nie przywiązywać
-// kodu do jednego projektu. Kolejność: -PdriveClientId=... , potem
-// local.properties (plik nieśledzony przez git).
-/** Wartości spoza repozytorium: Client ID Google i dane podpisu wydania. */
+/** Wartości spoza repozytorium: dane podpisu wydania i adres kodu. */
 val localProperties = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
@@ -18,17 +14,10 @@ val localProperties = Properties().apply {
 fun local(name: String): String? =
     (project.findProperty(name) as String?) ?: localProperties.getProperty(name)
 
-val driveClientId: String = local("driveClientId").orEmpty()
-
-// Google wymaga, żeby adres przekierowania był odwróconym Client ID. Wyliczamy
-// go, zamiast kazać wpisywać drugą, łatwą do pomylenia wartość.
-val driveRedirectScheme: String =
-    if (driveClientId.endsWith(".apps.googleusercontent.com")) {
-        "com.googleusercontent.apps." +
-            driveClientId.removeSuffix(".apps.googleusercontent.com")
-    } else {
-        "pl.arma.files.oauth"
-    }
+// Adres kodu źródłowego pokazywany w aplikacji — GPL wymaga, żeby użytkownik
+// wiedział, skąd go wziąć. Fork ustawia własny: -PsourceUrl=...
+val sourceUrl: String = local("sourceUrl")
+    ?: "https://github.com/arturotolinski/aplikacje-android-arma-files"
 
 android {
     namespace = "pl.arma.files"
@@ -41,9 +30,7 @@ android {
         versionCode = 20
         versionName = "0.10.0"
 
-        manifestPlaceholders["appAuthRedirectScheme"] = driveRedirectScheme
-        buildConfigField("String", "DRIVE_CLIENT_ID", "\"$driveClientId\"")
-        buildConfigField("String", "DRIVE_REDIRECT_SCHEME", "\"$driveRedirectScheme\"")
+        buildConfigField("String", "SOURCE_URL", "\"$sourceUrl\"")
     }
 
     signingConfigs {
@@ -124,16 +111,11 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-svg:3.2.0")
     implementation("commons-net:commons-net:3.13.0")
-    // jcifs-ng ciagnie bcprov-jdk15on, sshj bcprov-jdk18on -- te same klasy w
-    // dwoch artefaktach. Zostawiamy nowszy, ktory jest nadzbiorem starego.
-    implementation("eu.agno3.jcifs:jcifs-ng:2.1.9") {
-        exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
-    }
+    // 2.1.10, bo 2.1.9 potrzebowal bcprov-jdk15on, a z nowszym bcprov-jdk18on
+    // (od sshj) brakowalo mu DERApplicationSpecific i SMB nie laczyl sie wcale.
+    implementation("eu.agno3.jcifs:jcifs-ng:2.1.10")
     implementation("com.hierynomus:sshj:0.38.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // OAuth 2.0 + PKCE dla Google Drive. AppAuth zamiast wlasnej implementacji,
-    // bo obsluguje Custom Tabs, PKCE i odswiezanie tokenow zgodnie z RFC 8252.
-    implementation("net.openid:appauth:0.11.1")
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-nop:2.0.17")
     debugImplementation("androidx.compose.ui:ui-tooling")
