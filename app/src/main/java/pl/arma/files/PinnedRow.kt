@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -46,9 +47,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
+import pl.arma.files.ui.theme.LocalFileTypeColors
 
-private val CARD_WIDTH = 168.dp
-private val CARD_SPACING = 12.dp
+private val CARD_WIDTH = 140.dp
+private val CARD_SPACING = 8.dp
 
 /**
  * Rząd przypiętych folderów z przeciąganiem kolejności.
@@ -74,7 +76,7 @@ fun PinnedFolderRow(
     var dragOffset by remember { mutableFloatStateOf(0f) }
 
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(CARD_SPACING)
     ) {
         items(pinned, key = { it.id }) { folder ->
@@ -132,18 +134,24 @@ fun PinnedFolderRow(
             OutlinedCard(
                 onClick = onAddFolder,
                 modifier = Modifier.width(CARD_WIDTH),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Icon(
                         Icons.Default.AddLink,
                         null,
-                        Modifier.size(34.dp),
+                        Modifier.size(26.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Column {
                         Text("Dodaj folder", fontWeight = FontWeight.SemiBold)
-                        Text("SAF / dostawca plików", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "SAF / dostawca plików",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -160,14 +168,18 @@ private fun PinnedCard(
     onUnpin: () -> Unit
 ) {
     var menu by remember { mutableStateOf(false) }
-    val icon = when {
-        folder.label.equals("Zdjęcia", ignoreCase = true) -> Icons.Default.Image
-        else -> Icons.Default.Folder
-    }
-    Card(onClick = onClick, modifier = Modifier.width(CARD_WIDTH), shape = RoundedCornerShape(22.dp)) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    val photos = folder.label.equals("Zdjęcia", ignoreCase = true)
+    val icon = if (photos) Icons.Default.Image else Icons.Default.Folder
+    val tint = LocalFileTypeColors.current.let { if (photos) it.image else it.folder }
+    Card(
+        onClick = onClick,
+        modifier = Modifier.width(CARD_WIDTH),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(icon, null, Modifier.size(26.dp), tint = tint)
                 Spacer(Modifier.weight(1f))
                 Box {
                     // Krzyżyk na kaflu folderu czytał się jak „usuń folder";
@@ -193,7 +205,7 @@ private fun PinnedCard(
                 }
             }
             Column(Modifier.fillMaxWidth()) {
-                Text(folder.label, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(folder.label, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     stat?.let { (count, bytes) -> "$count plików · ${formatSize(bytes)}" }
                         ?: folder.subtitle.substringAfterLast('/').ifBlank { folder.subtitle },

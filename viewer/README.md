@@ -1,0 +1,69 @@
+# :viewer — przeglądarka PDF i rysunków CAD
+
+Moduł niezależny od ARMA Files: dostaje plik lokalny i go wyświetla. Nie zna
+niczego z `:app`, więc przenosi się go do innej aplikacji razem z katalogiem.
+Licencja zależności: PdfBox-Android (Apache 2.0). Odczyt DWG jest w osobnym
+module `:dwg` (GPL-3.0) — bez niego działają PDF i DXF.
+
+## Wspólne dla PDF i CAD (`sheet/`)
+
+- powiększenie do 6400% z ostrością ekranu — nad bitmapą całej strony rysowany
+  jest wycinek widocznej części w pełnej rozdzielczości
+- szczypanie w punkcie palców, przesuwanie w obu osiach z bezwładnością,
+  podwójne tapnięcie, obrót bez utraty miejsca
+- wyszukiwanie tekstu z licznikiem i przeskokiem do kolejnego trafienia
+- **pomiar**: celownik pośrodku ekranu, przyciąganie do końców, przecięć,
+  środków odcinków i okręgów, punktów wstawienia bloków, prostopadłej i do
+  linii; tryb osi (poziomo/pionowo od pierwszego punktu, z przecięciem
+  z linią rysunku — „odległość od ściany”); Δx/Δy; cofanie
+- **skala**: z pliku (rzutnia AutoCAD `/VP /Measure`, jednostki `$INSUNITS`),
+  z tabelki rysunkowej („SKALA 1:50”), wybór z listy albo kalibracja z
+  odcinka o znanej długości
+- **warstwy**: lista z filtrem, włączanie i wyłączanie
+
+## PDF (`pdf/`)
+
+Obraz rysuje systemowy PdfRenderer; PdfBox dokłada:
+- komentarze i adnotacje — lista, dymek, wtapianie w obraz (PdfRenderer ich
+  nie rysuje), dodawanie notatek i pomiarów jako adnotacji, usuwanie, zapis
+- warstwy PDF (OCG)
+- linie wektorowe strony do przyciągania (także na stronach obróconych)
+- napisy SHX z AutoCAD (adnotacje „AutoCAD SHX Text”) w wyszukiwaniu
+- wyszukiwanie zapasowe dla Androida < 15 bez modułu PDF
+
+## CAD (`cad/`)
+
+Własny czytnik DXF (tekstowy i binarny, R12–2018, strony kodowe sprzed 2007):
+LINE, ARC, CIRCLE, ELLIPSE, LWPOLYLINE/POLYLINE (łuki, szerokość, 3D), SPLINE
+(NURBS i punkty dopasowania), TEXT/ATTRIB, MTEXT (formatowanie, ułamki,
+Unicode), INSERT z tablicami MINSERT i atrybutami, DIMENSION (bloki *D),
+LEADER, MLEADER, HATCH (pełne z otworami i wzorem z definicji w pliku),
+SOLID/TRACE/3DFACE, WIPEOUT, ramki IMAGE; OCS, BYLAYER/BYBLOCK, kolory ACI
+i RGB, przezroczystość, rodzaje linii z $LTSCALE, grubości linii; tła jasne,
+ciemne i czarno-białe. Bryły 3D (ACIS) i obiekty OLE są pomijane z komunikatem.
+
+```kotlin
+val state = rememberSheetViewerState(key = uri) { ctx -> SheetDocuments.open(ctx, plik, nazwa) }
+
+SheetViewer(state, Modifier.fillMaxSize(), onSave = { gotowy -> /* nadpisz oryginał */ })
+// albo na pełnym ekranie, z akcjami gospodarza w menu ⋮
+SheetViewerDialog(state, onDismiss = { … }, title = nazwa, actions = listOf(…), onSave = …)
+```
+
+## Przeniesienie do innej aplikacji
+
+1. skopiuj `viewer/` (i `dwg/`, jeśli DWG ma działać)
+2. `settings.gradle.kts`: `include(":viewer")`, `include(":dwg")`
+3. główny `build.gradle.kts`: `id("com.android.library") version "…" apply false`
+4. aplikacja: `implementation(project(":viewer"))` (+ `:dwg`)
+5. `LibreDwgConverter.install()` w `Application.onCreate`
+6. reguły R8 z `app/proguard-rules.pro` (sekcja PdfBox i DwgNative)
+
+Wymaga Compose z Material 3 (BOM 2025.05+), minSdk 26, JDK 17, NDK 28 dla `:dwg`.
+
+## Testy na prawdziwych rysunkach
+
+`ARMA_CAD_SAMPLES=<katalog z .dxf/.dxb> ./gradlew :viewer:testDebugUnitTest
+--tests '*RealDrawingsTest'` — czyta wszystkie rysunki i wypisuje statystyki;
+`ARMA_CAD_RENDER=<pliki rozdzielone :> ARMA_CAD_OUT=<katalog>` w
+`RenderPreviewTest` zapisuje podglądy PNG.

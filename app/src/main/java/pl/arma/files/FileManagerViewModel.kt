@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.Color as AndroidColor
-import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -39,7 +38,6 @@ import pl.arma.files.net.RemoteType
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
 import pl.arma.files.ops.PaneRules
-import pl.arma.files.ops.RenderBudget
 import pl.arma.files.ops.OperationKind
 import pl.arma.files.ops.OperationRecord
 import pl.arma.files.ops.OperationStatus
@@ -880,6 +878,15 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun sortMode(tab: Tab, dir: Uri?): SortMode =
+        prefs.sortMode(sortKey(tab, dir)) ?: defaultSortFor(dir.takeIf { tab == Tab.FILES })
+
+    /** Wybór równy domyślnemu nie jest zapisywany, żeby nie puchły preferencje. */
+    fun saveSortMode(tab: Tab, dir: Uri?, mode: SortMode) {
+        val default = defaultSortFor(dir.takeIf { tab == Tab.FILES })
+        prefs.setSortMode(sortKey(tab, dir), mode.takeIf { it != default })
+    }
+
     fun addRecent(uri: Uri) {
         prefs.addRecent(uri)
         loadSavedCollections()
@@ -974,58 +981,20 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         return file
     }
 
-    suspend fun preparePdf(item: FileItem): File = withContext(Dispatchers.IO) {
-        preparePreviewFile(item, "pdf_preview")
-    }
-
-    suspend fun pdfPageCount(file: File): Int = withContext(Dispatchers.IO) {
-        val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-        val renderer = try {
-            PdfRenderer(descriptor)
-        } catch (error: Throwable) {
-            runCatching { descriptor.close() }
-            throw error
-        }
-        renderer.use { it.pageCount }
-    }
-
-    suspend fun renderPdfPage(file: File, pageIndex: Int, targetWidth: Int = 1600): Bitmap = withContext(Dispatchers.IO) {
-        val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-        val renderer = try {
-            PdfRenderer(descriptor)
-        } catch (error: Throwable) {
-            runCatching { descriptor.close() }
-            throw error
-        }
-        renderer.use { pdf ->
-            require(pageIndex in 0 until pdf.pageCount) { "Nieprawidłowy numer strony PDF." }
-            pdf.openPage(pageIndex).use { page ->
-                val (width, height) = RenderBudget.fit(targetWidth, page.width, page.height)
-                val bitmap = allocate(width, height)
-                bitmap.eraseColor(AndroidColor.WHITE)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                bitmap
-            }
-        }
+    /** Plik lokalny dla przeglądarki PDF/CAD; z sieci pobierany do pamięci podręcznej. */
+    suspend fun prepareDocument(item: FileItem): File = withContext(Dispatchers.IO) {
+        preparePreviewFile(item, "doc_preview")
     }
 
     /**
-     * Bitmapa strony PDF. Przy niedoborze pamięci schodzimy na RGB_565 (połowa
-     * zużycia, a strony PDF to głównie biel i tekst), a w ostateczności na
-     * mniejszą rozdzielczość — lepiej pokazać stronę mniej ostrą niż komunikat
-     * o błędzie renderowania.
+     * Nadpisuje plik treścią z [source] (np. PDF z dodanymi komentarzami).
+     * Najpierw kopia do kosza nie jest potrzebna — przeglądarka zapisuje tylko
+     * na wyraźne polecenie, a dokument zachowuje wszystko poza dodanymi adnotacjami.
      */
-    private fun allocate(width: Int, height: Int): Bitmap =
-        runCatching { Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888) }
-            .recoverCatching { Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565) }
-            .recoverCatching {
-                Bitmap.createBitmap(
-                    (width / 2).coerceAtLeast(1),
-                    (height / 2).coerceAtLeast(1),
-                    Bitmap.Config.RGB_565
-                )
-            }
-            .getOrThrow()
+    suspend fun replaceContent(item: FileItem, source: File) = withContext(Dispatchers.IO) {
+        repo.openOutput(item.uri).use { output -> source.inputStream().use { it.copyTo(output) } }
+        withContext(Dispatchers.Main) { refresh() }
+    }
 
     fun refreshDeviceLocations() {
         _allFilesAccess.value = hasBroadStorageAccess()
@@ -1097,10 +1066,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private fun loadPinnedStats() {
         viewModelScope.launch {
             val stats = withContext(Dispatchers.IO) {
+                // Zero przy braku indeksu wyglądało jak pusty folder; wtedy
+                // karta pokazuje ścieżkę.
                 _pinnedFolders.value.associate { folder ->
                     val uri = folder.rootUri.toString()
                     uri to (index.countUnder(uri) to index.bytesUnder(uri))
-                }
+                }.filterValues { (count, _) -> count > 0 }
             }
             _pinnedStats.value = stats
         }

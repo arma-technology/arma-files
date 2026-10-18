@@ -19,12 +19,17 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="ARMA Files"
+        android:largeHeap="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.ArmaFiles">
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:screenOrientation="unspecified">
+            <!-- Obrót bez odtwarzania aktywności: interfejs jest w Compose i sam
+                 przelicza układ, a odtworzenie gubiło otwarty podgląd, kartę
+                 dolnego paska i zaznaczenie. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -50,6 +50,16 @@ class StoragePrefs(context: Context) {
             .apply()
     }
 
+    /** Sortowanie wybrane dla folderu; null, gdy zostało domyślne. */
+    fun sortMode(key: String): SortMode? =
+        prefs.getString("sort:$key", null)?.let { runCatching { SortMode.valueOf(it) }.getOrNull() }
+
+    fun setSortMode(key: String, mode: SortMode?) {
+        prefs.edit().apply {
+            if (mode == null) remove("sort:$key") else putString("sort:$key", mode.name)
+        }.apply()
+    }
+
     fun replaceUri(old: Uri, new: Uri) {
         val oldValue = old.toString()
         val newValue = new.toString()

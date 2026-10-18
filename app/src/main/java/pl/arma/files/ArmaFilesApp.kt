@@ -33,6 +33,12 @@ class ArmaFilesApp : Application() {
     val index: FileIndexDb by lazy { FileIndexDb(this) }
 
     val indexer: Indexer by lazy { Indexer(index, scope) }
+
+    override fun onCreate() {
+        super.onCreate()
+        // DWG otwiera przeglądarka arkuszy przez LibreDWG (moduł :dwg, GPL).
+        pl.arma.dwg.LibreDwgConverter.install()
+    }
 }
 
 val Context.armaApp: ArmaFilesApp

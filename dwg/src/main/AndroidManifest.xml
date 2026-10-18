@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Konwersja w osobnym procesie: błąd w kodzie natywnym albo brak
+             pamięci przy ogromnym rysunku kończy tylko ten proces. -->
+        <service
+            android:name="pl.arma.dwg.DwgConversionService"
+            android:exported="false"
+            android:process=":dwg" />
+    </application>
+</manifest>

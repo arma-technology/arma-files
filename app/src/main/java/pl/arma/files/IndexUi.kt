@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import pl.arma.files.ui.theme.LocalFileTypeColors
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -166,11 +167,10 @@ fun CategorySearchRow(
                     SuggestionChip(
                         onClick = { onPick(category) },
                         label = { Text(label.first) },
-                        icon = { Icon(label.second, null, Modifier.size(17.dp)) },
+                        icon = { Icon(label.second, null, Modifier.size(17.dp), tint = indexCategoryColor(category)) },
                         colors = SuggestionChipDefaults.suggestionChipColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            labelColor = MaterialTheme.colorScheme.onSurface,
-                            iconContentColor = MaterialTheme.colorScheme.primary
+                            labelColor = MaterialTheme.colorScheme.onSurface
                         ),
                         border = null
                     )
@@ -190,6 +190,20 @@ fun CategorySearchRow(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun indexCategoryColor(category: IndexCategory): Color {
+    val colors = LocalFileTypeColors.current
+    return when (category) {
+        IndexCategory.IMAGE -> colors.image
+        IndexCategory.VIDEO -> colors.video
+        IndexCategory.AUDIO -> colors.audio
+        IndexCategory.DOCUMENT -> colors.document
+        IndexCategory.ARCHIVE -> colors.archive
+        IndexCategory.APK -> colors.apk
+        IndexCategory.OTHER -> colors.other
     }
 }
 

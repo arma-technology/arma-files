@@ -1,6 +1,7 @@
-package pl.arma.files.ops
+package pl.arma.viewer.sheet
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -56,5 +57,59 @@ class RenderBudgetTest {
         assertEquals(RenderBudget.widthForZoom(1.6f), RenderBudget.widthForZoom(2.4f))
         assertTrue(RenderBudget.widthForZoom(2.6f) > RenderBudget.widthForZoom(1.6f))
         assertTrue(RenderBudget.widthForZoom(1.6f) > RenderBudget.widthForZoom(1.0f))
+    }
+
+    // Telefon 1080 x 1900, strona A4 przy 1600% ma okolo 16 500 px szerokosci.
+    private fun detail(left: Float, top: Float, width: Int = 16_500, height: Int = 23_350, base: Int = 1_450) =
+        RenderBudget.detailRegion(left, top, width, height, viewWidth = 1080, viewHeight = 1900, baseWidth = base)
+
+    @Test
+    fun `bez powiekszenia wycinek nie jest potrzebny`() {
+        assertNull(detail(0f, 0f, width = 1_030, height = 1_457, base = 1_400))
+    }
+
+    @Test
+    fun `wycinek to dokladnie widoczny fragment strony`() {
+        val region = detail(left = -5_000f, top = -8_000f)!!
+        assertEquals(5_000, region.left)
+        assertEquals(8_000, region.top)
+        assertEquals(1080, region.width)
+        assertEquals(1900, region.height)
+        assertEquals(1f, region.scale)
+    }
+
+    @Test
+    fun `wycinek nie wychodzi poza strone`() {
+        // Prawy dolny rog strony w polowie ekranu.
+        val region = detail(left = -(16_500f - 540f), top = -(23_350f - 950f))!!
+        assertEquals(16_500, region.right)
+        assertEquals(23_350, region.bottom)
+        assertEquals(540, region.width)
+        assertEquals(950, region.height)
+    }
+
+    @Test
+    fun `strona poza ekranem nie ma wycinka`() {
+        assertNull(detail(left = 0f, top = 2_500f))
+        assertNull(detail(left = 0f, top = -23_350f - 10f))
+    }
+
+    @Test
+    fun `wycinek miesci sie w budzecie niezaleznie od powiekszenia`() {
+        for (width in listOf(3_000, 16_500, 100_000)) {
+            val region = detail(left = -1_000f, top = -1_000f, width = width, height = width * 3 / 2)!!
+            assertTrue(region.width.toLong() * region.height <= RenderBudget.MAX_PIXELS)
+        }
+    }
+
+    @Test
+    fun `duzy ekran tabletu jest skalowany do budzetu`() {
+        val region = RenderBudget.detailRegion(
+            -1_000f, -1_000f, pageWidth = 20_000, pageHeight = 28_000,
+            viewWidth = 2560, viewHeight = 1600, baseWidth = 1_450
+        )!!
+        val rendered = (region.width * region.scale).toLong() * (region.height * region.scale).toLong()
+        assertTrue(region.scale < 1f)
+        assertTrue(rendered <= RenderBudget.MAX_PIXELS)
     }
 }

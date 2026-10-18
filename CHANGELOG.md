@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.10.0
+
+Przeglądarka PDF i CAD (moduły `:viewer` i `:dwg`):
+
+- PDF: powiększenie do 6400% z ostrością ekranu, wyszukiwanie tekstu (także
+  napisów SHX z AutoCAD), warstwy, komentarze — oglądanie, dodawanie, zapis
+- CAD: DXF natywnie, DWG przez LibreDWG (GPL-3.0) w osobnym procesie
+- pomiary w PDF i CAD: przyciąganie do końców, przecięć, środków, punktów
+  wstawienia i prostopadłej, tryb osi; skala z pliku, z tabelki albo kalibracja
+- w poziomie pełny ekran z narzędziami na treści
+
+Ekran plików:
+
+- zapamiętywane sortowanie dla każdego folderu; Pobrane domyślnie po dacie
+- gęstszy, płaski widok listy z kolorowymi ikonami typów plików
+- obrót ekranu nie zamyka otwartego pliku
+
 ## 0.9.0-alpha3
 
 Czytnik plików tekstowych:
