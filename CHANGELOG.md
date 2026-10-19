@@ -33,6 +33,11 @@
   i tar.zst
 - obraz w poziomie od razu na pełnym ekranie z narzędziami na nim; rysunek
   CAD wypełnia cały ekran i otwiera się w całości
+- wyszukiwanie nie wymaga indeksu: bez niego pliki są przeszukiwane na żywo
+  (wcześniej okienko nie miało pola i nie dało się nic wpisać); bez polskich
+  znaków i wielkości liter; opcja „Przeszukaj również zdalne zasoby”
+  (włączone serwery, folder po folderze, z informacją, gdzie trwa szukanie)
+- powrót z folderu albo archiwum zostawia listę w tym samym miejscu
 - **dostępne offline**: pliki i foldery z serwerów można trzymać w telefonie;
   bez zasięgu albo gdy serwer nie odpowiada w 5 s, lista i pliki otwierają się
   z kopii (z paskiem „kopia offline z …”), a zmiany zapisane bez połączenia

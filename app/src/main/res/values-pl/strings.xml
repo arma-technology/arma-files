@@ -332,7 +332,11 @@ wybierając kartę z paska powyżej.</string>
     <string name="search_files">Szukaj plików</string>
     <string name="search_found">Znaleziono: %1$d</string>
     <string name="search_here_only">Szukaj tylko tutaj</string>
+    <string name="search_remote_too">Przeszukaj również zdalne zasoby</string>
+    <string name="search_status">Szukam: %1$s…</string>
+    <string name="search_status_device">pamięć telefonu</string>
     <string name="search_this_folder">Szukaj w tym folderze</string>
+    <string name="search_without_index">Bez indeksu — szukanie bezpośrednio w plikach trwa dłużej.</string>
     <string name="select_all">Zaznacz wszystko</string>
     <string name="selected_count">Wybrano: %1$d</string>
     <string name="settings_about">O aplikacji</string>

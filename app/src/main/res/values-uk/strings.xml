@@ -332,7 +332,11 @@
     <string name="search_files">Пошук файлів</string>
     <string name="search_found">Знайдено: %1$d</string>
     <string name="search_here_only">Шукати лише тут</string>
+    <string name="search_remote_too">Шукати також у віддалених ресурсах</string>
+    <string name="search_status">Пошук: %1$s…</string>
+    <string name="search_status_device">пам’ять телефона</string>
     <string name="search_this_folder">Шукати в цій папці</string>
+    <string name="search_without_index">Без індексу — пошук безпосередньо у файлах триває довше.</string>
     <string name="select_all">Вибрати все</string>
     <string name="selected_count">Вибрано: %1$d</string>
     <string name="settings_about">Про застосунок</string>

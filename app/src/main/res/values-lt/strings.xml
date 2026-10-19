@@ -332,7 +332,11 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="search_files">Ieškoti failų</string>
     <string name="search_found">Rasta: %1$d</string>
     <string name="search_here_only">Ieškoti tik čia</string>
+    <string name="search_remote_too">Ieškoti ir nuotoliniuose ištekliuose</string>
+    <string name="search_status">Ieškoma: %1$s…</string>
+    <string name="search_status_device">telefono atmintis</string>
     <string name="search_this_folder">Ieškoti šiame aplanke</string>
+    <string name="search_without_index">Be indekso — paieška tiesiogiai failuose trunka ilgiau.</string>
     <string name="select_all">Pažymėti viską</string>
     <string name="selected_count">Pažymėta: %1$d</string>
     <string name="settings_about">Apie programą</string>

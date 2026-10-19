@@ -332,7 +332,11 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="search_files">Bestanden zoeken</string>
     <string name="search_found">Gevonden: %1$d</string>
     <string name="search_here_only">Alleen hier zoeken</string>
+    <string name="search_remote_too">Ook externe bronnen doorzoeken</string>
+    <string name="search_status">Zoeken: %1$s…</string>
+    <string name="search_status_device">telefoonopslag</string>
     <string name="search_this_folder">In deze map zoeken</string>
+    <string name="search_without_index">Geen index — rechtstreeks in bestanden zoeken duurt langer.</string>
     <string name="select_all">Alles selecteren</string>
     <string name="selected_count">Geselecteerd: %1$d</string>
     <string name="settings_about">Over de app</string>

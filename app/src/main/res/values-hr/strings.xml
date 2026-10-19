@@ -332,7 +332,11 @@ odabirom kartice na traci iznad.</string>
     <string name="search_files">Pretraži datoteke</string>
     <string name="search_found">Pronađeno: %1$d</string>
     <string name="search_here_only">Pretraži samo ovdje</string>
+    <string name="search_remote_too">Pretraži i udaljene resurse</string>
+    <string name="search_status">Pretraživanje: %1$s…</string>
+    <string name="search_status_device">memorija telefona</string>
     <string name="search_this_folder">Pretraži ovu mapu</string>
+    <string name="search_without_index">Bez indeksa — izravno pretraživanje datoteka traje dulje.</string>
     <string name="select_all">Odaberi sve</string>
     <string name="selected_count">Odabrano: %1$d</string>
     <string name="settings_about">O aplikaciji</string>

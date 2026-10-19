@@ -332,7 +332,11 @@
     <string name="search_files">Пребарај датотеки</string>
     <string name="search_found">Пронајдено: %1$d</string>
     <string name="search_here_only">Пребарај само тука</string>
+    <string name="search_remote_too">Пребарај и во оддалечените ресурси</string>
+    <string name="search_status">Пребарување: %1$s…</string>
+    <string name="search_status_device">меморија на телефонот</string>
     <string name="search_this_folder">Пребарај во оваа папка</string>
+    <string name="search_without_index">Без индекс — директното пребарување во датотеките трае подолго.</string>
     <string name="select_all">Избери сѐ</string>
     <string name="selected_count">Избрано: %1$d</string>
     <string name="settings_about">За апликацијата</string>

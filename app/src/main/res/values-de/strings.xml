@@ -332,7 +332,11 @@ indem du oben einen Tab auswählst.</string>
     <string name="search_files">Dateien suchen</string>
     <string name="search_found">Gefunden: %1$d</string>
     <string name="search_here_only">Nur hier suchen</string>
+    <string name="search_remote_too">Auch entfernte Ressourcen durchsuchen</string>
+    <string name="search_status">Suche: %1$s…</string>
+    <string name="search_status_device">Telefonspeicher</string>
     <string name="search_this_folder">In diesem Ordner suchen</string>
+    <string name="search_without_index">Kein Index — die direkte Suche in den Dateien dauert länger.</string>
     <string name="select_all">Alle auswählen</string>
     <string name="selected_count">Ausgewählt: %1$d</string>
     <string name="settings_about">Über die App</string>

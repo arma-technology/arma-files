@@ -332,7 +332,11 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="search_files">Fájlok keresése</string>
     <string name="search_found">Találatok: %1$d</string>
     <string name="search_here_only">Keresés csak itt</string>
+    <string name="search_remote_too">Távoli erőforrásokban is keressen</string>
+    <string name="search_status">Keresés: %1$s…</string>
+    <string name="search_status_device">telefon tárhelye</string>
     <string name="search_this_folder">Keresés ebben a mappában</string>
+    <string name="search_without_index">Nincs index — a fájlokban való közvetlen keresés tovább tart.</string>
     <string name="select_all">Összes kijelölése</string>
     <string name="selected_count">Kijelölve: %1$d</string>
     <string name="settings_about">Névjegy</string>

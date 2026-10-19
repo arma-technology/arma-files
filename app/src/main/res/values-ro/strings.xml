@@ -332,7 +332,11 @@ alegând o filă din bara de sus.</string>
     <string name="search_files">Caută fișiere</string>
     <string name="search_found">Găsite: %1$d</string>
     <string name="search_here_only">Caută doar aici</string>
+    <string name="search_remote_too">Caută și în resursele la distanță</string>
+    <string name="search_status">Se caută: %1$s…</string>
+    <string name="search_status_device">memoria telefonului</string>
     <string name="search_this_folder">Caută în acest dosar</string>
+    <string name="search_without_index">Fără index — căutarea direct în fișiere durează mai mult.</string>
     <string name="select_all">Selectează tot</string>
     <string name="selected_count">Selectate: %1$d</string>
     <string name="settings_about">Despre aplicație</string>

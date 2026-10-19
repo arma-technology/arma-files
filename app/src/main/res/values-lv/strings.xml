@@ -332,7 +332,11 @@ izvēloties cilni joslā augšā.</string>
     <string name="search_files">Meklēt failus</string>
     <string name="search_found">Atrasts: %1$d</string>
     <string name="search_here_only">Meklēt tikai šeit</string>
+    <string name="search_remote_too">Meklēt arī attālajos resursos</string>
+    <string name="search_status">Meklē: %1$s…</string>
+    <string name="search_status_device">tālruņa krātuve</string>
     <string name="search_this_folder">Meklēt šajā mapē</string>
+    <string name="search_without_index">Bez indeksa — meklēšana tieši failos aizņem ilgāk.</string>
     <string name="select_all">Atlasīt visu</string>
     <string name="selected_count">Atlasīti: %1$d</string>
     <string name="settings_about">Par lietotni</string>

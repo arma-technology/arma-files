@@ -332,7 +332,11 @@ valides ülal ribal vahelehe.</string>
     <string name="search_files">Otsi faile</string>
     <string name="search_found">Leitud: %1$d</string>
     <string name="search_here_only">Otsi ainult siit</string>
+    <string name="search_remote_too">Otsi ka kaugressurssidest</string>
+    <string name="search_status">Otsimine: %1$s…</string>
+    <string name="search_status_device">telefoni mälu</string>
     <string name="search_this_folder">Otsi sellest kaustast</string>
+    <string name="search_without_index">Indeksita — otsing otse failidest võtab kauem aega.</string>
     <string name="select_all">Vali kõik</string>
     <string name="selected_count">Valitud: %1$d</string>
     <string name="settings_about">Teave</string>

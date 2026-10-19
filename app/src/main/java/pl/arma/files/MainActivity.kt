@@ -28,7 +28,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
@@ -205,6 +207,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
     val offlineProgress by vm.offlineProgress.collectAsStateWithLifecycle()
     val offlineSince by vm.offlineSince.collectAsStateWithLifecycle()
+    val searchRemote by vm.searchRemote.collectAsStateWithLifecycle()
+    val searchStatus by vm.searchStatus.collectAsStateWithLifecycle()
     var conflictsOf by remember { mutableStateOf<String?>(null) }
     val secondaryFiles by vm.secondaryFiles.collectAsStateWithLifecycle()
     val secondaryDir by vm.secondaryDir.collectAsStateWithLifecycle()
@@ -576,6 +580,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenTrash = { showTrash = true },
                         indexProgress = indexProgress,
                         indexedCount = analysis.stats?.files ?: 0,
+                        hasRemote = remoteAccounts.any { it.enabled },
+                        searchRemote = searchRemote,
+                        onSearchRemote = vm::setSearchRemote,
+                        searchingIn = searchStatus.where,
+                        searchLocation = vm::searchLocation,
                         globalQuery = query,
                         onGlobalQuery = { value ->
                             // Wpisanie frazy tutaj włącza wyszukiwanie globalne
@@ -702,11 +711,29 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             }
                         }
 
+                        // Pozycja listy zapamiętana dla folderu w tej karcie: po powrocie
+                        // z podfolderu albo archiwum lista stoi tam, gdzie ją zostawiono.
+                        // Stan żyje poza samą listą, bo ta znika na czas wczytywania.
+                        val paneId = tabs.firstOrNull { it.active }?.id.orEmpty()
+                        val savedScroll = remember(paneId, currentDir) { vm.scrollPosition(paneId, currentDir) }
+                        val listState = remember(paneId, currentDir) { LazyListState(savedScroll.first, savedScroll.second) }
+                        val gridState = remember(paneId, currentDir) { LazyGridState(savedScroll.first, savedScroll.second) }
+                        // Wartości z chwili kompozycji — w onDispose currentDir byłby już nowym folderem.
+                        val shownDir = currentDir
+                        val shownMode = viewMode
+                        DisposableEffect(paneId, shownDir, shownMode) {
+                            onDispose {
+                                val state = if (shownMode == ViewMode.LIST) listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+                                else gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
+                                vm.saveScrollPosition(paneId, shownDir, state.first, state.second)
+                            }
+                        }
+
                         Box(fileAreaModifier) {
                             if (visibleFiles.isEmpty()) {
                                 EmptyFolder(filtered = query.isNotBlank() || category != FileCategory.ALL, tab = tab)
                             } else if (viewMode == ViewMode.LIST) {
-                                LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
+                                LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp)) {
                                     items(visibleFiles, key = { it.uri.toString() }) { item ->
                                         FileRow(
                                             item = item,
@@ -722,6 +749,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                 }
                             } else {
                                 LazyVerticalGrid(
+                                    state = gridState,
                                     columns = GridCells.Fixed(gridColumns),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -1057,6 +1085,11 @@ private fun ComputerHome(
     onOpenTrash: () -> Unit,
     indexProgress: pl.arma.files.index.IndexProgress,
     indexedCount: Int,
+    hasRemote: Boolean,
+    searchRemote: Boolean,
+    onSearchRemote: (Boolean) -> Unit,
+    searchingIn: String?,
+    searchLocation: (FileItem) -> String,
     globalQuery: String,
     onGlobalQuery: (String) -> Unit,
     onBuildIndex: () -> Unit,
@@ -1142,7 +1175,11 @@ private fun ComputerHome(
                 onPick = onCategory,
                 onBuild = onBuildIndex,
                 onCancel = onCancelIndex,
-                onRefresh = onBuildIndex
+                onRefresh = onBuildIndex,
+                hasRemote = hasRemote,
+                searchRemote = searchRemote,
+                onSearchRemote = onSearchRemote,
+                searchingIn = searchingIn
             )
         }
 
@@ -1160,6 +1197,7 @@ private fun ComputerHome(
             items(searchResults, key = { it.uri.toString() }) { item ->
                 SearchResultRow(
                     item = item,
+                    location = searchLocation(item),
                     onOpen = { onOpenResult(item) },
                     onReveal = { onRevealResult(item) }
                 )
@@ -1371,7 +1409,7 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun SearchResultRow(item: FileItem, onOpen: () -> Unit, onReveal: () -> Unit) {
+private fun SearchResultRow(item: FileItem, location: String, onOpen: () -> Unit, onReveal: () -> Unit) {
     Surface(
         onClick = onOpen,
         modifier = Modifier.padding(horizontal = 8.dp).fillMaxWidth(),
@@ -1389,7 +1427,7 @@ private fun SearchResultRow(item: FileItem, onOpen: () -> Unit, onReveal: () -> 
             Column(Modifier.weight(1f)) {
                 Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
                 Text(
-                    item.uri.path.orEmpty().substringBeforeLast('/').removePrefix("/storage/emulated/0"),
+                    location,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

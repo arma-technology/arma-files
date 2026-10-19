@@ -17,6 +17,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -193,8 +196,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun rejectIdentity() = pl.arma.files.net.ServerIdentityAlerts.dismiss()
 
     /** Otwiera wpis offline: folder w karcie (z serwera albo z kopii), plik w podglądzie. */
-    fun openOfflineFolder(entry: OfflineStore.Entry) {
-        val uri = entry.uri
+    fun openOfflineFolder(entry: OfflineStore.Entry) = openRemoteFolder(entry.uri)
+
+    /** Folder na serwerze w bieżącej karcie, ze ścieżką liczoną od korzenia konta. */
+    fun openRemoteFolder(uri: Uri) {
         val source = _sources.value.firstOrNull { it.rootUri?.scheme == uri.scheme && it.rootUri?.authority == uri.authority }
         val pane = active()
         pane.source = source?.type ?: SourceType.SMB
@@ -311,6 +316,19 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         updateWatchers()
+    }
+
+    /** Pozycje list (pierwszy widoczny element i przesunięcie) dla folderów w kartach. */
+    private val scrollPositions = object : LinkedHashMap<String, Pair<Int, Int>>(32, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Int, Int>>?) = size > 200
+    }
+
+    fun scrollPosition(paneId: String, dir: Uri?): Pair<Int, Int> =
+        dir?.let { scrollPositions["$paneId|$it"] } ?: (0 to 0)
+
+    fun saveScrollPosition(paneId: String, dir: Uri?, index: Int, offset: Int) {
+        if (dir == null || paneId.isEmpty()) return
+        scrollPositions["$paneId|$dir"] = index to offset
     }
 
     private val watcher = DirectoryWatcher(app, repo)
@@ -1645,19 +1663,133 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setGlobalSearch(enabled: Boolean) {
         _globalSearch.value = enabled
-        if (!enabled) _searchResults.value = emptyList()
+        if (!enabled) {
+            searchJob?.cancel()
+            lastQuery = ""
+            _searchStatus.value = SearchStatus(null)
+            _searchResults.value = emptyList()
+        }
     }
 
-    /** Szuka w całym zindeksowanym urządzeniu, a nie tylko w bieżącym katalogu. */
+    /** Stan trwającego wyszukiwania: gdzie właśnie szukamy (null = koniec). */
+    data class SearchStatus(val where: String?, val liveLocal: Boolean = false)
+
+    private val _searchStatus = MutableStateFlow(SearchStatus(null))
+    val searchStatus: StateFlow<SearchStatus> = _searchStatus.asStateFlow()
+
+    private val _searchRemote = MutableStateFlow(prefs.searchRemote)
+    val searchRemote: StateFlow<Boolean> = _searchRemote.asStateFlow()
+
+    private var searchJob: Job? = null
+    private var lastQuery = ""
+
+    fun setSearchRemote(enabled: Boolean) {
+        _searchRemote.value = enabled
+        prefs.searchRemote = enabled
+        if (lastQuery.isNotBlank()) searchEverywhere(lastQuery)
+    }
+
+    /**
+     * Szuka w całym urządzeniu, a nie tylko w bieżącym katalogu. Z indeksem
+     * odpowiedź jest natychmiastowa; bez niego pliki są przeglądane na żywo
+     * (wolniej, ale indeks nie jest warunkiem). Opcjonalnie przeszukuje też
+     * włączone zasoby sieciowe — folder po folderze, z limitami, żeby wielki
+     * NAS nie zajmował wyszukiwania w nieskończoność.
+     */
     fun searchEverywhere(query: String) {
+        searchJob?.cancel()
+        lastQuery = query
         if (query.isBlank()) {
             _searchResults.value = emptyList()
+            _searchStatus.value = SearchStatus(null)
             return
         }
-        viewModelScope.launch {
-            val found = withContext(Dispatchers.IO) { index.search(query) }
-            _searchResults.value = found.map(::toFileItem).filter { onPresentVolume(it.uri) }
+        searchJob = viewModelScope.launch {
+            delay(250) // pisanie kolejnych liter anuluje poprzednie szukanie
+            val matcher = NameMatcher(query)
+            val found = java.util.Collections.synchronizedList(mutableListOf<FileItem>())
+            var lastPublish = 0L
+            fun publish(force: Boolean = false) {
+                val now = System.currentTimeMillis()
+                if (force || now - lastPublish > 300) {
+                    lastPublish = now
+                    _searchResults.value = synchronized(found) { found.toList() }
+                }
+            }
+            try {
+                val indexed = withContext(Dispatchers.IO) { runCatching { index.stats().files }.getOrDefault(0) }
+                if (indexed > 0) {
+                    found += withContext(Dispatchers.IO) { index.search(query) }.map(::toFileItem).filter { onPresentVolume(it.uri) }
+                    publish(force = true)
+                } else {
+                    _searchStatus.value = SearchStatus(text(R.string.search_status_device), liveLocal = true)
+                    withContext(Dispatchers.IO) { searchLocal(matcher, found) { publish() } }
+                    publish(force = true)
+                }
+                if (_searchRemote.value) {
+                    _remoteAccounts.value.filter { it.enabled }.forEach { account ->
+                        _searchStatus.value = SearchStatus(account.label)
+                        withContext(Dispatchers.IO) { searchRemote(repo.remoteRoot(account), matcher, found) { publish() } }
+                        publish(force = true)
+                    }
+                }
+            } finally {
+                publish(force = true)
+                if (searchJob == coroutineContext[Job]) _searchStatus.value = SearchStatus(null)
+            }
         }
+    }
+
+    private suspend fun searchLocal(matcher: NameMatcher, found: MutableList<FileItem>, onFound: () -> Unit) {
+        val context = kotlin.coroutines.coroutineContext
+        _deviceStorages.value.mapNotNull { it.rootUri.path?.let(::File) }.forEach { root ->
+            root.walkTopDown()
+                .onEnter { dir -> context.isActive && !dir.name.startsWith(TrashStore.TRASH_DIR) && dir.path != "${root.path}/Android/data" && dir.path != "${root.path}/Android/obb" }
+                .forEach { file ->
+                    context.ensureActive()
+                    if (found.size >= SEARCH_LIMIT) return
+                    if (file != root && matcher.matches(file.name)) {
+                        found += FileItem(
+                            Uri.fromFile(file), file.name,
+                            if (file.isDirectory) DIRECTORY_MIME else guessMime(file.name),
+                            if (file.isFile) file.length() else 0L, file.lastModified(), file.isDirectory
+                        )
+                        onFound()
+                    }
+                }
+        }
+    }
+
+    private suspend fun searchRemote(root: Uri, matcher: NameMatcher, found: MutableList<FileItem>, onFound: () -> Unit) {
+        val context = kotlin.coroutines.coroutineContext
+        val started = System.currentTimeMillis()
+        val queue = ArrayDeque(listOf(root))
+        var visited = 0
+        while (queue.isNotEmpty() && visited < REMOTE_SEARCH_DIRS && found.size < SEARCH_LIMIT &&
+            System.currentTimeMillis() - started < REMOTE_SEARCH_MS
+        ) {
+            context.ensureActive()
+            val dir = queue.removeFirst()
+            visited++
+            val children = runCatching { repo.listChildren(dir) }.getOrNull() ?: continue
+            children.forEach { child ->
+                if (matcher.matches(child.name)) {
+                    found += child
+                    onFound()
+                }
+                if (child.isDirectory && child.name != TrashStore.TRASH_DIR) queue += child.uri
+            }
+        }
+    }
+
+    /** Gdzie leży wynik: ścieżka w pamięci albo nazwa konta i ścieżka na serwerze. */
+    fun searchLocation(item: FileItem): String {
+        val parent = item.uri.path.orEmpty().substringBeforeLast('/')
+        if (RemoteRepository.isRemoteScheme(item.uri.scheme)) {
+            val label = _remoteAccounts.value.firstOrNull { it.id == item.uri.authority }?.label ?: item.uri.authority.orEmpty()
+            return "$label: ${parent.ifEmpty { "/" }}"
+        }
+        return parent.removePrefix("/storage/emulated/0")
     }
 
     /** Kategoria licząca się dla całej pamięci, nie tylko dla otwartego katalogu. */
@@ -1727,7 +1859,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val parent = item.uri.toString().substringBeforeLast('/')
         _globalSearch.value = false
         _searchResults.value = emptyList()
-        openLocalLocation(Uri.parse(parent))
+        if (RemoteRepository.isRemoteScheme(item.uri.scheme)) openRemoteFolder(Uri.parse(parent))
+        else openLocalLocation(Uri.parse(parent))
     }
 
     private fun loadSavedCollections() {
@@ -1806,5 +1939,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 _busy.value = false
             }
         }
+    }
+
+    private companion object {
+        const val SEARCH_LIMIT = 500
+        const val REMOTE_SEARCH_DIRS = 3_000
+        const val REMOTE_SEARCH_MS = 90_000L
     }
 }

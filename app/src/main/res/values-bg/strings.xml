@@ -332,7 +332,11 @@
     <string name="search_files">Търсене на файлове</string>
     <string name="search_found">Намерени: %1$d</string>
     <string name="search_here_only">Търсене само тук</string>
+    <string name="search_remote_too">Търсене и в отдалечените ресурси</string>
+    <string name="search_status">Търсене: %1$s…</string>
+    <string name="search_status_device">памет на телефона</string>
     <string name="search_this_folder">Търсене в тази папка</string>
+    <string name="search_without_index">Без индекс — директното търсене във файловете отнема повече време.</string>
     <string name="select_all">Избиране на всички</string>
     <string name="selected_count">Избрани: %1$d</string>
     <string name="settings_about">Информация</string>

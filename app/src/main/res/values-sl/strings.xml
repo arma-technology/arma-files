@@ -332,7 +332,11 @@ z izbiro zavihka v vrstici zgoraj.</string>
     <string name="search_files">Išči datoteke</string>
     <string name="search_found">Najdeno: %1$d</string>
     <string name="search_here_only">Išči samo tukaj</string>
+    <string name="search_remote_too">Išči tudi po oddaljenih virih</string>
+    <string name="search_status">Iskanje: %1$s…</string>
+    <string name="search_status_device">pomnilnik telefona</string>
     <string name="search_this_folder">Išči v tej mapi</string>
+    <string name="search_without_index">Brez indeksa — neposredno iskanje po datotekah traja dlje.</string>
     <string name="select_all">Izberi vse</string>
     <string name="selected_count">Izbrano: %1$d</string>
     <string name="settings_about">O aplikaciji</string>

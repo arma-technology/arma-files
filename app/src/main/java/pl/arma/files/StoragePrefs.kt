@@ -6,6 +6,11 @@ import android.net.Uri
 class StoragePrefs(context: Context) {
     private val prefs = context.getSharedPreferences("storage", Context.MODE_PRIVATE)
 
+    /** Czy wyszukiwanie obejmuje też zasoby sieciowe. */
+    var searchRemote: Boolean
+        get() = prefs.getBoolean("search_remote", false)
+        set(value) { prefs.edit().putBoolean("search_remote", value).apply() }
+
     var treeUri: Uri?
         get() = prefs.getString("tree_uri", null)?.let(Uri::parse)
         set(value) { prefs.edit().putString("tree_uri", value?.toString()).apply() }

@@ -333,7 +333,11 @@ by picking a tab in the bar above.</string>
     <string name="search_files">Search files</string>
     <string name="search_found">Found: %1$d</string>
     <string name="search_here_only">Search here only</string>
+    <string name="search_remote_too">Also search remote resources</string>
+    <string name="search_status">Searching: %1$s…</string>
+    <string name="search_status_device">phone storage</string>
     <string name="search_this_folder">Search this folder</string>
+    <string name="search_without_index">No index — searching files directly takes longer.</string>
     <string name="select_all">Select all</string>
     <string name="selected_count">Selected: %1$d</string>
     <string name="settings_about">About</string>

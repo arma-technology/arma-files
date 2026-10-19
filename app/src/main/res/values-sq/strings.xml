@@ -332,7 +332,11 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="search_files">Kërko skedarë</string>
     <string name="search_found">U gjetën: %1$d</string>
     <string name="search_here_only">Kërko vetëm këtu</string>
+    <string name="search_remote_too">Kërko edhe në burimet në distancë</string>
+    <string name="search_status">Po kërkohet: %1$s…</string>
+    <string name="search_status_device">memoria e telefonit</string>
     <string name="search_this_folder">Kërko në këtë dosje</string>
+    <string name="search_without_index">Pa indeks — kërkimi direkt në skedarë zgjat më shumë.</string>
     <string name="select_all">Zgjidh të gjitha</string>
     <string name="selected_count">Të zgjedhura: %1$d</string>
     <string name="settings_about">Rreth aplikacionit</string>

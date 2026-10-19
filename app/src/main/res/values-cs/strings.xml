@@ -332,7 +332,11 @@ výběrem karty v liště nahoře.</string>
     <string name="search_files">Hledat soubory</string>
     <string name="search_found">Nalezeno: %1$d</string>
     <string name="search_here_only">Hledat jen zde</string>
+    <string name="search_remote_too">Prohledat i vzdálené zdroje</string>
+    <string name="search_status">Hledání: %1$s…</string>
+    <string name="search_status_device">úložiště telefonu</string>
     <string name="search_this_folder">Hledat v této složce</string>
+    <string name="search_without_index">Bez indexu — přímé hledání v souborech trvá déle.</string>
     <string name="select_all">Vybrat vše</string>
     <string name="selected_count">Vybráno: %1$d</string>
     <string name="settings_about">O aplikaci</string>

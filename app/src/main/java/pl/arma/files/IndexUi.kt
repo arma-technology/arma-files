@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -81,56 +83,34 @@ fun CategorySearchRow(
     onPick: (IndexCategory) -> Unit,
     onBuild: () -> Unit,
     onCancel: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    hasRemote: Boolean = false,
+    searchRemote: Boolean = false,
+    onSearchRemote: (Boolean) -> Unit = {},
+    searchingIn: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
 
+    // Pole jest zawsze — indeks tylko przyspiesza szukanie. Wcześniej bez
+    // indeksu w okienku była sama podpowiedź i nie dało się nic wpisać.
     LaunchedEffect(expanded) {
-        if (expanded && indexed > 0) runCatching { focus.requestFocus() }
+        if (expanded) {
+            runCatching { focus.requestFocus() }
+            keyboard?.show()
+        }
     }
 
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (expanded) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.weight(1f)
-            ) {
-                when {
-                    progress.running -> Row(
-                        Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            stringResource(R.string.index_building, progress.scanned),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = onCancel) { Text(stringResource(R.string.index_stop)) }
-                    }
-
-                    // Bez indeksu nie ma czego przeszukiwać, więc zamiast pola
-                    // proponujemy jego zbudowanie.
-                    indexed == 0 -> Row(
-                        Modifier.padding(start = 14.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            stringResource(R.string.index_build_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = onBuild) { Text(stringResource(R.string.index_build)) }
-                    }
-
-                    else -> TextField(
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (expanded) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    TextField(
                         value = query,
                         onValueChange = onQuery,
                         modifier = Modifier.fillMaxWidth().focusRequester(focus),
@@ -144,52 +124,97 @@ fun CategorySearchRow(
                         )
                     )
                 }
-            }
-            // Odświeżenie indeksu mieszka tutaj — indeks jest migawką, a bez
-            // tego przycisku nowe pliki nigdy by się w wynikach nie pojawiły.
-            if (indexed > 0 && query.isBlank() && !progress.running) {
-                IconButton(onClick = onRefresh) {
+                // Odświeżenie indeksu mieszka tutaj — indeks jest migawką, a bez
+                // tego przycisku nowe pliki nigdy by się w wynikach nie pojawiły.
+                if (indexed > 0 && query.isBlank() && !progress.running) {
+                    IconButton(onClick = onRefresh) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            stringResource(R.string.index_refresh),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                IconButton(onClick = { expanded = false; onQuery("") }) {
+                    Icon(Icons.Default.Close, stringResource(R.string.common_close_search))
+                }
+            } else {
+                LazyRow(
+                    Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(categoryEntries) { (category, label) ->
+                        SuggestionChip(
+                            onClick = { onPick(category) },
+                            label = { Text(stringResource(label.first)) },
+                            icon = { Icon(label.second, null, Modifier.size(17.dp), tint = indexCategoryColor(category)) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                labelColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            border = null
+                        )
+                    }
+                }
+                Spacer(Modifier.width(4.dp))
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    onClick = { expanded = true }
+                ) {
                     Icon(
-                        Icons.Default.Refresh,
-                        stringResource(R.string.index_refresh),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        Icons.Default.Search,
+                        stringResource(R.string.index_search_all),
+                        Modifier.padding(9.dp).size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-            IconButton(onClick = { expanded = false; onQuery("") }) {
-                Icon(Icons.Default.Close, stringResource(R.string.common_close_search))
-            }
-        } else {
-            LazyRow(
-                Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                items(categoryEntries) { (category, label) ->
-                    SuggestionChip(
-                        onClick = { onPick(category) },
-                        label = { Text(stringResource(label.first)) },
-                        icon = { Icon(label.second, null, Modifier.size(17.dp), tint = indexCategoryColor(category)) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            labelColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        border = null
-                    )
+        }
+
+        if (expanded) {
+            if (hasRemote) {
+                Row(
+                    Modifier.fillMaxWidth().clickable { onSearchRemote(!searchRemote) },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(checked = searchRemote, onCheckedChange = onSearchRemote)
+                    Text(stringResource(R.string.search_remote_too), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            Spacer(Modifier.width(4.dp))
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                onClick = { expanded = true }
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    stringResource(R.string.index_search_all),
-                    Modifier.padding(9.dp).size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            when {
+                progress.running -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.index_building, progress.scanned),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onCancel) { Text(stringResource(R.string.index_stop)) }
+                }
+                // Bez indeksu szukanie działa, tylko wolniej — proponujemy go, ale go nie wymagamy.
+                indexed == 0 -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.search_without_index),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onBuild) { Text(stringResource(R.string.index_build)) }
+                }
+            }
+            if (searchingIn != null && query.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        stringResource(R.string.search_status, searchingIn),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
