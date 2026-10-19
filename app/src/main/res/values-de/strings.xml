@@ -21,6 +21,7 @@
     <string name="accounts_root">Startordner (optional)</string>
     <string name="accounts_sftp_hint">SFTP ist immer verschlüsselt und nutzt eine einzige Verbindung – kein Passivmodus und keine offenen Ports nötig.</string>
     <string name="accounts_share">Freigabename</string>
+    <string name="accounts_share_hint">Leer lassen, um alle Freigaben des Servers zu zeigen</string>
     <string name="accounts_test">Testen</string>
     <string name="accounts_test_failed">Verbindung fehlgeschlagen.</string>
     <string name="accounts_test_ok">Verbindung funktioniert • %1$s im Startordner</string>
@@ -380,7 +381,8 @@ indem du oben einen Tab auswählst.</string>
     <string name="sftp_write_failed">SFTP: Die Datei kann nicht geschrieben werden.</string>
     <string name="show_in_folder">Im Ordner anzeigen</string>
     <string name="smb_missing">SMB: Die Freigabe oder der Ordner existiert nicht.</string>
-    <string name="smb_need_share">SMB: Gib den Server und den Freigabenamen ein.</string>
+    <string name="smb_need_share">SMB: Serveradresse eingeben.</string>
+    <string name="smb_shares_port">SMB: Die Freigabenliste funktioniert nur auf Port 445 — Freigabe angeben oder Port 445 verwenden.</string>
     <string name="sort">Sortieren</string>
     <string name="sort_date">Änderungsdatum</string>
     <string name="sort_name">Name</string>

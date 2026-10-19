@@ -21,6 +21,7 @@
     <string name="accounts_root">Початкова папка (необов’язково)</string>
     <string name="accounts_sftp_hint">SFTP завжди зашифрований і використовує одне з’єднання, тож не потребує пасивного режиму чи відкритих портів.</string>
     <string name="accounts_share">Назва спільної папки</string>
+    <string name="accounts_share_hint">Залиште порожнім, щоб показати всі ресурси сервера</string>
     <string name="accounts_test">Перевірити</string>
     <string name="accounts_test_failed">Не вдалося підключитися.</string>
     <string name="accounts_test_ok">Підключення працює • %1$s у початковій папці</string>
@@ -380,7 +381,8 @@
     <string name="sftp_write_failed">SFTP: не вдається записати файл.</string>
     <string name="show_in_folder">Показати в папці</string>
     <string name="smb_missing">SMB: спільна папка або каталог не існує.</string>
-    <string name="smb_need_share">SMB: вкажіть сервер і назву спільної папки.</string>
+    <string name="smb_need_share">SMB: вкажіть адресу сервера.</string>
+    <string name="smb_shares_port">SMB: список ресурсів працює лише на порту 445 — вкажіть назву ресурсу або використайте порт 445.</string>
     <string name="sort">Сортування</string>
     <string name="sort_date">Дата зміни</string>
     <string name="sort_name">Назва</string>

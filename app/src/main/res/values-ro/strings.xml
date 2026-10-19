@@ -21,6 +21,7 @@
     <string name="accounts_root">Dosar de pornire (opțional)</string>
     <string name="accounts_sftp_hint">SFTP este mereu criptat și folosește o singură conexiune, deci nu are nevoie de mod pasiv sau porturi deschise.</string>
     <string name="accounts_share">Numele partajării</string>
+    <string name="accounts_share_hint">Lăsați gol pentru a afișa toate partajările serverului</string>
     <string name="accounts_test">Testează</string>
     <string name="accounts_test_failed">Conectarea a eșuat.</string>
     <string name="accounts_test_ok">Conexiunea funcționează • %1$s în dosarul de pornire</string>
@@ -380,7 +381,8 @@ alegând o filă din bara de sus.</string>
     <string name="sftp_write_failed">SFTP: fișierul nu poate fi scris.</string>
     <string name="show_in_folder">Arată în dosar</string>
     <string name="smb_missing">SMB: partajarea sau dosarul nu există.</string>
-    <string name="smb_need_share">SMB: introdu serverul și numele partajării.</string>
+    <string name="smb_need_share">SMB: introduceți adresa serverului.</string>
+    <string name="smb_shares_port">SMB: lista partajărilor funcționează doar pe portul 445 — introduceți numele sau folosiți portul 445.</string>
     <string name="sort">Sortează</string>
     <string name="sort_date">Data modificării</string>
     <string name="sort_name">Nume</string>

@@ -89,9 +89,11 @@ class AccountCodecTest {
     }
 
     @Test
-    fun `konto SMB bez nazwy udzialu nie jest skonfigurowane`() {
+    fun `konto SMB bez udzialu jest kompletne, bez adresu nie`() {
         assertTrue(nas.configured)
-        assertTrue(!nas.copy(share = "").configured)
+        // Bez udziału konto pokazuje listę udziałów serwera.
+        assertTrue(nas.copy(share = "").configured)
+        assertTrue(nas.copy(share = "").summary == nas.host)
         assertTrue(!nas.copy(host = "").configured)
         // FTP nie potrzebuje udziału, wystarczy adres.
         assertTrue(ftp.configured)

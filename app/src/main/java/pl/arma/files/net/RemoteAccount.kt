@@ -29,15 +29,13 @@ data class RemoteAccount(
     val enabled: Boolean = true
 ) {
     val configured: Boolean
-        get() = when {
-            type == RemoteType.SMB -> host.isNotBlank() && share.isNotBlank()
-            else -> host.isNotBlank()
-        }
+        // SMB bez udziału też jest kompletne — pokazuje wtedy listę udziałów.
+        get() = host.isNotBlank()
 
     /** Podpis do pokazania na liście źródeł. */
     val summary: String
         get() = when (type) {
-            RemoteType.SMB -> "$host/$share"
+            RemoteType.SMB -> if (share.isBlank()) host else "$host/$share"
             RemoteType.WEBDAV -> "${if (secure) "https" else "http"}://$host$rootPath"
             else -> "$host:$port"
         }

@@ -21,6 +21,7 @@
     <string name="accounts_root">Katalog startowy (opcjonalnie)</string>
     <string name="accounts_sftp_hint">SFTP jest zawsze szyfrowany i działa przez jedno połączenie, więc nie wymaga trybu pasywnego ani otwierania portów.</string>
     <string name="accounts_share">Nazwa udziału</string>
+    <string name="accounts_share_hint">Puste — pokaże wszystkie udziały serwera</string>
     <string name="accounts_test">Testuj</string>
     <string name="accounts_test_failed">Nie udało się połączyć.</string>
     <string name="accounts_test_ok">Połączenie działa • %1$s w katalogu startowym</string>
@@ -380,7 +381,8 @@ wybierając kartę z paska powyżej.</string>
     <string name="sftp_write_failed">SFTP: nie można zapisać pliku.</string>
     <string name="show_in_folder">Pokaż w katalogu</string>
     <string name="smb_missing">SMB: udział lub katalog nie istnieje.</string>
-    <string name="smb_need_share">SMB: podaj serwer i nazwę udziału.</string>
+    <string name="smb_need_share">SMB: podaj adres serwera.</string>
+    <string name="smb_shares_port">SMB: lista udziałów działa tylko na porcie 445 — podaj nazwę udziału albo użyj portu 445.</string>
     <string name="sort">Sortuj</string>
     <string name="sort_date">Data modyfikacji</string>
     <string name="sort_name">Nazwa</string>

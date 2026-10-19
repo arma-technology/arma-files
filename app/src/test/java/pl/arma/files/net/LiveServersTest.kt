@@ -33,6 +33,30 @@ class LiveServersTest {
         return (System.nanoTime() - start) / 1_000_000
     }
 
+    /** Konto SMB bez udziału: korzeń to lista udziałów, a pierwszy człon ścieżki — udział. */
+    @Test
+    fun udzialySmbBezNazwyUdzialu() {
+        assumeTrue(env("ARMA_NET_TEST") == "1")
+        // Serwer z udziałem i podkatalogiem; domyślnie kontener testowy.
+        val host = env("ARMA_SMB_SHARES_HOST") ?: "127.0.0.1"
+        val port = env("ARMA_SMB_SHARES_PORT")?.toInt() ?: env("ARMA_SMB")?.toInt() ?: return
+        val account = RemoteAccount(
+            id = "shares", type = RemoteType.SMB, label = "SMB", host = host, port = port,
+            username = env("ARMA_SMB_SHARES_USER") ?: "test", password = env("ARMA_SMB_SHARES_PASS") ?: "haslo", share = ""
+        )
+        val expected = env("ARMA_SMB_SHARES_EXPECT") ?: "dane"
+        val backend = SmbBackend()
+        val shares = backend.list(account, "/")
+        println("  udziały: ${shares.map { it.name }}")
+        assert(shares.any { it.name == expected && it.isDirectory }) { shares.toString() }
+        assert(shares.none { it.name.endsWith("$") })
+        val inside = backend.list(account, "/$expected")
+        println("  w $expected: ${inside.take(5).map { it.name }}")
+        assert(inside.isNotEmpty())
+        val folder = inside.first { it.isDirectory }
+        assert(backend.info(account, "/$expected/${folder.name}")?.isDirectory == true)
+    }
+
     /** Powiadomienie SMB przychodzi, gdy ktoś inny doda plik do obserwowanego folderu. */
     @Test
     fun obserwacjaSmb() {

@@ -21,6 +21,7 @@
     <string name="accounts_root">Počáteční složka (volitelné)</string>
     <string name="accounts_sftp_hint">SFTP je vždy šifrované a používá jediné připojení, takže nepotřebuje pasivní režim ani otevřené porty.</string>
     <string name="accounts_share">Název sdílené složky</string>
+    <string name="accounts_share_hint">Prázdné — zobrazí všechny sdílené složky serveru</string>
     <string name="accounts_test">Otestovat</string>
     <string name="accounts_test_failed">Nepodařilo se připojit.</string>
     <string name="accounts_test_ok">Připojení funguje • %1$s v počáteční složce</string>
@@ -380,7 +381,8 @@ výběrem karty v liště nahoře.</string>
     <string name="sftp_write_failed">SFTP: soubor nelze zapsat.</string>
     <string name="show_in_folder">Zobrazit ve složce</string>
     <string name="smb_missing">SMB: sdílená složka nebo složka neexistuje.</string>
-    <string name="smb_need_share">SMB: zadejte server a název sdílené složky.</string>
+    <string name="smb_need_share">SMB: zadejte adresu serveru.</string>
+    <string name="smb_shares_port">SMB: seznam sdílených složek funguje jen na portu 445 — zadejte název nebo použijte port 445.</string>
     <string name="sort">Řadit</string>
     <string name="sort_date">Datum změny</string>
     <string name="sort_name">Název</string>

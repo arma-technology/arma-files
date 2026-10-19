@@ -21,6 +21,7 @@
     <string name="accounts_root">Kezdőmappa (nem kötelező)</string>
     <string name="accounts_sftp_hint">Az SFTP mindig titkosított és egyetlen kapcsolatot használ, így nem kell hozzá passzív mód vagy nyitott port.</string>
     <string name="accounts_share">Megosztás neve</string>
+    <string name="accounts_share_hint">Üresen hagyva a szerver összes megosztása látszik</string>
     <string name="accounts_test">Tesztelés</string>
     <string name="accounts_test_failed">Nem sikerült csatlakozni.</string>
     <string name="accounts_test_ok">A kapcsolat működik • %1$s a kezdőmappában</string>
@@ -380,7 +381,8 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="sftp_write_failed">SFTP: a fájl nem írható.</string>
     <string name="show_in_folder">Megjelenítés a mappában</string>
     <string name="smb_missing">SMB: a megosztás vagy mappa nem létezik.</string>
-    <string name="smb_need_share">SMB: add meg a szervert és a megosztás nevét.</string>
+    <string name="smb_need_share">SMB: adja meg a szerver címét.</string>
+    <string name="smb_shares_port">SMB: a megosztások listája csak a 445-ös porton működik — adja meg a nevet, vagy használja a 445-ös portot.</string>
     <string name="sort">Rendezés</string>
     <string name="sort_date">Módosítás dátuma</string>
     <string name="sort_name">Név</string>

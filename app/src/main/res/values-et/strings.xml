@@ -21,6 +21,7 @@
     <string name="accounts_root">Algkaust (valikuline)</string>
     <string name="accounts_sftp_hint">SFTP on alati krüptitud ja kasutab ühte ühendust, seega ei vaja see passiivset režiimi ega avatud porte.</string>
     <string name="accounts_share">Jagatud kausta nimi</string>
+    <string name="accounts_share_hint">Tühjaks jättes kuvatakse kõik serveri jagatud kaustad</string>
     <string name="accounts_test">Testi</string>
     <string name="accounts_test_failed">Ühendamine ebaõnnestus.</string>
     <string name="accounts_test_ok">Ühendus töötab • algkaustas %1$s</string>
@@ -380,7 +381,8 @@ valides ülal ribal vahelehe.</string>
     <string name="sftp_write_failed">SFTP: faili ei saa kirjutada.</string>
     <string name="show_in_folder">Näita kaustas</string>
     <string name="smb_missing">SMB: jagatud kausta või kausta pole olemas.</string>
-    <string name="smb_need_share">SMB: sisestage server ja jagatud kausta nimi.</string>
+    <string name="smb_need_share">SMB: sisesta serveri aadress.</string>
+    <string name="smb_shares_port">SMB: jagatud kaustade loend töötab ainult pordil 445 — sisesta nimi või kasuta porti 445.</string>
     <string name="sort">Sordi</string>
     <string name="sort_date">Muutmise kuupäev</string>
     <string name="sort_name">Nimi</string>

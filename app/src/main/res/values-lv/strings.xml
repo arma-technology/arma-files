@@ -21,6 +21,7 @@
     <string name="accounts_root">Sākuma mape (nav obligāta)</string>
     <string name="accounts_sftp_hint">SFTP vienmēr ir šifrēts un izmanto vienu savienojumu, tāpēc tam nav vajadzīgs pasīvais režīms vai atvērti porti.</string>
     <string name="accounts_share">Koplietojuma nosaukums</string>
+    <string name="accounts_share_hint">Atstājiet tukšu, lai rādītu visus servera koplietojumus</string>
     <string name="accounts_test">Pārbaudīt</string>
     <string name="accounts_test_failed">Neizdevās izveidot savienojumu.</string>
     <string name="accounts_test_ok">Savienojums darbojas • %1$s sākuma mapē</string>
@@ -380,7 +381,8 @@ izvēloties cilni joslā augšā.</string>
     <string name="sftp_write_failed">SFTP: failu nevar ierakstīt.</string>
     <string name="show_in_folder">Rādīt mapē</string>
     <string name="smb_missing">SMB: koplietojums vai mape neeksistē.</string>
-    <string name="smb_need_share">SMB: ievadiet serveri un koplietojuma nosaukumu.</string>
+    <string name="smb_need_share">SMB: ievadiet servera adresi.</string>
+    <string name="smb_shares_port">SMB: koplietojumu saraksts darbojas tikai ar portu 445 — ievadiet nosaukumu vai izmantojiet portu 445.</string>
     <string name="sort">Kārtot</string>
     <string name="sort_date">Izmaiņu datums</string>
     <string name="sort_name">Nosaukums</string>

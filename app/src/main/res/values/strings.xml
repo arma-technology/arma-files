@@ -22,6 +22,7 @@
     <string name="accounts_root">Start folder (optional)</string>
     <string name="accounts_sftp_hint">SFTP is always encrypted and uses a single connection, so it needs no passive mode or open ports.</string>
     <string name="accounts_share">Share name</string>
+    <string name="accounts_share_hint">Leave empty to show all shares of the server</string>
     <string name="accounts_test">Test</string>
     <string name="accounts_test_failed">Could not connect.</string>
     <string name="accounts_test_ok">Connection works • %1$s in the start folder</string>
@@ -381,7 +382,8 @@ by picking a tab in the bar above.</string>
     <string name="sftp_write_failed">SFTP: cannot write the file.</string>
     <string name="show_in_folder">Show in folder</string>
     <string name="smb_missing">SMB: the share or folder does not exist.</string>
-    <string name="smb_need_share">SMB: enter the server and share name.</string>
+    <string name="smb_need_share">SMB: enter the server address.</string>
+    <string name="smb_shares_port">SMB: the list of shares works only on port 445 — enter the share name or use port 445.</string>
     <string name="sort">Sort</string>
     <string name="sort_date">Date modified</string>
     <string name="sort_name">Name</string>

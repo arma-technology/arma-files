@@ -21,6 +21,7 @@
     <string name="accounts_root">Počiatočný priečinok (voliteľné)</string>
     <string name="accounts_sftp_hint">SFTP je vždy šifrované a používa jediné pripojenie, takže nepotrebuje pasívny režim ani otvorené porty.</string>
     <string name="accounts_share">Názov zdieľaného priečinka</string>
+    <string name="accounts_share_hint">Prázdne — zobrazí všetky zdieľané priečinky servera</string>
     <string name="accounts_test">Otestovať</string>
     <string name="accounts_test_failed">Nepodarilo sa pripojiť.</string>
     <string name="accounts_test_ok">Pripojenie funguje • %1$s v počiatočnom priečinku</string>
@@ -380,7 +381,8 @@ výberom karty v lište hore.</string>
     <string name="sftp_write_failed">SFTP: súbor nemožno zapísať.</string>
     <string name="show_in_folder">Zobraziť v priečinku</string>
     <string name="smb_missing">SMB: zdieľaný priečinok alebo priečinok neexistuje.</string>
-    <string name="smb_need_share">SMB: zadajte server a názov zdieľaného priečinka.</string>
+    <string name="smb_need_share">SMB: zadajte adresu servera.</string>
+    <string name="smb_shares_port">SMB: zoznam zdieľaných priečinkov funguje len na porte 445 — zadajte názov alebo použite port 445.</string>
     <string name="sort">Zoradiť</string>
     <string name="sort_date">Dátum zmeny</string>
     <string name="sort_name">Názov</string>

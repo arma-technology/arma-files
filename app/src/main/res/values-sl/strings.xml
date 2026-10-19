@@ -21,6 +21,7 @@
     <string name="accounts_root">Začetna mapa (neobvezno)</string>
     <string name="accounts_sftp_hint">SFTP je vedno šifriran in uporablja eno samo povezavo, zato ne potrebuje pasivnega načina ali odprtih vrat.</string>
     <string name="accounts_share">Ime skupne rabe</string>
+    <string name="accounts_share_hint">Prazno — prikaže vse skupne mape strežnika</string>
     <string name="accounts_test">Preizkusi</string>
     <string name="accounts_test_failed">Povezava ni uspela.</string>
     <string name="accounts_test_ok">Povezava deluje • %1$s v začetni mapi</string>
@@ -380,7 +381,8 @@ z izbiro zavihka v vrstici zgoraj.</string>
     <string name="sftp_write_failed">SFTP: datoteke ni mogoče zapisati.</string>
     <string name="show_in_folder">Pokaži v mapi</string>
     <string name="smb_missing">SMB: skupna raba ali mapa ne obstaja.</string>
-    <string name="smb_need_share">SMB: vnesite strežnik in ime skupne rabe.</string>
+    <string name="smb_need_share">SMB: vnesite naslov strežnika.</string>
+    <string name="smb_shares_port">SMB: seznam skupnih map deluje samo na vratih 445 — vnesite ime ali uporabite vrata 445.</string>
     <string name="sort">Razvrsti</string>
     <string name="sort_date">Datum spremembe</string>
     <string name="sort_name">Ime</string>

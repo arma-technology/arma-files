@@ -250,6 +250,7 @@ fun AccountEditorSheet(
                     value = draft.share,
                     onValueChange = { draft = draft.copy(share = it) },
                     label = { Text(stringResource(R.string.accounts_share)) },
+                    supportingText = { Text(stringResource(R.string.accounts_share_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

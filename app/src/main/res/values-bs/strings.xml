@@ -21,6 +21,7 @@
     <string name="accounts_root">Početna mapa (neobavezno)</string>
     <string name="accounts_sftp_hint">SFTP je uvijek šifriran i koristi jednu vezu, pa mu ne trebaju pasivni način rada ni otvoreni portovi.</string>
     <string name="accounts_share">Naziv dijeljenja</string>
+    <string name="accounts_share_hint">Prazno — prikazat će sve dijeljene mape servera</string>
     <string name="accounts_test">Testiraj</string>
     <string name="accounts_test_failed">Povezivanje nije uspjelo.</string>
     <string name="accounts_test_ok">Veza radi • %1$s u početnoj mapi</string>
@@ -380,7 +381,8 @@ odabirom kartice na traci iznad.</string>
     <string name="sftp_write_failed">SFTP: datoteku nije moguće zapisati.</string>
     <string name="show_in_folder">Prikaži u mapi</string>
     <string name="smb_missing">SMB: dijeljenje ili mapa ne postoji.</string>
-    <string name="smb_need_share">SMB: unesite server i naziv dijeljenja.</string>
+    <string name="smb_need_share">SMB: unesite adresu servera.</string>
+    <string name="smb_shares_port">SMB: lista dijeljenih mapa radi samo na portu 445 — unesite naziv ili koristite port 445.</string>
     <string name="sort">Sortiraj</string>
     <string name="sort_date">Datum izmjene</string>
     <string name="sort_name">Naziv</string>

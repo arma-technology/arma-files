@@ -42,12 +42,16 @@ class SmbBackend : RemoteBackend {
      * wskazywały nieistniejący plik; dziecko przyjmuje nazwę dosłownie.
      */
     private fun file(account: RemoteAccount, path: String, directory: Boolean = false): SmbFile {
-        if (account.host.isBlank() || account.share.isBlank()) {
-            throw IOException(text(R.string.smb_need_share))
-        }
+        if (account.host.isBlank()) throw IOException(text(R.string.smb_need_share))
         val host = if (account.port == 445) account.host else "${account.host}:${account.port}"
-        val segments = RemotePaths.absolute(account.rootPath, path).split('/').filter { it.isNotBlank() }
-        var current = SmbFile("smb://$host/${account.share.trim('/')}/", context(account))
+        var segments = RemotePaths.absolute(account.rootPath, path).split('/').filter { it.isNotBlank() }
+        // Bez udziału w koncie pierwszy człon ścieżki to nazwa udziału, a sam
+        // korzeń to serwer — jego „katalog” to lista udziałów.
+        val share = account.share.trim('/').ifBlank {
+            if (segments.isEmpty()) return SmbFile("smb://$host/", context(account))
+            segments.first().also { segments = segments.drop(1) }
+        }
+        var current = SmbFile("smb://$host/$share/", context(account))
         segments.forEachIndexed { index, name ->
             val last = index == segments.lastIndex
             current = SmbFile(current, if (!last || directory) "$name/" else name)
@@ -72,8 +76,19 @@ class SmbBackend : RemoteBackend {
         }
     }
 
+    /** Konto bez udziału, korzeń: udziały dyskowe serwera, bez ukrytych (C$, IPC$). */
+    private fun isServerRoot(account: RemoteAccount, path: String) =
+        account.share.isBlank() && RemotePaths.absolute(account.rootPath, path) == "/"
+
     override fun list(account: RemoteAccount, path: String): List<RemoteEntry> =
-        file(account, path, directory = true).use { dir ->
+        if (isServerRoot(account, path)) file(account, path).use { server ->
+            // jCIFS pobiera listę udziałów zawsze przez port 445 — na innym
+            // porcie trafiłby w inny serwer i zgłosił „złe hasło”.
+            if (account.port != 445) throw IOException(text(R.string.smb_shares_port))
+            server.listFiles()
+                .filter { runCatching { it.type == jcifs.SmbConstants.TYPE_SHARE }.getOrDefault(false) && !it.name.trimEnd('/').endsWith("$") }
+                .map { share -> share.use { RemoteEntry(it.name.trimEnd('/'), isDirectory = true, size = 0L, modified = 0L) } }
+        } else file(account, path, directory = true).use { dir ->
             if (!dir.exists()) throw IOException(text(R.string.smb_missing))
             dir.listFiles().map { child ->
                 child.use {

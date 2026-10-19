@@ -21,6 +21,7 @@
     <string name="accounts_root">Почетна папка (незадолжително)</string>
     <string name="accounts_sftp_hint">SFTP е секогаш шифриран и користи една врска, па не му требаат пасивен режим ниту отворени порти.</string>
     <string name="accounts_share">Име на споделувањето</string>
+    <string name="accounts_share_hint">Празно — ќе се прикажат сите споделени папки</string>
     <string name="accounts_test">Тестирај</string>
     <string name="accounts_test_failed">Поврзувањето не успеа.</string>
     <string name="accounts_test_ok">Врската работи • %1$s во почетната папка</string>
@@ -380,7 +381,8 @@
     <string name="sftp_write_failed">SFTP: датотеката не може да се запише.</string>
     <string name="show_in_folder">Прикажи во папката</string>
     <string name="smb_missing">SMB: споделувањето или папката не постои.</string>
-    <string name="smb_need_share">SMB: внесете го серверот и името на споделувањето.</string>
+    <string name="smb_need_share">SMB: внесете ја адресата на серверот.</string>
+    <string name="smb_shares_port">SMB: листата на споделени папки работи само на порта 445 — внесете име или користете порта 445.</string>
     <string name="sort">Подреди</string>
     <string name="sort_date">Датум на измена</string>
     <string name="sort_name">Име</string>

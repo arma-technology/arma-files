@@ -21,6 +21,7 @@
     <string name="accounts_root">Dosja fillestare (opsionale)</string>
     <string name="accounts_sftp_hint">SFTP është gjithmonë i enkriptuar dhe përdor një lidhje të vetme, prandaj nuk kërkon modalitet pasiv apo porta të hapura.</string>
     <string name="accounts_share">Emri i ndarjes</string>
+    <string name="accounts_share_hint">Lëreni bosh për të shfaqur të gjitha ndarjet e serverit</string>
     <string name="accounts_test">Testo</string>
     <string name="accounts_test_failed">Lidhja dështoi.</string>
     <string name="accounts_test_ok">Lidhja funksionon • %1$s në dosjen fillestare</string>
@@ -380,7 +381,8 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="sftp_write_failed">SFTP: skedari nuk mund të shkruhet.</string>
     <string name="show_in_folder">Shfaq në dosje</string>
     <string name="smb_missing">SMB: ndarja ose dosja nuk ekziston.</string>
-    <string name="smb_need_share">SMB: fut serverin dhe emrin e ndarjes.</string>
+    <string name="smb_need_share">SMB: vendosni adresën e serverit.</string>
+    <string name="smb_shares_port">SMB: lista e ndarjeve funksionon vetëm në portën 445 — vendosni emrin e ndarjes ose përdorni portën 445.</string>
     <string name="sort">Rendit</string>
     <string name="sort_date">Data e ndryshimit</string>
     <string name="sort_name">Emri</string>

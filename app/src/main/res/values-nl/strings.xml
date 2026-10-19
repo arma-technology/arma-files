@@ -21,6 +21,7 @@
     <string name="accounts_root">Startmap (optioneel)</string>
     <string name="accounts_sftp_hint">SFTP is altijd versleuteld en gebruikt één verbinding, dus er is geen passieve modus of open poort nodig.</string>
     <string name="accounts_share">Naam van de share</string>
+    <string name="accounts_share_hint">Leeg laten om alle shares van de server te tonen</string>
     <string name="accounts_test">Testen</string>
     <string name="accounts_test_failed">Verbinden mislukt.</string>
     <string name="accounts_test_ok">Verbinding werkt • %1$s in de startmap</string>
@@ -380,7 +381,8 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="sftp_write_failed">SFTP: kan het bestand niet schrijven.</string>
     <string name="show_in_folder">Tonen in map</string>
     <string name="smb_missing">SMB: de share of map bestaat niet.</string>
-    <string name="smb_need_share">SMB: voer de server en de naam van de share in.</string>
+    <string name="smb_need_share">SMB: voer het serveradres in.</string>
+    <string name="smb_shares_port">SMB: de lijst met shares werkt alleen op poort 445 — voer de sharenaam in of gebruik poort 445.</string>
     <string name="sort">Sorteren</string>
     <string name="sort_date">Wijzigingsdatum</string>
     <string name="sort_name">Naam</string>
