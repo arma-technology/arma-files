@@ -175,7 +175,17 @@ Czytnik pokazuje pierwsze 2 MB (dla większych informuje, że to początek).
     mieć do niego prawo (własny katalog, `cacheDir`, pliki z SAF skopiowane
     do siebie). Brak dostępu daje czytelny komunikat w miejscu dokumentu,
     a nie awarię.
-13. **Pierwsza kompilacja `dwg` ze źródeł** buduje część natywną przez CMake
+13. **Room z KSP w aplikacji gospodarza.** Z Kotlin 2.1.21 KSP domyślnie
+    używa KSP2, a Room 2.6.1 pada wtedy na „unexpected jvm signature V”.
+    Pomaga `ksp.useKSP2=false` w `gradle.properties` (albo Room 2.7+).
+    Sam rdzeń nie używa KSP — to pułapka zestawu wersji, zgłoszona z SUMPTEN.
+14. **DWG z LibreDWG 0.14: tylko DXF tekstowy.** Binarny DXF z LibreDWG gubi
+    kolory i większość kreskowań (na prawdziwych rysunkach 132 z 351 i 712
+    z 3150 wypełnień wg ODA). Moduł `dwg` od tej wersji zapisuje DXF
+    tekstowy. Jeśli konwertujesz DWG gdzie indziej (np. `dwg2dxf` na
+    serwerze), też używaj tekstowego — czytnik pomija linie, które LibreDWG
+    psuje surowym znakiem nowej linii w MTEXT (dawniej odrzucał cały rysunek).
+15. **Pierwsza kompilacja `dwg` ze źródeł** buduje część natywną przez CMake
     (około minuty). Statyczna LibreDWG jest gotowa w `libs/`; przebudowa:
     `dwg/build-libredwg.sh`.
 
