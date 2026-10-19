@@ -12,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.clickable
@@ -37,7 +40,14 @@ fun SettingsScreen(
     onEditAccount: (RemoteAccount) -> Unit,
     onAccountEnabled: (RemoteAccount, Boolean) -> Unit,
     onAddAccount: () -> Unit,
-    onDiscover: () -> Unit
+    onDiscover: () -> Unit,
+    trashBytes: Long = 0L,
+    onEmptyTrash: () -> Unit = {},
+    indexProgress: pl.arma.files.index.IndexProgress = pl.arma.files.index.IndexProgress(),
+    indexedFiles: Int = 0,
+    onBuildIndex: () -> Unit = {},
+    onCancelIndex: () -> Unit = {},
+    onStorageChanged: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -107,10 +117,263 @@ fun SettingsScreen(
             }
         }
 
+        item { StorageCard(trashBytes, onEmptyTrash, indexProgress.running, onStorageChanged) }
+        item { IndexCard(indexProgress, indexedFiles, onBuildIndex, onCancelIndex) }
         item { OfflineSettingsCard() }
         item { CacheCard() }
         item { LanguageCard() }
         item { AboutCard() }
+    }
+}
+
+private val storageColors = mapOf(
+    StoragePart.INDEX to Color(0xFF5C8DF6),
+    StoragePart.DWG to Color(0xFFE08A3C),
+    StoragePart.PREVIEWS to Color(0xFF4FB3A9),
+    StoragePart.ARCHIVES to Color(0xFFB08A5A),
+    StoragePart.OTHER_CACHE to Color(0xFF9E9E9E),
+    StoragePart.OFFLINE to Color(0xFF7E6BD6),
+    StoragePart.TRASH to Color(0xFFD45B5B),
+    StoragePart.SETTINGS to Color(0xFF6D8C5A),
+    StoragePart.APP to Color(0xFF3F6E8C),
+    StoragePart.OTHER to Color(0xFF5E5E5E)
+)
+
+private fun storageLabel(part: StoragePart) = when (part) {
+    StoragePart.INDEX -> R.string.storage_part_index to R.string.storage_part_index_desc
+    StoragePart.DWG -> R.string.storage_part_dwg to R.string.storage_part_dwg_desc
+    StoragePart.PREVIEWS -> R.string.storage_part_previews to R.string.storage_part_previews_desc
+    StoragePart.ARCHIVES -> R.string.storage_part_archives to R.string.storage_part_archives_desc
+    StoragePart.OTHER_CACHE -> R.string.storage_part_other_cache to R.string.storage_part_other_cache_desc
+    StoragePart.OFFLINE -> R.string.storage_part_offline to R.string.storage_part_offline_desc
+    StoragePart.TRASH -> R.string.storage_part_trash to R.string.storage_part_trash_desc
+    StoragePart.SETTINGS -> R.string.storage_part_settings to R.string.storage_part_settings_desc
+    StoragePart.APP -> R.string.storage_part_app to R.string.storage_part_app_desc
+    StoragePart.OTHER -> R.string.storage_part_other to R.string.storage_part_other_desc
+}
+
+/**
+ * Ile miejsca zajmuje aplikacja i na co: każda część osobno, z przyciskiem
+ * czyszczenia tam, gdzie da się bezpiecznie wyczyścić, oraz „Wyczyść wszystko”.
+ */
+@Composable
+private fun StorageCard(trashBytes: Long, onEmptyTrash: () -> Unit, indexing: Boolean, onChanged: () -> Unit) {
+    val app = LocalContext.current.armaApp
+    val scope = rememberCoroutineScope()
+    var report by remember { mutableStateOf<StorageReport?>(null) }
+    var refresh by remember { mutableIntStateOf(0) }
+    var confirm by remember { mutableStateOf<StoragePart?>(null) }
+    var confirmAll by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    LaunchedEffect(refresh, trashBytes, indexing) {
+        report = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { StorageUsage.measure(app, trashBytes) }
+    }
+    fun clear(parts: List<StoragePart>) {
+        busy = true
+        scope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                parts.filter { it != StoragePart.TRASH }.forEach { StorageUsage.clear(app, it) }
+            }
+            if (StoragePart.TRASH in parts) onEmptyTrash()
+            onChanged()
+            busy = false
+            refresh++
+        }
+    }
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Storage, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.storage_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        report?.let { stringResource(R.string.storage_total, formatSize(it.total)) } ?: "…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+            val current = report
+            if (current != null && current.total > 0) {
+                // Pasek proporcji — od razu widać, co zajmuje najwięcej.
+                Row(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp))) {
+                    StoragePart.entries.forEach { part ->
+                        val share = current[part].toFloat() / current.total
+                        if (share > 0.004f) Box(Modifier.weight(share).fillMaxHeight().background(storageColors.getValue(part)))
+                    }
+                }
+                StoragePart.entries.forEach { part ->
+                    val bytes = current[part]
+                    val (label, desc) = storageLabel(part)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(10.dp).clip(CircleShape).background(storageColors.getValue(part)))
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                stringResource(desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(formatSize(bytes), style = MaterialTheme.typography.labelLarge)
+                        if (part.clearable) {
+                            TextButton(
+                                enabled = bytes > 0 && !busy && !(part == StoragePart.INDEX && indexing),
+                                onClick = {
+                                    // Indeks, kopie offline i kosz trudno odtworzyć — pytamy.
+                                    if (part in setOf(StoragePart.INDEX, StoragePart.OFFLINE, StoragePart.TRASH)) confirm = part
+                                    else clear(listOf(part))
+                                }
+                            ) { Text(stringResource(R.string.storage_clear)) }
+                        } else {
+                            Spacer(Modifier.width(12.dp))
+                        }
+                    }
+                }
+                OutlinedButton(
+                    onClick = { confirmAll = true },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.DeleteSweep, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.storage_clear_all))
+                }
+            }
+        }
+    }
+
+    confirm?.let { part ->
+        AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text(stringResource(storageLabel(part).first)) },
+            text = {
+                Text(
+                    stringResource(
+                        when (part) {
+                            StoragePart.INDEX -> R.string.storage_confirm_index
+                            StoragePart.OFFLINE -> R.string.storage_confirm_offline
+                            else -> R.string.storage_confirm_trash
+                        }
+                    )
+                )
+            },
+            confirmButton = { TextButton(onClick = { confirm = null; clear(listOf(part)) }) { Text(stringResource(R.string.storage_clear)) } },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.common_cancel)) } }
+        )
+    }
+
+    if (confirmAll) {
+        var withTrash by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { confirmAll = false },
+            title = { Text(stringResource(R.string.storage_clear_all)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.storage_confirm_all))
+                    Row(Modifier.clickable { withTrash = !withTrash }, verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = withTrash, onCheckedChange = { withTrash = it })
+                        Text(stringResource(R.string.storage_confirm_all_trash))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmAll = false
+                    clear(StoragePart.entries.filter { it.clearable && (withTrash || it != StoragePart.TRASH) })
+                }) { Text(stringResource(R.string.storage_clear)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmAll = false }) { Text(stringResource(R.string.common_cancel)) } }
+        )
+    }
+}
+
+/** Indeks plików: stan, budowanie na żądanie i samoczynne odświeżanie. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun IndexCard(
+    progress: pl.arma.files.index.IndexProgress,
+    indexedFiles: Int,
+    onBuild: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val automation = LocalContext.current.armaApp.indexAutomation
+    var enabled by remember { mutableStateOf(automation.enabled) }
+    var onStartup by remember { mutableStateOf(automation.onStartup) }
+    var days by remember { mutableIntStateOf(automation.everyDays) }
+    var changeMb by remember { mutableIntStateOf(automation.onChangeMb) }
+    val lastBuilt = remember(progress.running, progress.finishedAt) { automation.lastBuilt }
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.ManageSearch, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.index_card_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        when {
+                            progress.running -> stringResource(R.string.index_building, progress.scanned)
+                            indexedFiles == 0 -> stringResource(R.string.index_card_empty)
+                            lastBuilt > 0 -> stringResource(
+                                R.string.index_card_state, indexedFiles,
+                                java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(lastBuilt))
+                            )
+                            else -> stringResource(R.string.index_card_count, indexedFiles)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (progress.running) TextButton(onClick = onCancel) { Text(stringResource(R.string.index_stop)) }
+                else TextButton(onClick = onBuild) { Text(stringResource(R.string.index_build_now)) }
+            }
+            Text(
+                stringResource(R.string.index_card_text),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.index_auto), modifier = Modifier.weight(1f))
+                Switch(checked = enabled, onCheckedChange = { enabled = it; automation.enabled = it })
+            }
+            if (enabled) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.index_auto_startup), modifier = Modifier.weight(1f))
+                    Switch(checked = onStartup, onCheckedChange = { onStartup = it; automation.onStartup = it })
+                }
+                Text(stringResource(R.string.index_auto_every), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0, 1, 3, 7, 14, 30).forEach { value ->
+                        FilterChip(
+                            selected = value == days,
+                            onClick = { days = value; automation.everyDays = value },
+                            label = { Text(if (value == 0) stringResource(R.string.index_auto_off) else pluralStringResource(R.plurals.cache_days, value, value)) }
+                        )
+                    }
+                }
+                Text(stringResource(R.string.index_auto_change), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0, 100, 500, 1000, 5000).forEach { value ->
+                        FilterChip(
+                            selected = value == changeMb,
+                            onClick = { changeMb = value; automation.onChangeMb = value },
+                            label = { Text(if (value == 0) stringResource(R.string.index_auto_off) else formatSize(value * 1_048_576L)) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -199,14 +462,8 @@ private fun OfflineSettingsCard() {
 @Composable
 private fun CacheCard() {
     val janitor = LocalContext.current.armaApp.cacheJanitor
-    val scope = rememberCoroutineScope()
     var limitMb by remember { mutableIntStateOf(janitor.maxMegabytes) }
     var ageDays by remember { mutableIntStateOf(janitor.maxAgeDays) }
-    var used by remember { mutableStateOf<Long?>(null) }
-    var refresh by remember { mutableIntStateOf(0) }
-    LaunchedEffect(refresh) {
-        used = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { janitor.usedBytes() }
-    }
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -216,20 +473,7 @@ private fun CacheCard() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Storage, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.cache_title), fontWeight = FontWeight.SemiBold)
-                    Text(
-                        used?.let { stringResource(R.string.cache_used, formatSize(it)) } ?: "…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                TextButton(onClick = {
-                    scope.launch {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { janitor.clear() }
-                        refresh++
-                    }
-                }) { Text(stringResource(R.string.cache_clear)) }
+                Text(stringResource(R.string.cache_limit_title), fontWeight = FontWeight.SemiBold)
             }
             Text(
                 stringResource(R.string.cache_text),
@@ -241,7 +485,7 @@ private fun CacheCard() {
                 CacheJanitor.SIZE_OPTIONS_MB.forEach { mb ->
                     FilterChip(
                         selected = mb == limitMb,
-                        onClick = { limitMb = mb; janitor.maxMegabytes = mb; refresh++ },
+                        onClick = { limitMb = mb; janitor.maxMegabytes = mb },
                         label = { Text(formatSize(mb * 1_048_576L)) }
                     )
                 }
@@ -251,7 +495,7 @@ private fun CacheCard() {
                 CacheJanitor.AGE_OPTIONS_DAYS.forEach { days ->
                     FilterChip(
                         selected = days == ageDays,
-                        onClick = { ageDays = days; janitor.maxAgeDays = days; refresh++ },
+                        onClick = { ageDays = days; janitor.maxAgeDays = days },
                         label = { Text(pluralStringResource(R.plurals.cache_days, days, days)) }
                     )
                 }

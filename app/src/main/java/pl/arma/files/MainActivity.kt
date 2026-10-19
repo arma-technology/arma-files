@@ -549,7 +549,14 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onEditAccount = { editedAccount = it to false },
                         onAccountEnabled = { account, on -> vm.setAccountEnabled(account.id, on) },
                         onAddAccount = { editedAccount = vm.newAccountDraft() to true },
-                        onDiscover = { showDiscovery = true; vm.discoverLan() }
+                        onDiscover = { showDiscovery = true; vm.discoverLan() },
+                        trashBytes = trashEntries.sumOf { it.size },
+                        onEmptyTrash = vm::emptyTrash,
+                        indexProgress = indexProgress,
+                        indexedFiles = analysis.stats?.files ?: 0,
+                        onBuildIndex = vm::buildIndex,
+                        onCancelIndex = vm::cancelIndexing,
+                        onStorageChanged = vm::analyzeStorage
                     )
                 }
 

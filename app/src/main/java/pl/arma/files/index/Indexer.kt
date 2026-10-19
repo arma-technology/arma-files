@@ -38,8 +38,11 @@ class Indexer(
 
     val isRunning: Boolean get() = job?.isActive == true
 
-    fun start(roots: List<Uri>) {
-        if (isRunning) return
+    /** Wywoływane po każdym udanym, pełnym skanie. */
+    var onFinished: (() -> Unit)? = null
+
+    fun start(roots: List<Uri>): Job? {
+        if (isRunning) return job
         job = scope.launch(Dispatchers.IO) {
             _progress.value = IndexProgress(running = true)
             val batch = mutableListOf<IndexedFile>()
@@ -48,9 +51,18 @@ class Indexer(
                 val visited = HashSet<String>()
                 roots.forEach { root ->
                     val dir = root.path?.let(::File) ?: return@forEach
-                    scanned = walk(dir, batch, scanned, depth = 0, visited = visited)
+                    val seen = HashSet<String>()
+                    scanned = walk(dir, batch, scanned, depth = 0, visited = visited, seen = seen)
+                    if (batch.isNotEmpty()) {
+                        db.upsert(batch.toList())
+                        batch.clear()
+                    }
+                    // Tylko po skończonym skanie danego nośnika: przerwany nie
+                    // wie, czego nie zdążył zobaczyć, więc niczego nie usuwa.
+                    db.prune(Uri.fromFile(dir).toString(), seen)
                 }
-                if (batch.isNotEmpty()) db.upsert(batch)
+                db.compact()
+                onFinished?.invoke()
                 _progress.value = IndexProgress(
                     running = false,
                     scanned = scanned,
@@ -63,6 +75,7 @@ class Indexer(
                 _progress.value = IndexProgress(running = false, scanned = scanned)
             }
         }
+        return job
     }
 
     fun cancel() {
@@ -76,7 +89,8 @@ class Indexer(
         batch: MutableList<IndexedFile>,
         counted: Int,
         depth: Int,
-        visited: MutableSet<String>
+        visited: MutableSet<String>,
+        seen: MutableSet<String>
     ): Int {
         var scanned = counted
         coroutineContext.ensureActive()
@@ -98,8 +112,10 @@ class Indexer(
             coroutineContext.ensureActive()
             val directory = child.isDirectory
             val mime = if (directory) "" else guessMime(child.name)
+            val uri = Uri.fromFile(child).toString()
+            seen += uri
             batch += IndexedFile(
-                uri = Uri.fromFile(child).toString(),
+                uri = uri,
                 parentUri = parentUri,
                 name = child.name,
                 size = if (child.isFile) child.length() else 0L,
@@ -119,7 +135,7 @@ class Indexer(
                 )
             }
 
-            if (directory) scanned = walk(child, batch, scanned, depth + 1, visited)
+            if (directory) scanned = walk(child, batch, scanned, depth + 1, visited, seen)
         }
         return scanned
     }

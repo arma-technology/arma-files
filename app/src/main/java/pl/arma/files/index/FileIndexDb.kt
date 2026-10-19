@@ -2,6 +2,7 @@ package pl.arma.files.index
 
 import android.content.ContentValues
 import android.content.Context
+import java.io.File
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -99,6 +100,57 @@ class FileIndexDb(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, D
         } finally {
             db.endTransaction()
         }
+    }
+
+    /**
+     * Usuwa wpisy spod [rootUri], których nie było w ostatnim pełnym skanie —
+     * pliki skasowane albo przeniesione od poprzedniego indeksowania.
+     * Bez tego indeks tylko by przybywał, a wyszukiwanie zwracałoby pliki,
+     * których już nie ma.
+     */
+    fun prune(rootUri: String, seen: Set<String>): Int {
+        val stale = readableDatabase.rawQuery(
+            "SELECT id, uri FROM files WHERE uri LIKE ?", arrayOf("$rootUri/%")
+        ).use { c ->
+            buildList { while (c.moveToNext()) if (c.getString(1) !in seen) add(c.getLong(0)) }
+        }
+        if (stale.isEmpty()) return 0
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            stale.chunked(500).forEach { chunk ->
+                val ids = chunk.joinToString(",")
+                db.execSQL("DELETE FROM files_fts WHERE rowid IN ($ids)")
+                db.execSQL("DELETE FROM files WHERE id IN ($ids)")
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        return stale.size
+    }
+
+    /**
+     * Kompaktowanie: scala segmenty wyszukiwania i przepisuje plik bazy bez
+     * pustych miejsc po usuniętych wpisach — plik nie trzyma zwolnionego miejsca.
+     */
+    fun compact() {
+        val db = writableDatabase
+        runCatching { db.execSQL("INSERT INTO files_fts(files_fts) VALUES('optimize')") }
+        runCatching { db.execSQL("VACUUM") }
+    }
+
+    /** Rozmiar pliku bazy razem z dziennikiem. */
+    fun fileSize(context: Context): Long {
+        val main = context.getDatabasePath(DB_NAME)
+        return listOf(main, File(main.path + "-journal"), File(main.path + "-wal"), File(main.path + "-shm"))
+            .sumOf { if (it.isFile) it.length() else 0L }
+    }
+
+    /** Usuwa cały indeks i oddaje miejsce. */
+    fun clearAndCompact() {
+        clear()
+        compact()
     }
 
     fun clear() {

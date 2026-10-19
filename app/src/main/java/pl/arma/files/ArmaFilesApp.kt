@@ -44,6 +44,8 @@ class ArmaFilesApp : Application() {
 
     val cacheJanitor: CacheJanitor by lazy { CacheJanitor(this, scope) }
 
+    val indexAutomation: IndexAutomation by lazy { IndexAutomation(this, indexer, scope) }
+
     val offline: OfflineStore by lazy { OfflineStore(this, repository, scope).also { repository.offline = it } }
 
     override fun attachBaseContext(base: Context) {
@@ -61,6 +63,9 @@ class ArmaFilesApp : Application() {
         // Kopie offline doganiają serwer przy każdym starcie — tylko przez Wi-Fi.
         offline.syncAll(automatic = true)
         OfflineSyncWorker.schedule(this, offline.intervalMinutes, offline.wifiOnly)
+        // Także po to, żeby ręcznie zbudowany indeks zapisał czas i zajętość.
+        indexAutomation.checkOnStartup()
+        indexAutomation.schedule()
     }
 }
 

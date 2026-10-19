@@ -235,4 +235,16 @@ class FileIndexDbTest {
         assertEquals(0, db.countUnder("file:///storage/Nieistnieje"))
         assertEquals(0L, db.bytesUnder("file:///storage/Nieistnieje"))
     }
+
+    @Test
+    fun `po skanie znikaja wpisy plikow, ktorych juz nie ma`() {
+        db.upsert(listOf(file("/sd/raport.pdf"), file("/sd/stary.pdf"), file("/inny/stary.pdf")))
+        val removed = db.prune("file:///sd", setOf("file:///sd/raport.pdf"))
+        assertEquals(1, removed)
+        assertEquals(listOf("raport.pdf"), db.search("pdf").filter { it.uri.startsWith("file:///sd/") }.map { it.name })
+        // Wpis spoza skanowanego nośnika zostaje.
+        assertTrue(db.search("stary").any { it.uri == "file:///inny/stary.pdf" })
+        db.compact()
+        assertEquals(2, db.search("pdf").size)
+    }
 }

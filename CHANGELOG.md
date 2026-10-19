@@ -33,6 +33,14 @@
   i tar.zst
 - obraz w poziomie od razu na pełnym ekranie z narzędziami na nim; rysunek
   CAD wypełnia cały ekran i otwiera się w całości
+- Ustawienia → „Miejsce zajmowane przez aplikację”: rozbicie na indeks,
+  rysunki DWG, podglądy, kopie archiwów, inną pamięć podręczną, kopie offline,
+  kosz, ustawienia, program i inne dane; „Wyczyść” przy każdej części
+  i „Wyczyść wszystko”
+- indeks plików: automatyczne budowanie (przy starcie, co kilka dni, po
+  zmianie zajętości pamięci), także w tle; po każdym budowaniu usuwane są
+  wpisy plików, których już nie ma (wcześniej zostawały w bazie na zawsze),
+  a baza jest kompaktowana
 - wyszukiwanie nie wymaga indeksu: bez niego pliki są przeszukiwane na żywo
   (wcześniej okienko nie miało pola i nie dało się nic wpisać); bez polskich
   znaków i wielkości liter; opcja „Przeszukaj również zdalne zasoby”
