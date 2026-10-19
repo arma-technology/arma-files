@@ -1,7 +1,7 @@
 # :dwg — odczyt DWG przez LibreDWG
 
-Moduł zamienia rysunki DWG na binarny DXF, który czyta przeglądarka `:viewer`.
-Używa biblioteki [GNU LibreDWG](https://www.gnu.org/software/libredwg/) 0.14,
+Moduł zamienia rysunki DWG na tekstowy DXF, który czyta przeglądarka `:viewer`.
+Używa biblioteki [GNU LibreDWG](https://www.gnu.org/software/libredwg/) 0.14.8612,
 dlatego **ten moduł jest na licencji GPL-3.0** (tekst w `COPYING`). Aplikacja,
 która go zawiera i jest przekazywana innym, musi udostępniać swój kod źródłowy
 na tej samej licencji. Bez tego modułu przeglądarka obsługuje PDF i DXF.

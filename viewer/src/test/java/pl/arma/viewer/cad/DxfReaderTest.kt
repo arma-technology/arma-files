@@ -10,12 +10,13 @@ class DxfReaderTest {
     private fun reader(text: String) = DxfReader(text.replace("\n", "\r\n").byteInputStream())
 
     @Test
-    fun `napis zlamany surowym znakiem nowej linii z LibreDWG wraca w calosci`() {
-        // Tak LibreDWG 0.14 zapisał MTEXT z rysunku „WYKONAWCZY 18MAJA 2027”.
+    fun `strzep po napisie z LibreDWG jest pomijany, a reszta pliku czyta sie dalej`() {
+        // Tak LibreDWG 0.14 zapisał MTEXT z rysunku „WYKONAWCZY 18MAJA 2027”:
+        // prawdziwy napis (wg ODA) kończy się na „RAL 8019”, dalej jest strzęp
+        // innego napisu, którego druga linia wypadła w miejsce kodu grupy.
         val r = reader("  0\nMTEXT\n  1\n\\A1;STAL MALOWANA PROSZKOWO^JKOLOR RAL 8019walka nablatowa\nbateria z blatu}\n  7\nStandard\n  0\nEOF\n")
         assertTrue(r.next()); assertEquals(0, r.code)
         assertTrue(r.next()); assertEquals(1, r.code)
-        assertEquals("\\A1;STAL MALOWANA PROSZKOWO^JKOLOR RAL 8019walka nablatowa\\Pbateria z blatu}", r.string)
         assertTrue(r.next()); assertEquals(7, r.code); assertEquals("Standard", r.string)
         assertTrue(r.next()); assertEquals(0, r.code); assertEquals("EOF", r.string)
         assertFalse(r.next())

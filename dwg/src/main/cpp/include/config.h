@@ -55,7 +55,7 @@
 /* Define if __attribute__((visibility("default"))) is supported. */
 #define HAVE_ATTRIBUTE_VISIBILITY_DEFAULT 1
 
-/* Define to 1 if you have the 'basename' function. */
+/* Define to 1 if you have the `basename' function. */
 #define HAVE_BASENAME 1
 
 /* Define to 1 if be64toh is available in <endian.h>. */
@@ -88,7 +88,7 @@
 /* Define to 1 if you have the <float.h> header file. */
 #define HAVE_FLOAT_H 1
 
-/* Define to 1 if you have the 'floor' function. */
+/* Define to 1 if you have the `floor' function. */
 /* #undef HAVE_FLOOR */
 
 /* Define to 1 if the system has the `aligned' function attribute */
@@ -118,13 +118,13 @@
 /* Define to 1 if you have the <getopt.h> header file. */
 #define HAVE_GETOPT_H 1
 
-/* Define to 1 if you have the 'getopt_long' function. */
+/* Define to 1 if you have the `getopt_long' function. */
 #define HAVE_GETOPT_LONG 1
 
-/* Define to 1 if you have the 'gettimeofday' function. */
+/* Define to 1 if you have the `gettimeofday' function. */
 #define HAVE_GETTIMEOFDAY 1
 
-/* Define to 1 if you have the 'gmtime_r' function. */
+/* Define to 1 if you have the `gmtime_r' function. */
 #define HAVE_GMTIME_R 1
 
 /* macOS 12.6.5 lies about its gperf version, using size_t as 3.0 */
@@ -145,7 +145,7 @@
 /* Define to 1 if htole64 is available in <endian.h>. */
 #define HAVE_HTOLE64 1
 
-/* Define if you have the iconv() function. */
+/* Define if you have the iconv() function and it works. */
 /* #undef HAVE_ICONV */
 
 /* Define to 1 if you have the <iconv.h> header file. */
@@ -166,7 +166,7 @@
 /* Define to 1 if you have the <libgen.h> header file. */
 #define HAVE_LIBGEN_H 1
 
-/* Define to 1 if you have the 'm' library (-lm). */
+/* Define to 1 if you have the `m' library (-lm). */
 #define HAVE_LIBM 1
 
 /* Define to 1 if you have the <libps/pslib.h> header file. */
@@ -178,20 +178,20 @@
 /* Define to 1 if you have the <machine/endian.h> header file. */
 /* #undef HAVE_MACHINE_ENDIAN_H */
 
-/* Define to 1 if your system has a GNU libc compatible 'malloc' function, and
+/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
 #define HAVE_MALLOC 1
 
 /* Define to 1 if you have the <malloc.h> header file. */
 #define HAVE_MALLOC_H 1
 
-/* Define to 1 if you have the 'memchr' function. */
+/* Define to 1 if you have the `memchr' function. */
 #define HAVE_MEMCHR 1
 
-/* Define to 1 if you have the 'memmem' function. */
+/* Define to 1 if you have the `memmem' function. */
 #define HAVE_MEMMEM 1
 
-/* Define to 1 if you have the 'memmove' function. */
+/* Define to 1 if you have the `memmove' function. */
 #define HAVE_MEMMOVE 1
 
 /* Define to 1 if you have the <mimalloc-override.h> header file. */
@@ -206,26 +206,26 @@
 /* If available, contains the Python version number currently in use. */
 /* #undef HAVE_PYTHON */
 
-/* Define to 1 if your system has a GNU libc compatible 'realloc' function,
+/* Define to 1 if your system has a GNU libc compatible `realloc' function,
    and to 0 otherwise. */
 #define HAVE_REALLOC 1
 
-/* Define to 1 if you have the 'scandir' function. */
+/* Define to 1 if you have the `scandir' function. */
 #define HAVE_SCANDIR 1
 
-/* Define to 1 if you have the 'setenv' function. */
+/* Define to 1 if you have the `setenv' function. */
 #define HAVE_SETENV 1
 
-/* Define to 1 if you have the 'sincos' function. */
+/* Define to 1 if you have the `sincos' function. */
 #define HAVE_SINCOS 1
 
-/* Define to 1 if you have the 'sqrt' function. */
+/* Define to 1 if you have the `sqrt' function. */
 /* #undef HAVE_SQRT */
 
-/* Define to 1 if you have the 'sscanf_s' function. */
+/* Define to 1 if you have the `sscanf_s' function. */
 /* #undef HAVE_SSCANF_S */
 
-/* Define to 1 if 'stat' has the bug that it succeeds when given the
+/* Define to 1 if `stat' has the bug that it succeeds when given the
    zero-length file name argument. */
 #define HAVE_STAT_EMPTY_STRING_BUG 1
 
@@ -241,13 +241,13 @@
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
 
-/* Define to 1 if you have the 'strcasecmp' function. */
+/* Define to 1 if you have the `strcasecmp' function. */
 #define HAVE_STRCASECMP 1
 
-/* Define to 1 if you have the 'strcasestr' function. */
+/* Define to 1 if you have the `strcasestr' function. */
 #define HAVE_STRCASESTR 1
 
-/* Define to 1 if you have the 'strchr' function. */
+/* Define to 1 if you have the `strchr' function. */
 #define HAVE_STRCHR 1
 
 /* Define to 1 if you have the <strings.h> header file. */
@@ -256,25 +256,25 @@
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
 
-/* Define to 1 if you have the 'strnlen' function. */
+/* Define to 1 if you have the `strnlen' function. */
 #define HAVE_STRNLEN 1
 
-/* Define to 1 if you have the 'strrchr' function. */
+/* Define to 1 if you have the `strrchr' function. */
 #define HAVE_STRRCHR 1
 
-/* Define to 1 if you have the 'strstr' function. */
+/* Define to 1 if you have the `strstr' function. */
 #define HAVE_STRSTR 1
 
-/* Define to 1 if you have the 'strtol' function. */
+/* Define to 1 if you have the `strtol' function. */
 #define HAVE_STRTOL 1
 
-/* Define to 1 if you have the 'strtoll' function. */
+/* Define to 1 if you have the `strtoll' function. */
 #define HAVE_STRTOLL 1
 
-/* Define to 1 if you have the 'strtoul' function. */
+/* Define to 1 if you have the `strtoul' function. */
 #define HAVE_STRTOUL 1
 
-/* Define to 1 if you have the 'strtoull' function. */
+/* Define to 1 if you have the `strtoull' function. */
 #define HAVE_STRTOULL 1
 
 /* Define to 1 if you have the <sys/byteorder.h> header file. */
@@ -304,19 +304,19 @@
 /* Define to 1 if you have the <wchar.h> header file. */
 #define HAVE_WCHAR_H 1
 
-/* Define to 1 if you have the 'wcscmp' function. */
+/* Define to 1 if you have the `wcscmp' function. */
 #define HAVE_WCSCMP 1
 
-/* Define to 1 if you have the 'wcscpy' function. */
+/* Define to 1 if you have the `wcscpy' function. */
 #define HAVE_WCSCPY 1
 
-/* Define to 1 if you have the 'wcslen' function. */
+/* Define to 1 if you have the `wcslen' function. */
 #define HAVE_WCSLEN 1
 
-/* Define to 1 if you have the 'wcsnlen' function. */
+/* Define to 1 if you have the `wcsnlen' function. */
 #define HAVE_WCSNLEN 1
 
-/* Define to 1 if you have the 'wcsstr' function. */
+/* Define to 1 if you have the `wcsstr' function. */
 #define HAVE_WCSSTR 1
 
 /* Define to 1 if you have the <wctype.h> header file. */
@@ -331,11 +331,11 @@
 /* Define to 1 if you have the <winsock2.h> header file. */
 /* #undef HAVE_WINSOCK2_H */
 
-/* Define to 1 if the system has the type '_Bool'. */
+/* Define to 1 if the system has the type `_Bool'. */
 #define HAVE__BOOL 1
 
 /* Define as const if the declaration of iconv() needs const. */
-/* #undef ICONV_CONST */
+#define ICONV_CONST 
 
 /* Define to 1 if this is a release, skipping unstable DWG features, unknown
    DWG versions and objects. */
@@ -344,7 +344,7 @@
 /* Defined in configure.ac to the libtool version-info of the shared lib. */
 #define LIBREDWG_SO_VERSION "0:14:0"
 
-/* Define to 1 if 'lstat' dereferences a symlink specified with a trailing
+/* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
 /* #undef LSTAT_FOLLOWS_SLASHED_SYMLINK */
 
@@ -358,7 +358,7 @@
 #define PACKAGE_NAME "LibreDWG"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "LibreDWG 0.14"
+#define PACKAGE_STRING "LibreDWG 0.14.8612"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libredwg"
@@ -367,12 +367,12 @@
 #define PACKAGE_URL "https://savannah.gnu.org/projects/libredwg/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.14"
+#define PACKAGE_VERSION "0.14.8612"
 
 /* Define to the printf() modifier to use with size_t. */
 /* #undef PRI_SIZE_T_MODIFIER */
 
-/* The size of 'size_t', as computed by sizeof. */
+/* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T 8
 
 /* The number of bytes in type wchar_t */
@@ -386,7 +386,7 @@
 	STACK_DIRECTION = 0 => direction of growth unknown */
 /* #undef STACK_DIRECTION */
 
-/* Define to 1 if all of the C89 standard headers exist (not just the ones
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
@@ -427,7 +427,7 @@
 /* Needed for cygwin strdup */
 /* #undef __XSI_VISIBLE */
 
-/* Define to '__inline__' or '__inline' if that's what the C compiler
+/* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
 /* #undef inline */
@@ -454,7 +454,7 @@
 /* If restrict is broken with this C compiler */
 #define restrict 
 
-/* Define as 'unsigned int' if <stddef.h> doesn't define. */
+/* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
 
 /* Define to the type of an unsigned integer type of width exactly 16 bits if

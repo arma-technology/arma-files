@@ -29,9 +29,9 @@ class RealDrawingsTest {
             result.onSuccess { (scene, truncated) ->
                 report.append(
                     String.format(
-                        "%-50s %7d ms  linie %8d  wypełnienia %6d  teksty %6d  punkty %9d  warstwy %4d  %s%s\n",
+                        "%-50s %7d ms  linie %8d  wypełnienia %6d  teksty %6d  punkty %9d  warstwy %4d  zakres %.0f×%.0f  %s%s\n",
                         file.name.take(50), ms, scene.strokes.count, scene.fills.count, scene.texts.size,
-                        scene.strokes.points, scene.layerNames.size,
+                        scene.strokes.points, scene.layerNames.size, scene.width, scene.height,
                         if (truncated) "[UCIĘTE] " else "",
                         scene.skipped.entries.joinToString { "${it.key}:${it.value}" }
                     )

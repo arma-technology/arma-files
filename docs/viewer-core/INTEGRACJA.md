@@ -179,13 +179,13 @@ Czytnik pokazuje pierwsze 2 MB (dla większych informuje, że to początek).
     używa KSP2, a Room 2.6.1 pada wtedy na „unexpected jvm signature V”.
     Pomaga `ksp.useKSP2=false` w `gradle.properties` (albo Room 2.7+).
     Sam rdzeń nie używa KSP — to pułapka zestawu wersji, zgłoszona z SUMPTEN.
-14. **DWG z LibreDWG 0.14: tylko DXF tekstowy.** Binarny DXF z LibreDWG gubi
-    kolory i większość kreskowań (na prawdziwych rysunkach 132 z 351 i 712
-    z 3150 wypełnień wg ODA). Moduł `dwg` od tej wersji zapisuje DXF
-    tekstowy. Jeśli konwertujesz DWG gdzie indziej (np. `dwg2dxf` na
-    serwerze), też używaj tekstowego. Napisy, które LibreDWG łamie surowym
-    znakiem nowej linii, czytnik skleja z powrotem (jako nowy wiersz MTEXT) —
-    naprawa po konwersji nie jest już potrzebna.
+14. **DWG z LibreDWG: DXF tekstowy i wersja ≥ 0.14.8612.** Binarny DXF
+    z LibreDWG gubi kolory i większość kreskowań (132 z 351 i 712 z 3150
+    wypełnień wg ODA). Wydania 0.14 sprzed 0.14.8612 czytają też niektóre
+    napisy poza ich końcem: za tekstem lądują strzępy innych napisów, czasem
+    ze znakiem nowej linii, który psuje plik. To śmieci — **nie doklejaj ich**.
+    Czytnik je pomija; 0.14.8612 ich w ogóle nie tworzy (na rysunkach
+    użytkownika wynik identyczny z ODA). Moduł `dwg` jest na 0.14.8612.
 15. **Pierwsza kompilacja `dwg` ze źródeł** buduje część natywną przez CMake
     (około minuty). Statyczna LibreDWG jest gotowa w `libs/`; przebudowa:
     `dwg/build-libredwg.sh`.
