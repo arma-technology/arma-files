@@ -31,7 +31,9 @@ class DwgConversionService : Service() {
                 val data = msg.data
                 val input = data.getString(INPUT) ?: return
                 val output = data.getString(OUTPUT) ?: return
-                val error = runCatching { DwgNative.toDxf(input, output, true) }
+                // DXF tekstowy: binarny z LibreDWG 0.14 gubi kolory i większość
+                // kreskowań (sprawdzone z ODA na prawdziwych rysunkach).
+                val error = runCatching { DwgNative.toDxf(input, output, false) }
                     .getOrElse { it.message ?: it::class.java.simpleName }
                 val reply = Message.obtain(null, DONE).apply {
                     this.data = Bundle().apply { putString(ERROR, error) }

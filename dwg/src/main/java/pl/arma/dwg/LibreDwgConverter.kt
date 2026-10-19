@@ -39,7 +39,7 @@ object LibreDwgConverter : SheetDocuments.DwgConverter {
     override suspend fun toDxf(context: Context, dwg: File): File = withContext(Dispatchers.IO) {
         val cache = File(context.cacheDir, "dwg_dxf").apply { mkdirs() }
         val key = fingerprint(dwg)
-        val target = File(cache, "$key.dxb")
+        val target = File(cache, "$key.dxf")
         if (target.isFile && target.length() > 0) return@withContext target.also { it.setLastModified(System.currentTimeMillis()) }
         val partial = File(cache, "$key.part")
         partial.delete()
@@ -69,7 +69,7 @@ object LibreDwgConverter : SheetDocuments.DwgConverter {
 
     /** Pamięć podręczna do [cacheLimitBytes] — najdawniej używane wyniki wylatują pierwsze. */
     private fun trim(dir: File, keep: File) {
-        val files = dir.listFiles { f -> f.extension == "dxb" }?.sortedBy { it.lastModified() } ?: return
+        val files = dir.listFiles { f -> f.extension == "dxf" || f.extension == "dxb" }?.sortedBy { it.lastModified() } ?: return
         var total = files.sumOf { it.length() }
         for (f in files) {
             if (total <= cacheLimitBytes) break

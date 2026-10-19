@@ -116,7 +116,10 @@ class DxfReader(input: InputStream) : Closeable {
                 b == '-'.code -> sign = -1
                 b in '0'.code..'9'.code -> { c = c * 10 + (b - '0'.code); any = true }
                 b == ' '.code || b == '\t'.code -> Unit
-                else -> throw IOException("Invalid DXF group code")
+                // LibreDWG 0.14 zostawia w tekście surowy znak nowej linii —
+                // dalszy ciąg napisu trafia w miejsce kodu grupy. Pomijamy tę
+                // linię (napis traci końcówkę) zamiast odrzucać cały rysunek.
+                else -> return if (code >= 0) nextText() else throw IOException("Invalid DXF group code")
             }
         }
         if (!any) {
