@@ -17,8 +17,16 @@ class AccountStore(context: Context) {
     private val secrets = SecretStore(context)
     private val legacy = context.getSharedPreferences("network_sources", Context.MODE_PRIVATE)
 
-    @Volatile
-    private var cached: List<RemoteAccount>? = null
+    private companion object {
+        /**
+         * Wspólna dla wszystkich instancji: ViewModel i repozytorium mają
+         * własne obiekty, a po zapisie konta oba muszą widzieć zmianę —
+         * inaczej przeglądanie łączyło się ze starym adresem do restartu.
+         */
+        @Volatile
+        var cached: List<RemoteAccount>? = null
+        val LOCK = Any()
+    }
 
     /**
      * Lista kont z pamięci podręcznej.
@@ -30,7 +38,7 @@ class AccountStore(context: Context) {
      */
     fun all(): List<RemoteAccount> {
         cached?.let { return it }
-        synchronized(this) {
+        synchronized(LOCK) {
             cached?.let { return it }
             migrateIfNeeded()
             val loaded = AccountCodec.decode(prefs.getString("accounts", "").orEmpty())
@@ -41,7 +49,7 @@ class AccountStore(context: Context) {
     }
 
     private fun invalidate() {
-        synchronized(this) { cached = null }
+        synchronized(LOCK) { cached = null }
     }
 
     fun get(id: String?): RemoteAccount? = id?.let { wanted -> all().firstOrNull { it.id == wanted } }

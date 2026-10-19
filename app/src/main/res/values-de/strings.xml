@@ -39,6 +39,22 @@
     <string name="apk_allow">Erlaube ARMA Files, Apps zu installieren, und versuche es dann erneut.</string>
     <string name="apk_failed">Das Installationsprogramm konnte nicht gestartet werden.</string>
     <string name="apk_unsupported">Diese Android-Version erlaubt keine Installation von APK-Dateien aus Apps.</string>
+    <string name="archive_browse">Inhalt durchsuchen</string>
+    <string name="archive_extract_all">Alles entpacken</string>
+    <string name="archive_extract_other_pane">In anderen Bereich entpacken</string>
+    <string name="archive_format">Format</string>
+    <string name="archive_no_password">Dieses Format unterstützt kein Passwort.</string>
+    <string name="archive_password">Passwort</string>
+    <string name="archive_password_aes">Verschlüsselung mit AES-256</string>
+    <string name="archive_password_optional">Passwort (optional)</string>
+    <string name="archive_password_title">Passwortgeschütztes Archiv</string>
+    <string name="archive_password_wrong">Falsches Passwort</string>
+    <string name="cache_clear">Jetzt leeren</string>
+    <string name="cache_limit_age">Löschen, wenn länger nicht genutzt als</string>
+    <string name="cache_limit_size">Höchstens</string>
+    <string name="cache_text">Kopien von Dateien aus Servern und Archiven sowie zur Ansicht umgewandelte DWG-Zeichnungen. Wird ein Limit überschritten, werden zuerst die am längsten nicht genutzten gelöscht.</string>
+    <string name="cache_title">Zwischenspeicher</string>
+    <string name="cache_used">Belegt: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archive</string>
     <string name="category_audio">Audio</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Zugriff konnte nicht erlangt werden.</string>
     <string name="err_account_missing">Die Verbindung existiert nicht oder wurde gelöscht.</string>
     <string name="err_apk_prepare">Die APK-Datei konnte nicht vorbereitet werden.</string>
+    <string name="err_archive_format">Nicht unterstütztes oder beschädigtes Archiv.</string>
+    <string name="err_archive_gone">Das Archiv ist nicht mehr verfügbar.</string>
+    <string name="err_archive_rar">Verschlüsselte RAR-Archive werden nicht unterstützt.</string>
+    <string name="err_archive_read_only">Archive sind schreibgeschützt. Entpacke die Dateien, um sie zu ändern.</string>
     <string name="err_attach_failed">Die Quelle konnte nicht verbunden werden.</string>
     <string name="err_attach_in_settings">Verbinde diese Quelle in den Einstellungen.</string>
     <string name="err_cannot_read_folder">Ordner kann nicht gelesen werden: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Der Zielordner konnte nicht erstellt werden.</string>
     <string name="err_zip_create">Das Archiv konnte nicht erstellt werden.</string>
     <string name="err_zip_unsafe">Das Archiv enthält einen unsicheren Pfad.</string>
+    <string name="extract_cancel_confirm">Abbrechen und löschen</string>
+    <string name="extract_cancel_continue">Fortsetzen</string>
+    <string name="extract_cancel_text">Das Entpacken ist pausiert. Bisher entpackte Dateien und Ordner werden gelöscht.</string>
+    <string name="extract_cancel_title">Entpacken abbrechen?</string>
     <string name="fab_new">Neu</string>
     <string name="fav_add">Zu Favoriten hinzufügen</string>
     <string name="fav_remove">Aus Favoriten entfernen</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopieren</string>
     <string name="history_delete">Löschen</string>
     <string name="history_empty">Hier erscheinen abgeschlossene Vorgänge. Kopieren, Verschieben und Papierkorb lassen sich von hier aus rückgängig machen.</string>
+    <string name="history_extract">Entpacken</string>
     <string name="history_move">Verschieben</string>
     <string name="history_restore">Wiederherstellen</string>
     <string name="history_title">Vorgangsverlauf</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Angeheftete Ordner</string>
     <string name="home_this_computer">Dieser Computer</string>
     <string name="home_title">Mein Computer</string>
+    <string name="identity_new">Neuer Fingerabdruck</string>
+    <string name="identity_old">Gespeicherter Fingerabdruck</string>
+    <string name="identity_reject">Nicht verbinden</string>
+    <string name="identity_text">%1$s weist sich anders aus als bei der ersten Verbindung. Das passiert nach einer Neuinstallation oder einem Austausch des Servers, kann aber auch bedeuten, dass sich jemand als Server ausgibt. Vertraue nur, wenn du den Grund kennst.</string>
+    <string name="identity_title_ssh">Der Serverschlüssel hat sich geändert</string>
+    <string name="identity_title_tls">Das Serverzertifikat hat sich geändert</string>
+    <string name="identity_trust">Neuem vertrauen</string>
     <string name="image_position">%1$d von %2$d · zur Seite wischen, um das Foto zu wechseln</string>
     <string name="index_build">Erstellen</string>
     <string name="index_build_hint">Erstelle den Index, um den gesamten Speicher zu durchsuchen</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP-Archiv erstellt</string>
     <string name="notif_channel">Dateivorgänge</string>
     <string name="notif_channel_desc">Fortschritt beim Kopieren, Verschieben und Löschen</string>
+    <string name="offline_added">Offline hinzugefügt — Download im Hintergrund</string>
+    <string name="offline_banner">Server nicht erreichbar — Offline-Kopie vom %1$s wird angezeigt</string>
+    <string name="offline_busy">Eine frühere Synchronisierung läuft noch — später erneut versuchen.</string>
+    <string name="offline_conflict_channel">Konflikte bei Offline-Dateien</string>
+    <string name="offline_conflict_text">Die Datei wurde auf dem Server und auf dem Telefon geändert. Welche Version behalten?
+Server: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Versionskonflikt: %1$s</string>
+    <string name="offline_conflicts_title">Versionskonflikte</string>
+    <string name="offline_failed">Synchronisierung fehlgeschlagen: %1$s</string>
+    <string name="offline_folder_unavailable">In den Ordner kann nicht geschrieben werden — „Zugriff auf alle Dateien“ ist nötig.</string>
+    <string name="offline_interval">Automatisch synchronisieren</string>
+    <string name="offline_interval_manual">Manuell</string>
+    <string name="offline_keep_both">Beide</string>
+    <string name="offline_keep_local">Vom Telefon</string>
+    <string name="offline_keep_remote">Vom Server</string>
+    <string name="offline_location">Wo Kopien speichern</string>
+    <string name="offline_location_app">App-Speicher</string>
+    <string name="offline_location_app_hint">Für andere Apps unsichtbar; wird beim Deinstallieren von ARMA Files gelöscht.</string>
+    <string name="offline_location_folder">Ordner „ARMA Files offline“</string>
+    <string name="offline_location_folder_hint">Im Telefonspeicher, für andere Apps sichtbar; bleibt nach dem Deinstallieren erhalten.</string>
+    <string name="offline_make">Offline verfügbar</string>
+    <string name="offline_missing">Dieses Element gibt es auf dem Server nicht mehr.</string>
+    <string name="offline_never">Wartet auf Synchronisierung</string>
+    <string name="offline_only_remote">Offline lassen sich nur Dateien und Ordner von Servern speichern.</string>
+    <string name="offline_phone_suffix">Telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Aus Offline entfernen</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Offline-Dateien</string>
+    <string name="offline_sync">Synchronisieren</string>
+    <string name="offline_synced">Synchronisiert %1$s · %2$s</string>
+    <string name="offline_syncing">Synchronisierung… %1$s</string>
+    <string name="offline_title">Offline verfügbar</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">gelöscht</string>
+    <string name="offline_wifi_only">Nur über WLAN</string>
     <string name="op_copy">Kopieren</string>
     <string name="op_delete">Löschen</string>
+    <string name="op_extract">Entpacken</string>
     <string name="op_move">Verschieben</string>
     <string name="op_restore">Wiederherstellen</string>
     <string name="op_trash">In den Papierkorb verschieben</string>
@@ -336,6 +406,7 @@ indem du oben einen Tab auswählst.</string>
     <string name="trash_with_count">Papierkorb (%1$d)</string>
     <string name="undo_copied">%1$d kopiert</string>
     <string name="undo_done">%1$d fertig</string>
+    <string name="undo_extracted">Entpackt: %1$d</string>
     <string name="undo_moved">%1$d verschoben</string>
     <string name="undo_skipped_suffix">, %1$d übersprungen</string>
     <string name="undo_trashed">%1$d in den Papierkorb verschoben</string>
@@ -344,14 +415,18 @@ indem du oben einen Tab auswählst.</string>
     <string name="welcome_pick">Ordner wählen</string>
     <string name="welcome_text">Wähle einen Startordner. Android merkt sich den Zugriff, sodass die App nach einem Neustart dorthin zurückkehren kann.</string>
     <string name="welcome_title">Willkommen bei ARMA Files</string>
-    <string name="zip_create_title">ZIP-Archiv erstellen</string>
+    <string name="zip_create_title">Archiv erstellen</string>
     <string name="zip_default_name">archiv.zip</string>
     <string name="zip_extract_here">Hier entpacken</string>
     <string name="zip_name">Archivname</string>
-    <string name="zip_pack">Als ZIP packen</string>
+    <string name="zip_pack">Packen</string>
     <string name="zoom_fit">Einpassen</string>
     <string name="zoom_in">Vergrößern</string>
     <string name="zoom_out">Verkleinern</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tage</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">%1$d Element löschen?</item>
         <item quantity="other">%1$d Elemente löschen?</item>
@@ -375,5 +450,9 @@ indem du oben einen Tab auswählst.</string>
     <plurals name="n_lines">
         <item quantity="one">%1$d Zeile</item>
         <item quantity="other">%1$d Zeilen</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d Konflikt — Version wählen</item>
+        <item quantity="other">%1$d Konflikte — Versionen wählen</item>
     </plurals>
 </resources>

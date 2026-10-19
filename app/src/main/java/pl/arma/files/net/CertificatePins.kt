@@ -57,8 +57,14 @@ class CertificatePins(private val file: File?) {
                 when (val known = load()[key]) {
                     null -> save(key, fingerprint)
                     fingerprint -> Unit
-                    else -> throw CertificateException(
-                        text(R.string.cert_changed, key, known.take(23), fingerprint.take(23))
+                    else -> throw CertificateChangedException(
+                        ServerIdentityChange(
+                            kind = ServerIdentityChange.Kind.TLS_CERTIFICATE,
+                            server = key,
+                            oldFingerprint = known,
+                            newFingerprint = fingerprint,
+                            accept = { save(key, fingerprint) }
+                        )
                     )
                 }
             }
@@ -66,6 +72,10 @@ class CertificatePins(private val file: File?) {
             override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
         }
     }
+
+    class CertificateChangedException(override val change: ServerIdentityChange) :
+        CertificateException(text(R.string.cert_changed, change.server, change.oldFingerprint.orEmpty().take(23), change.newFingerprint.take(23))),
+        IdentityChangeCarrier
 
     companion object {
         fun fingerprintOf(certificate: X509Certificate): String =

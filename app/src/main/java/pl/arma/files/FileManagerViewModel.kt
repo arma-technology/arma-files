@@ -17,6 +17,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +38,10 @@ import pl.arma.files.net.RemoteType
 import pl.arma.files.ops.ConflictDecision
 import pl.arma.files.ops.Operation
 import pl.arma.files.ops.PaneRules
+import pl.arma.files.archive.ArchiveFormat
+import pl.arma.files.archive.ArchiveFormats
+import pl.arma.files.archive.ArchivePasswordException
+import pl.arma.files.archive.ArchiveRepository
 import pl.arma.files.ops.OperationKind
 import pl.arma.files.ops.OperationRecord
 import pl.arma.files.ops.OperationStatus
@@ -129,6 +135,77 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _notice = MutableStateFlow<String?>(null)
     val notice: StateFlow<String?> = _notice.asStateFlow()
 
+    /** Archiwum czekające na hasło; po jego podaniu ponawiamy [ArchivePasswordRequest.retry]. */
+    data class ArchivePasswordRequest(val root: Uri, val name: String, val wrong: Boolean, val retry: () -> Unit)
+
+    private val _passwordRequest = MutableStateFlow<ArchivePasswordRequest?>(null)
+    val passwordRequest: StateFlow<ArchivePasswordRequest?> = _passwordRequest.asStateFlow()
+
+    /** Rozpakowywanie wstrzymane przyciskiem „Anuluj”, czeka na potwierdzenie. */
+    data class CancelRequest(val operationId: String, val wasPaused: Boolean)
+
+    private val _cancelRequest = MutableStateFlow<CancelRequest?>(null)
+    val cancelRequest: StateFlow<CancelRequest?> = _cancelRequest.asStateFlow()
+
+    private val offlineStore = (app as ArmaFilesApp).offline
+    val offlineEntries: StateFlow<List<OfflineStore.Entry>> = offlineStore.entries
+    val offlineProgress: StateFlow<Map<String, OfflineStore.Progress>> = offlineStore.progress
+
+    /** Folder bieżącej karty pokazany z kopii offline — czas tej kopii; null, gdy z serwera. */
+    private val _offlineSince = MutableStateFlow<Long?>(null)
+    val offlineSince: StateFlow<Long?> = _offlineSince.asStateFlow()
+
+    fun makeOffline(items: List<FileItem>) {
+        val remote = items.filter { RemoteRepository.isRemoteScheme(it.uri.scheme) }
+        if (remote.isEmpty()) {
+            _error.value = text(R.string.offline_only_remote)
+            return
+        }
+        offlineStore.add(remote)
+        _notice.value = text(R.string.offline_added)
+    }
+
+    fun removeOffline(items: List<FileItem>) = offlineStore.removeUris(items.map { it.uri })
+
+    fun removeOfflineEntry(entry: OfflineStore.Entry) = offlineStore.remove(listOf(entry.id))
+
+    fun syncOffline() = offlineStore.syncAll()
+
+    fun resolveOfflineConflict(entry: OfflineStore.Entry, conflict: OfflineStore.Conflict, choice: OfflineStore.Choice) =
+        offlineStore.resolve(entry.id, conflict.path, choice)
+
+    /** Zmieniony klucz SSH albo certyfikat TLS serwera, czekający na decyzję. */
+    val identityChange: StateFlow<pl.arma.files.net.ServerIdentityChange?> = pl.arma.files.net.ServerIdentityAlerts.pending
+
+    fun trustIdentity() {
+        val change = identityChange.value ?: return
+        pl.arma.files.net.ServerIdentityAlerts.dismiss()
+        viewModelScope.launch {
+            runCatching { withContext(Dispatchers.IO) { change.trust() } }
+                .onFailure { _error.value = it.message }
+                .onSuccess {
+                    refresh()
+                    offlineStore.syncAll()
+                }
+        }
+    }
+
+    fun rejectIdentity() = pl.arma.files.net.ServerIdentityAlerts.dismiss()
+
+    /** Otwiera wpis offline: folder w karcie (z serwera albo z kopii), plik w podglądzie. */
+    fun openOfflineFolder(entry: OfflineStore.Entry) {
+        val uri = entry.uri
+        val source = _sources.value.firstOrNull { it.rootUri?.scheme == uri.scheme && it.rootUri?.authority == uri.authority }
+        val pane = active()
+        pane.source = source?.type ?: SourceType.SMB
+        pane.root = source?.rootUri ?: uri.buildUpon().path("/").build()
+        pane.currentDir = uri
+        pane.navStack.clear()
+        refreshPane(pane)
+    }
+
+    suspend fun offlineItem(entry: OfflineStore.Entry): FileItem? = withContext(Dispatchers.IO) { repo.itemInfo(entry.uri) }
+
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
 
@@ -155,6 +232,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         var source: SourceType = SourceType.LOCAL
         var files: List<FileItem> = emptyList()
         val navStack = ArrayDeque<Uri>()
+        /** Czas synchronizacji kopii offline, gdy lista pochodzi z niej, a nie z serwera. */
+        var offlineSince: Long? = null
     }
 
     private val panes = mutableListOf(Pane(java.util.UUID.randomUUID().toString()))
@@ -189,6 +268,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (RemoteRepository.isRemoteScheme(uri.scheme) && uri.path.orEmpty().trim('/').isEmpty()) {
             return _remoteAccounts.value.firstOrNull { it.id == uri.authority }?.label?.ifBlank { null }
         }
+        if (ArchiveRepository.isArchive(uri) && ArchiveRepository.innerPath(uri).isEmpty()) {
+            return repo.archives.archiveName(uri)
+        }
         return null
     }
 
@@ -211,6 +293,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         _root.value = current.root
         _currentSource.value = current.source
         _files.value = current.files
+        _offlineSince.value = current.offlineSince
 
         val other = secondary()
         _secondaryFiles.value = other?.files.orEmpty()
@@ -226,6 +309,61 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 source = pane.source,
                 atHome = pane.currentDir == null
             )
+        }
+        updateWatchers()
+    }
+
+    private val watcher = DirectoryWatcher(app, repo)
+
+    /** Obserwowany folder każdego widocznego panelu. */
+    private val watches = mutableMapOf<String, Pair<Uri, Job>>()
+    private var foreground = true
+
+    /**
+     * Obserwujemy tylko foldery widoczne na ekranie i tylko wtedy, gdy
+     * aplikacja jest na wierzchu — w tle nie ma po co trzymać połączeń
+     * z serwerami ani budzić telefonu odpytywaniem.
+     */
+    private fun updateWatchers() {
+        val wanted = if (!foreground) emptyMap() else listOfNotNull(active(), secondary())
+            .mapNotNull { pane -> pane.currentDir?.let { pane.id to it } }
+            .toMap()
+        watches.entries.removeAll { (id, watch) ->
+            (wanted[id] != watch.first).also { stale -> if (stale) watch.second.cancel() }
+        }
+        wanted.forEach { (id, dir) ->
+            if (id in watches) return@forEach
+            val job = viewModelScope.launch {
+                @OptIn(kotlinx.coroutines.FlowPreview::class)
+                watcher.changes(dir).debounce(400).collect { quietRefresh(id, dir) }
+            }
+            watches[id] = dir to job
+        }
+    }
+
+    /** Odświeżenie bez wskaźnika zajętości i bez komunikatu o błędzie — lista zmienia się tylko, gdy coś się zmieniło. */
+    private suspend fun quietRefresh(paneId: String, dir: Uri) {
+        val pane = panes.firstOrNull { it.id == paneId } ?: return
+        if (pane.currentDir != dir) return
+        val fresh = runCatching { repo.listChildren(dir) }.getOrNull() ?: return
+        val since = if (repo.servedOffline(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+        if (pane.currentDir == dir && (fresh != pane.files || since != pane.offlineSince)) {
+            pane.files = fresh
+            pane.offlineSince = since
+            syncPanes()
+        }
+    }
+
+    /** Aplikacja na wierzchu: od razu sprawdza widoczne foldery i wznawia obserwację. */
+    fun setForeground(value: Boolean) {
+        if (foreground == value) return
+        foreground = value
+        updateWatchers()
+        if (value) {
+            listOfNotNull(active(), secondary()).forEach { pane ->
+                val dir = pane.currentDir ?: return@forEach
+                viewModelScope.launch { quietRefresh(pane.id, dir) }
+            }
         }
     }
 
@@ -347,7 +485,16 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         if (items.isEmpty()) return
-        enqueue(if (move) OperationKind.MOVE else OperationKind.COPY, items, target)
+        if (ArchiveRepository.isArchive(target)) {
+            _error.value = text(R.string.err_archive_read_only)
+            return
+        }
+        val kind = when {
+            items.all { ArchiveRepository.isArchive(it.uri) } -> OperationKind.EXTRACT
+            move -> OperationKind.MOVE
+            else -> OperationKind.COPY
+        }
+        enqueue(kind, items, target)
     }
 
     fun openDirectoryInSecondary(item: FileItem) {
@@ -556,8 +703,16 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _busy.value = true
             runCatching { repo.listChildren(dir) }
-                .onSuccess { pane.files = it }
-                .onFailure { _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty()) }
+                .onSuccess {
+                    pane.files = it
+                    pane.offlineSince = if (repo.servedOffline(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+                }
+                .onFailure {
+                    if (it is ArchivePasswordException) askPassword(dir, it.wrong) { refreshPane(pane) }
+                    else if (!pl.arma.files.net.ServerIdentityAlerts.isIdentityChange(it)) {
+                        _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty())
+                    }
+                }
             _busy.value = false
             syncPanes()
         }
@@ -647,7 +802,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun rename(item: FileItem, name: String) {
         launchOperation(success = text(R.string.notice_renamed)) {
             val newUri = repo.rename(item, validatedName(name))
-            if (newUri != null) prefs.replaceUri(item.uri, newUri)
+            if (newUri != null) {
+                prefs.replaceUri(item.uri, newUri)
+                prefs.saveMeta(item.copy(uri = newUri, name = newUri.lastPathSegment ?: item.name))
+            }
             refresh()
             loadSavedCollections()
         }
@@ -763,7 +921,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (!record.undoable) return
         viewModelScope.launch {
             when (record.kind) {
-                OperationKind.COPY -> {
+                OperationKind.COPY, OperationKind.EXTRACT -> {
                     val copies = record.pairs.mapNotNull { (_, destination) ->
                         runCatching { repo.itemInfo(Uri.parse(destination)) }.getOrNull()
                     }
@@ -837,6 +995,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setClipboard(items: List<FileItem>, cut: Boolean) {
         if (items.isNotEmpty()) {
+            // Z archiwum można tylko kopiować — źródła nie da się usunąć.
+            val cut = cut && items.none { ArchiveRepository.isArchive(it.uri) }
             _clipboard.value = ClipboardPayload(items.distinctBy { it.uri.toString() }, cut)
             _notice.value = if (cut) text(R.string.notice_selected_move, items.size) else text(R.string.notice_copied, items.size)
         }
@@ -846,9 +1006,14 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun paste() {
         val clip = _clipboard.value ?: return
-        val target = _currentDir.value ?: return
+        val target = writableDir() ?: return
+        val fromArchive = clip.items.all { ArchiveRepository.isArchive(it.uri) }
         enqueue(
-            kind = if (clip.cut) OperationKind.MOVE else OperationKind.COPY,
+            kind = when {
+                fromArchive -> OperationKind.EXTRACT
+                clip.cut -> OperationKind.MOVE
+                else -> OperationKind.COPY
+            },
             items = clip.items,
             target = target
         )
@@ -857,26 +1022,150 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun pauseOperation(id: String) = engine.pause(id)
     fun resumeOperation(id: String) = engine.resume(id)
-    fun cancelOperation(id: String) = engine.cancel(id)
+    /**
+     * Rozpakowywanie przed przerwaniem wstrzymujemy i pytamy — przerwanie
+     * usuwa wszystko, co zdążyło się wypakować.
+     */
+    fun cancelOperation(id: String) {
+        val operation = engine.operations.value.firstOrNull { it.id == id }
+        if (operation?.kind == OperationKind.EXTRACT && operation.status in setOf(OperationStatus.RUNNING, OperationStatus.PAUSED)) {
+            val wasPaused = operation.status == OperationStatus.PAUSED
+            if (!wasPaused) engine.pause(id)
+            _cancelRequest.value = CancelRequest(id, wasPaused)
+        } else {
+            engine.cancel(id)
+        }
+    }
+
+    fun confirmCancel() {
+        val request = _cancelRequest.value ?: return
+        _cancelRequest.value = null
+        engine.cancel(request.operationId)
+    }
+
+    fun dismissCancel() {
+        val request = _cancelRequest.value ?: return
+        _cancelRequest.value = null
+        if (!request.wasPaused) engine.resume(request.operationId)
+    }
     fun clearFinishedOperations() = engine.clearFinished()
     fun clearOperationHistory() = engine.clearHistory()
     fun resolveConflict(decision: ConflictDecision) = engine.resolveConflict(decision)
 
-    fun createArchive(items: List<FileItem>, name: String) {
-        val parent = _currentDir.value ?: return
+    fun createArchive(items: List<FileItem>, name: String, format: ArchiveFormat, password: String?) {
+        val parent = writableDir() ?: return
         if (items.isEmpty()) return
         launchOperation(success = text(R.string.notice_zip_created)) {
-            repo.createZip(items, parent, name)
+            repo.createArchive(items, parent, name, format, password?.takeIf { it.isNotEmpty() }?.toCharArray())
             refresh()
         }
     }
 
-    fun extractArchive(item: FileItem) {
-        val parent = _currentDir.value ?: return
-        launchOperation(success = text(R.string.notice_unzipped, item.name)) {
-            repo.extractZip(item, parent)
-            refresh()
+    fun isArchive(uri: Uri?): Boolean = ArchiveRepository.isArchive(uri)
+
+    /** Bieżący folder, o ile da się w nim zapisywać — wnętrze archiwum nie. */
+    private fun writableDir(): Uri? {
+        val dir = _currentDir.value ?: return null
+        if (ArchiveRepository.isArchive(dir)) {
+            _error.value = text(R.string.err_archive_read_only)
+            return null
         }
+        return dir
+    }
+
+    /** Wchodzi do archiwum jak do folderu. */
+    fun openArchive(item: FileItem, inSecondary: Boolean = false) {
+        val root = repo.archives.rootOf(item.uri, item.name)
+        viewModelScope.launch {
+            _busy.value = true
+            try {
+                withContext(Dispatchers.IO) { repo.archives.ensureReadable(root) }
+                val folder = FileItem(root, item.name, DIRECTORY_MIME, 0, 0, true)
+                if (inSecondary) openDirectoryInSecondary(folder) else openDirectory(folder)
+            } catch (e: ArchivePasswordException) {
+                askPassword(root, e.wrong) { openArchive(item, inSecondary) }
+            } catch (e: Exception) {
+                _error.value = e.message ?: text(R.string.err_archive_format)
+            } finally {
+                _busy.value = false
+            }
+        }
+    }
+
+    /**
+     * Rozpakowuje całe archiwum do folderu o jego nazwie — obok archiwum,
+     * a gdy jesteśmy w jego wnętrzu, do folderu, z którego do niego weszliśmy.
+     * [toOtherPane] kieruje je do drugiego panelu.
+     */
+    fun extractArchive(item: FileItem, toOtherPane: Boolean = false) {
+        val target = if (toOtherPane) {
+            secondary()?.currentDir ?: run { _error.value = text(R.string.err_pane_no_folder); return }
+        } else {
+            val pane = active()
+            (listOfNotNull(pane.currentDir) + pane.navStack.reversed())
+                .firstOrNull { !ArchiveRepository.isArchive(it) }
+                ?: run { _error.value = text(R.string.err_archive_read_only); return }
+        }
+        if (ArchiveRepository.isArchive(target)) {
+            _error.value = text(R.string.err_archive_read_only)
+            return
+        }
+        val root = if (ArchiveRepository.isArchive(item.uri) && ArchiveRepository.innerPath(item.uri).isEmpty()) item.uri
+        else repo.archives.rootOf(item.uri, item.name)
+        val name = ArchiveFormats.baseName(repo.archives.archiveName(root) ?: item.name)
+        viewModelScope.launch {
+            // Spis tar.xz czy tar.gz wymaga zdekompresowania całego archiwum —
+            // przy dużym archiwum to dziesiątki sekund, więc pokazujemy zajętość.
+            _busy.value = true
+            try {
+                withContext(Dispatchers.IO) { repo.archives.ensureReadable(root) }
+                enqueue(OperationKind.EXTRACT, listOf(FileItem(root, name, DIRECTORY_MIME, 0, 0, true)), target)
+            } catch (e: ArchivePasswordException) {
+                askPassword(root, e.wrong) { extractArchive(item, toOtherPane) }
+            } catch (e: Exception) {
+                _error.value = e.message ?: text(R.string.err_archive_format)
+            } finally {
+                _busy.value = false
+            }
+        }
+    }
+
+    /** Wypakowuje zaznaczone wpisy archiwum — tam, skąd weszliśmy do archiwum, albo do drugiego panelu. */
+    fun extractItems(items: List<FileItem>, toOtherPane: Boolean = false) {
+        if (items.isEmpty()) return
+        val target = if (toOtherPane) {
+            secondary()?.currentDir ?: run { _error.value = text(R.string.err_pane_no_folder); return }
+        } else {
+            active().navStack.reversed().firstOrNull { !ArchiveRepository.isArchive(it) }
+                ?: run { _error.value = text(R.string.err_archive_read_only); return }
+        }
+        if (ArchiveRepository.isArchive(target)) {
+            _error.value = text(R.string.err_archive_read_only)
+            return
+        }
+        enqueue(OperationKind.EXTRACT, items, target)
+    }
+
+    /** Plik archiwum, w którym leży [uri]. */
+    fun archiveSource(uri: Uri): Uri? = repo.archives.sourceOf(uri)
+
+    private fun askPassword(uri: Uri, wrong: Boolean, retry: () -> Unit) {
+        val root = Uri.Builder().scheme(ArchiveRepository.SCHEME).authority(uri.authority).path("/").build()
+        _passwordRequest.value = ArchivePasswordRequest(root, repo.archives.archiveName(root).orEmpty(), wrong, retry)
+    }
+
+    fun submitArchivePassword(password: String) {
+        val request = _passwordRequest.value ?: return
+        _passwordRequest.value = null
+        repo.archives.setPassword(request.root, password.toCharArray())
+        request.retry()
+    }
+
+    fun dismissArchivePassword() {
+        val request = _passwordRequest.value ?: return
+        _passwordRequest.value = null
+        // Spis zaszyfrowanego 7z bez hasła jest pusty — nie zostajemy w nim.
+        if (ArchiveRepository.isArchive(active().currentDir) && active().currentDir?.authority == request.root.authority) goBack()
     }
 
     fun sortMode(tab: Tab, dir: Uri?): SortMode =
@@ -888,18 +1177,20 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         prefs.setSortMode(sortKey(tab, dir), mode.takeIf { it != default })
     }
 
-    fun addRecent(uri: Uri) {
-        prefs.addRecent(uri)
+    fun addRecent(item: FileItem) {
+        prefs.saveMeta(item)
+        prefs.addRecent(item.uri)
         loadSavedCollections()
     }
 
-    fun toggleFavorite(uri: Uri) {
-        prefs.toggleFavorite(uri)
+    fun toggleFavorite(item: FileItem) {
+        prefs.saveMeta(item)
+        prefs.toggleFavorite(item.uri)
         loadSavedCollections()
     }
 
     fun toggleFavorites(items: List<FileItem>) {
-        items.forEach { prefs.toggleFavorite(it.uri) }
+        items.forEach { prefs.saveMeta(it); prefs.toggleFavorite(it.uri) }
         loadSavedCollections()
     }
 
@@ -922,6 +1213,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "file" }
         val file = File(cache, "${item.uri.toString().hashCode()}_$safe")
         repo.openInput(item.uri).use { input -> file.outputStream().use { output -> input.copyTo(output) } }
+        getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
         FileProvider.getUriForFile(
             getApplication(),
             "${getApplication<Application>().packageName}.files",
@@ -978,6 +1270,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 temp.copyTo(file, overwrite = true)
                 temp.delete()
             }
+            getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
+        } else {
+            // Czas użycia, nie pobrania — limit wieku liczy się od ostatniego otwarcia.
+            file.setLastModified(System.currentTimeMillis())
         }
         return file
     }
@@ -1439,11 +1735,41 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _recentFiles.value = prefs.recents()
                 .filter(::isSavedUriSourceEnabled)
-                .mapNotNull { runCatching { repo.itemInfo(it) }.getOrNull() }
+                .mapNotNull { savedItem(it) }
             _favoriteFiles.value = prefs.favorites()
                 .map(Uri::parse)
                 .filter(::isSavedUriSourceEnabled)
-                .mapNotNull { runCatching { repo.itemInfo(it) }.getOrNull() }
+                .mapNotNull { savedItem(it) }
+            prefs.pruneMeta()
+            fillMissingMeta()
+        }
+    }
+
+    /** Wpisy z serwera albo z archiwum nie wymagają połączenia — mamy zapisane metadane. */
+    private fun needsNetwork(uri: Uri) = RemoteRepository.isRemoteScheme(uri.scheme) || ArchiveRepository.isArchive(uri)
+
+    private suspend fun savedItem(uri: Uri): FileItem? =
+        if (needsNetwork(uri)) prefs.meta(uri) ?: FileItem(uri, uri.lastPathSegment ?: uri.toString(), guessMime(uri.lastPathSegment.orEmpty()), 0, 0, false)
+        else runCatching { repo.itemInfo(uri) }.getOrNull()
+
+    private var metaMigrated = false
+
+    /**
+     * Wpisy zapisane przed zapamiętywaniem metadanych — raz, w tle, pytamy
+     * o nie serwer, żeby folder nie udawał pliku. Później już nigdy.
+     */
+    private fun fillMissingMeta() {
+        if (metaMigrated) return
+        metaMigrated = true
+        val missing = (prefs.recents() + prefs.favorites().map(Uri::parse)).distinct()
+            .filter { needsNetwork(it) && prefs.meta(it) == null && isSavedUriSourceEnabled(it) }
+        if (missing.isEmpty()) return
+        viewModelScope.launch {
+            var found = false
+            missing.forEach { uri ->
+                runCatching { repo.itemInfo(uri) }.getOrNull()?.let { prefs.saveMeta(it); found = true }
+            }
+            if (found) loadSavedCollections()
         }
     }
 

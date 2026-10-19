@@ -60,6 +60,29 @@ class StoragePrefs(context: Context) {
         }.apply()
     }
 
+    /**
+     * Nazwa, rozmiar i data elementu z Ostatnich/Ulubionych. Dzięki nim listy
+     * pokazują się od razu, bez łączenia z serwerem przy każdym starcie —
+     * a przy niedostępnym serwerze bez czekania na limit czasu.
+     */
+    fun saveMeta(item: FileItem) {
+        val value = listOf(item.name, item.size, item.lastModified, item.isDirectory, item.mimeType).joinToString("\t")
+        prefs.edit().putString("meta:${item.uri}", value).apply()
+    }
+
+    fun meta(uri: Uri): FileItem? {
+        val parts = prefs.getString("meta:$uri", null)?.split('\t') ?: return null
+        if (parts.size != 5) return null
+        return FileItem(uri, parts[0], parts[4], parts[1].toLongOrNull() ?: 0, parts[2].toLongOrNull() ?: 0, parts[3] == "true")
+    }
+
+    /** Metadane wpisów, których nie ma już ani w Ostatnich, ani w Ulubionych. */
+    fun pruneMeta() {
+        val keep = (recents().map(Uri::toString) + favorites()).toSet()
+        val stale = prefs.all.keys.filter { it.startsWith("meta:") && it.removePrefix("meta:") !in keep }
+        if (stale.isNotEmpty()) prefs.edit().apply { stale.forEach(::remove) }.apply()
+    }
+
     fun replaceUri(old: Uri, new: Uri) {
         val oldValue = old.toString()
         val newValue = new.toString()

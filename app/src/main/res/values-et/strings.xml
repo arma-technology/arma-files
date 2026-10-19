@@ -39,6 +39,22 @@
     <string name="apk_allow">Lubage ARMA Filesil rakendusi installida ja proovige uuesti.</string>
     <string name="apk_failed">Installerit ei õnnestunud käivitada.</string>
     <string name="apk_unsupported">See Androidi versioon ei luba rakendustest APK-faile installida.</string>
+    <string name="archive_browse">Sirvi sisu</string>
+    <string name="archive_extract_all">Paki kõik lahti</string>
+    <string name="archive_extract_other_pane">Paki lahti teise paani</string>
+    <string name="archive_format">Vorming</string>
+    <string name="archive_no_password">See vorming ei toeta parooli.</string>
+    <string name="archive_password">Parool</string>
+    <string name="archive_password_aes">AES-256 krüpteerimine</string>
+    <string name="archive_password_optional">Parool (valikuline)</string>
+    <string name="archive_password_title">Parooliga kaitstud arhiiv</string>
+    <string name="archive_password_wrong">Vale parool</string>
+    <string name="cache_clear">Tühjenda kohe</string>
+    <string name="cache_limit_age">Kustuta, kui pole kasutatud kauem kui</string>
+    <string name="cache_limit_size">Kõige rohkem</string>
+    <string name="cache_text">Serveritest ja arhiividest pärit failide koopiad ning vaatamiseks teisendatud DWG-joonised. Piirangu ületamisel kustutatakse esmalt kõige kauem kasutamata.</string>
+    <string name="cache_title">Vahemälu</string>
+    <string name="cache_used">Kasutusel: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Arhiivid</string>
     <string name="category_audio">Heli</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Juurdepääsu ei õnnestunud saada.</string>
     <string name="err_account_missing">Ühendust pole olemas või see on kustutatud.</string>
     <string name="err_apk_prepare">APK-faili ei õnnestunud ette valmistada.</string>
+    <string name="err_archive_format">Toetamata või vigane arhiiv.</string>
+    <string name="err_archive_gone">Arhiiv pole enam saadaval.</string>
+    <string name="err_archive_rar">Krüpteeritud RAR-arhiive ei toetata.</string>
+    <string name="err_archive_read_only">Arhiiv on kirjutuskaitstud. Muutmiseks pakkige failid lahti.</string>
     <string name="err_attach_failed">Allikat ei õnnestunud ühendada.</string>
     <string name="err_attach_in_settings">Ühendage see allikas seadetes.</string>
     <string name="err_cannot_read_folder">Kausta ei saa lugeda: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Sihtkausta ei õnnestunud luua.</string>
     <string name="err_zip_create">Arhiivi ei õnnestunud luua.</string>
     <string name="err_zip_unsafe">Arhiiv sisaldab ohtlikku teed.</string>
+    <string name="extract_cancel_confirm">Peata ja kustuta</string>
+    <string name="extract_cancel_continue">Jätka</string>
+    <string name="extract_cancel_text">Lahtipakkimine on peatatud. Seni lahti pakitud failid ja kaustad kustutatakse.</string>
+    <string name="extract_cancel_title">Kas peatada lahtipakkimine?</string>
     <string name="fab_new">Uus</string>
     <string name="fav_add">Lisa lemmikutesse</string>
     <string name="fav_remove">Eemalda lemmikutest</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopeerimine</string>
     <string name="history_delete">Kustutamine</string>
     <string name="history_empty">Siia ilmuvad lõpetatud toimingud. Kopeerimise, teisaldamise ja prügikasti saab siit tagasi võtta.</string>
+    <string name="history_extract">Lahtipakkimine</string>
     <string name="history_move">Teisaldamine</string>
     <string name="history_restore">Taastamine</string>
     <string name="history_title">Toimingute ajalugu</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Kinnitatud kaustad</string>
     <string name="home_this_computer">See arvuti</string>
     <string name="home_title">Minu arvuti</string>
+    <string name="identity_new">Uus sõrmejälg</string>
+    <string name="identity_old">Salvestatud sõrmejälg</string>
+    <string name="identity_reject">Ära ühenda</string>
+    <string name="identity_text">%1$s esitleb end teisiti kui esimesel ühendamisel. See juhtub pärast serveri uuesti paigaldamist või vahetamist, kuid võib tähendada ka, et keegi esineb serverina. Usalda ainult siis, kui tead põhjust.</string>
+    <string name="identity_title_ssh">Serveri võti on muutunud</string>
+    <string name="identity_title_tls">Serveri sertifikaat on muutunud</string>
+    <string name="identity_trust">Usalda uut</string>
     <string name="image_position">%1$d / %2$d · foto vahetamiseks libistage küljele</string>
     <string name="index_build">Loo</string>
     <string name="index_build_hint">Looge indeks, et otsida kogu mälust</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP-arhiiv on loodud</string>
     <string name="notif_channel">Failitoimingud</string>
     <string name="notif_channel_desc">Kopeerimise, teisaldamise ja kustutamise edenemine</string>
+    <string name="offline_added">Lisatud võrguta režiimi — allalaadimine taustal</string>
+    <string name="offline_banner">Server pole saadaval — kuvatakse võrguta koopiat ajast %1$s</string>
+    <string name="offline_busy">Eelmine sünkroonimine veel käib — proovi hiljem.</string>
+    <string name="offline_conflict_channel">Võrguta failide vastuolud</string>
+    <string name="offline_conflict_text">Fail muutus nii serveris kui ka telefonis. Millist versiooni säilitada?
+Server: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Versioonide vastuolu: %1$s</string>
+    <string name="offline_conflicts_title">Versioonide vastuolud</string>
+    <string name="offline_failed">Sünkroonimine ebaõnnestus: %1$s</string>
+    <string name="offline_folder_unavailable">Kausta ei saa kirjutada — vaja on „Juurdepääsu kõigile failidele”.</string>
+    <string name="offline_interval">Sünkrooni automaatselt</string>
+    <string name="offline_interval_manual">Käsitsi</string>
+    <string name="offline_keep_both">Mõlemad</string>
+    <string name="offline_keep_local">Telefonist</string>
+    <string name="offline_keep_remote">Serverist</string>
+    <string name="offline_location">Kus koopiaid hoida</string>
+    <string name="offline_location_app">Rakenduse mälu</string>
+    <string name="offline_location_app_hint">Teistele rakendustele nähtamatu; kaob ARMA Files desinstallimisel.</string>
+    <string name="offline_location_folder">Kaust „ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">Telefoni mälus, teistele rakendustele nähtav; jääb alles ka pärast desinstallimist.</string>
+    <string name="offline_make">Saadaval võrguta</string>
+    <string name="offline_missing">Seda üksust serveris enam pole.</string>
+    <string name="offline_never">Ootab sünkroonimist</string>
+    <string name="offline_only_remote">Võrguta saab hoida ainult serverite faile ja kaustu.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Eemalda võrguta režiimist</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Võrguta failid</string>
+    <string name="offline_sync">Sünkrooni</string>
+    <string name="offline_synced">Sünkrooniti %1$s · %2$s</string>
+    <string name="offline_syncing">Sünkroonimine… %1$s</string>
+    <string name="offline_title">Saadaval võrguta</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">kustutatud</string>
+    <string name="offline_wifi_only">Ainult Wi-Fi kaudu</string>
     <string name="op_copy">Kopeerimine</string>
     <string name="op_delete">Kustutamine</string>
+    <string name="op_extract">Lahtipakkimine</string>
     <string name="op_move">Teisaldamine</string>
     <string name="op_restore">Taastamine</string>
     <string name="op_trash">Prügikasti teisaldamine</string>
@@ -336,6 +406,7 @@ valides ülal ribal vahelehe.</string>
     <string name="trash_with_count">Prügikast (%1$d)</string>
     <string name="undo_copied">Kopeeritud: %1$d</string>
     <string name="undo_done">Valmis: %1$d</string>
+    <string name="undo_extracted">Lahti pakitud: %1$d</string>
     <string name="undo_moved">Teisaldatud: %1$d</string>
     <string name="undo_skipped_suffix">, vahele jäetud %1$d</string>
     <string name="undo_trashed">Prügikasti: %1$d</string>
@@ -344,14 +415,18 @@ valides ülal ribal vahelehe.</string>
     <string name="welcome_pick">Vali kaust</string>
     <string name="welcome_text">Valige algkaust. Android jätab juurdepääsu meelde, nii et rakendus saab selle juurde ka pärast taaskäivitamist naasta.</string>
     <string name="welcome_title">Tere tulemast kasutama ARMA Filesi</string>
-    <string name="zip_create_title">Loo ZIP-arhiiv</string>
+    <string name="zip_create_title">Loo arhiiv</string>
     <string name="zip_default_name">arhiiv.zip</string>
     <string name="zip_extract_here">Paki siia lahti</string>
     <string name="zip_name">Arhiivi nimi</string>
-    <string name="zip_pack">Paki ZIP-i</string>
+    <string name="zip_pack">Paki</string>
     <string name="zoom_fit">Sobita</string>
     <string name="zoom_in">Suurenda</string>
     <string name="zoom_out">Vähenda</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d päev</item>
+        <item quantity="other">%1$d päeva</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Kas kustutada %1$d üksus?</item>
         <item quantity="other">Kas kustutada %1$d üksust?</item>
@@ -375,5 +450,9 @@ valides ülal ribal vahelehe.</string>
     <plurals name="n_lines">
         <item quantity="one">%1$d rida</item>
         <item quantity="other">%1$d rida</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d vastuolu — vali versioon</item>
+        <item quantity="other">%1$d vastuolu — vali versioonid</item>
     </plurals>
 </resources>

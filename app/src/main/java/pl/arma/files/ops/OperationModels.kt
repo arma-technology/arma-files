@@ -5,7 +5,8 @@ import pl.arma.files.text
 import android.net.Uri
 import pl.arma.files.FileItem
 
-enum class OperationKind { COPY, MOVE, TRASH, DELETE, RESTORE }
+/** [EXTRACT] kopiuje z archiwum; przerwane sprząta to, co zdążyło powstać. */
+enum class OperationKind { COPY, MOVE, TRASH, DELETE, RESTORE, EXTRACT }
 
 enum class OperationStatus { QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELLED }
 
@@ -73,6 +74,7 @@ data class Operation(
             OperationKind.TRASH -> text(R.string.op_trash)
             OperationKind.DELETE -> text(R.string.op_delete)
             OperationKind.RESTORE -> text(R.string.op_restore)
+            OperationKind.EXTRACT -> text(R.string.op_extract)
         }
 
     val isFinished: Boolean
@@ -102,5 +104,5 @@ data class OperationRecord(
      */
     val undoable: Boolean
         get() = status == OperationStatus.COMPLETED && pairs.isNotEmpty() &&
-            (kind == OperationKind.COPY || kind == OperationKind.MOVE || kind == OperationKind.TRASH)
+            (kind == OperationKind.COPY || kind == OperationKind.EXTRACT || kind == OperationKind.MOVE || kind == OperationKind.TRASH)
 }

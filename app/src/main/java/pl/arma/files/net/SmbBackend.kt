@@ -55,6 +55,23 @@ class SmbBackend : RemoteBackend {
         return current
     }
 
+    /** SMB2 CHANGE_NOTIFY: serwer sam odpowiada, gdy w folderze coś się zmieni. */
+    override fun watch(account: RemoteAccount, path: String): RemoteWatch {
+        val filter = jcifs.FileNotifyInformation.FILE_NOTIFY_CHANGE_NAME or
+            jcifs.FileNotifyInformation.FILE_NOTIFY_CHANGE_SIZE or
+            jcifs.FileNotifyInformation.FILE_NOTIFY_CHANGE_LAST_WRITE
+        val handle = file(account, path, directory = true).watch(filter, false)
+        return object : RemoteWatch {
+            override fun await() {
+                handle.watch()
+            }
+
+            override fun close() {
+                runCatching { handle.close() }
+            }
+        }
+    }
+
     override fun list(account: RemoteAccount, path: String): List<RemoteEntry> =
         file(account, path, directory = true).use { dir ->
             if (!dir.exists()) throw IOException(text(R.string.smb_missing))

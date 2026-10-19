@@ -84,6 +84,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -104,6 +105,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import pl.arma.files.archive.ArchiveFormat
+import pl.arma.files.archive.ArchiveFormats
+import pl.arma.files.archive.ArchiveRepository
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
 import pl.arma.files.ui.theme.ArmaFilesTheme
@@ -118,6 +122,8 @@ import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 
 class MainActivity : ComponentActivity() {
     private val vm: FileManagerViewModel by viewModels()
@@ -149,6 +155,16 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         vm.refreshDeviceLocations()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        vm.setForeground(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        vm.setForeground(false)
     }
 }
 
@@ -185,6 +201,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val analyzing by vm.analyzing.collectAsStateWithLifecycle()
     val tabs by vm.tabs.collectAsStateWithLifecycle()
     val dualPane by vm.dualPane.collectAsStateWithLifecycle()
+    val inArchive = ArchiveRepository.isArchive(currentDir)
+    val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
+    val offlineProgress by vm.offlineProgress.collectAsStateWithLifecycle()
+    val offlineSince by vm.offlineSince.collectAsStateWithLifecycle()
+    var conflictsOf by remember { mutableStateOf<String?>(null) }
     val secondaryFiles by vm.secondaryFiles.collectAsStateWithLifecycle()
     val secondaryDir by vm.secondaryDir.collectAsStateWithLifecycle()
     val accountTestResult by vm.accountTestResult.collectAsStateWithLifecycle()
@@ -221,6 +242,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var pendingCloudSource by remember { mutableStateOf<SourceType?>(null) }
     var pendingLocalUri by remember { mutableStateOf<Uri?>(null) }
 
+    // Powiadomienia (postęp kopiowania, rozbieżności offline) na Androidzie 13+
+    // wymagają zgody; pytamy przy pierwszym oznaczeniu czegoś jako offline.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    fun askForNotifications() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let(vm::setTree)
     }
@@ -277,7 +307,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         if (initialUri != null) {
             vm.itemFromUri(initialUri)?.let {
                 preview = it
-                vm.addRecent(initialUri)
+                vm.addRecent(it)
             }
         }
     }
@@ -305,6 +335,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         if (!record.undoable) return@LaunchedEffect
         val what = when (record.kind) {
             pl.arma.files.ops.OperationKind.COPY -> R.string.undo_copied
+            pl.arma.files.ops.OperationKind.EXTRACT -> R.string.undo_extracted
             pl.arma.files.ops.OperationKind.MOVE -> R.string.undo_moved
             pl.arma.files.ops.OperationKind.TRASH -> R.string.undo_trashed
             else -> R.string.undo_done
@@ -371,7 +402,27 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 MultiSelectionTopBar(
                     count = selectedItems.size,
                     canRename = selectedItems.size == 1,
-                    canExtract = selectedItems.size == 1 && isZip(selectedItems.first()),
+                    canExtract = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name) || inArchive,
+                    canBrowse = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name),
+                    canExtractToOther = dualPane,
+                    readOnly = inArchive,
+                    canOffline = selectedItems.isNotEmpty() && selectedItems.all { vm.isRemote(it.uri) },
+                    allOffline = selectedItems.isNotEmpty() && selectedItems.all { item -> offlineEntries.any { it.source == item.uri.toString() } },
+                    onOffline = { remove ->
+                        if (remove) vm.removeOffline(selectedItems) else {
+                            askForNotifications()
+                            vm.makeOffline(selectedItems)
+                        }
+                        selectedUris = emptySet()
+                    },
+                    onBrowse = { selectedItems.firstOrNull()?.let(vm::openArchive); selectedUris = emptySet() },
+                    onExtractToOther = {
+                        if (inArchive) vm.extractItems(selectedItems, toOtherPane = true)
+                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it, toOtherPane = true) }
+                        selectedUris = emptySet()
+                    },
                     onClose = { selectedUris = emptySet() },
                     onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
                     onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
@@ -384,7 +435,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         selectedUris = emptySet(); tab = Tab.FILES
                     },
                     onArchive = { archiveItems = selectedItems },
-                    onExtract = { selectedItems.firstOrNull()?.let(vm::extractArchive); selectedUris = emptySet() },
+                    onExtract = {
+                        if (inArchive) vm.extractItems(selectedItems)
+                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it) }
+                        selectedUris = emptySet()
+                    },
                     onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
                     onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
                     onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
@@ -427,7 +482,19 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             }
         },
         floatingActionButton = {
-            if (tab == Tab.FILES && currentDir != null && !selectionMode) {
+            if (tab == Tab.FILES && inArchive && !selectionMode) {
+                // Wnętrze archiwum jest tylko do odczytu — zamiast „Nowy”
+                // rozpakowanie całości obok archiwum.
+                FloatingActionButton(
+                    onClick = {
+                        val dir = currentDir ?: return@FloatingActionButton
+                        val root = dir.buildUpon().path("/").build()
+                        vm.extractArchive(FileItem(root, vm.rootLabel(root).orEmpty(), DIRECTORY_MIME, 0, 0, true))
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) { Icon(Icons.Default.Unarchive, stringResource(R.string.archive_extract_all)) }
+            } else if (tab == Tab.FILES && currentDir != null && !selectionMode) {
                 // Sama ikona — rozszerzony przycisk z napisem zasłaniał
                 // menu ostatniego widocznego wiersza.
                 FloatingActionButton(
@@ -494,6 +561,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenPinned = { openLocal(it.rootUri) },
                         onOpenStorage = { openLocal(it.rootUri) },
                         onOpenSource = { vm.openSource(it) },
+                        offlineEntries = offlineEntries,
+                        offlineProgress = offlineProgress,
+                        onOpenOffline = { entry ->
+                            if (entry.isDirectory) vm.openOfflineFolder(entry)
+                            else appScope.launch { vm.offlineItem(entry)?.let { preview = it; vm.addRecent(it) } }
+                        },
+                        onRemoveOffline = vm::removeOfflineEntry,
+                        onConflicts = { conflictsOf = it.id },
+                        onSyncOffline = vm::syncOffline,
                         onGrantAccess = ::requestBroadStorageAccess,
                         onAddFolder = { folderPicker.launch(null) },
                         trashCount = trashEntries.size,
@@ -522,7 +598,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         },
                         searchResults = if (globalSearch && query.isNotBlank()) searchResults else emptyList(),
                         onOpenResult = { item ->
-                            if (item.isDirectory) vm.openDirectory(item) else preview = item
+                            when {
+                                item.isDirectory -> vm.openDirectory(item)
+                                ArchiveFormats.canBrowse(item.name) -> vm.openArchive(item)
+                                else -> preview = item
+                            }
                         },
                         onRevealResult = vm::revealParent,
                         storageUsage = analysis.usageByCategory
@@ -539,7 +619,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     Column(Modifier.fillMaxSize()) {
                         FolderHeader(
                             tab = tab,
-                            crumbs = breadcrumbs(root, currentDir, vm::rootLabel),
+                            crumbs = breadcrumbs(root, currentDir, vm::rootLabel, vm::archiveSource),
                             onCrumb = vm::openPath,
                             searchOpen = searchOpen || query.isNotBlank(),
                             onSearchOpen = { open ->
@@ -567,6 +647,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
                         AnimatedVisibility(clipboard != null && tab == Tab.FILES) {
                             ClipboardCard(payload = clipboard, onPaste = vm::paste, onCancel = vm::clearClipboard)
+                        }
+
+                        AnimatedVisibility(offlineSince != null && tab == Tab.FILES) {
+                            OfflineBanner(since = offlineSince ?: 0L)
                         }
 
                         val fileAreaModifier = Modifier
@@ -612,7 +696,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                     onOpenFile = { preview = it },
                                     onInstallApk = { apkToInstall = it }
                                 )
-                                if (item.isDirectory) {
+                                if (item.isDirectory || ArchiveFormats.canBrowse(item.name)) {
                                     tab = Tab.FILES; query = ""; category = FileCategory.ALL
                                 }
                             }
@@ -687,7 +771,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 files = secondaryFiles,
                 selectionCount = selectedItems.size,
                 onOpen = { item ->
-                    if (item.isDirectory) vm.openDirectoryInSecondary(item) else preview = item
+                    when {
+                        item.isDirectory -> vm.openDirectoryInSecondary(item)
+                        ArchiveFormats.canBrowse(item.name) -> vm.openArchive(item, inSecondary = true)
+                        else -> preview = item
+                    }
                 },
                 onBack = vm::secondaryGoBack,
                 onCopyHere = { vm.sendToOtherPane(selectedItems, move = false); selectedUris = emptySet() },
@@ -721,7 +809,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     ViewerAction(
                         if (favorite) stringResource(R.string.fav_remove) else stringResource(R.string.fav_add),
                         if (favorite) Icons.Default.Star else Icons.Default.StarBorder
-                    ) { vm.toggleFavorite(item.uri) },
+                    ) { vm.toggleFavorite(item) },
                     ViewerAction(stringResource(R.string.common_share), Icons.Default.Share) {
                         appScope.launch { shareItems(context, listOf(item), vm) }
                     },
@@ -730,6 +818,18 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     },
                     ViewerAction(stringResource(R.string.common_properties), Icons.Default.Info) { preview = null; details = item }
                 )
+            )
+            return@let
+        }
+        // Obraz w poziomie też od razu na całym ekranie, narzędzia na nim.
+        if (landscape && item.mimeType.startsWith("image/")) {
+            val images = visibleFiles.filter { it.mimeType.startsWith("image/") }
+            LandscapeImageViewer(
+                item = item,
+                vm = vm,
+                siblings = images,
+                onNavigate = { preview = it; vm.addRecent(it) },
+                onDismiss = { preview = null }
             )
             return@let
         }
@@ -742,9 +842,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             // Rodzeństwo bierzemy z aktualnie widocznej listy, więc przewijanie
             // respektuje wybrane sortowanie, filtr i wyniki wyszukiwania.
             siblings = visibleFiles.filter { it.mimeType.startsWith("image/") },
-            onNavigate = { preview = it; vm.addRecent(it.uri) },
+            onNavigate = { preview = it; vm.addRecent(it) },
             onDismiss = { preview = null },
-            onFavorite = { vm.toggleFavorite(item.uri) },
+            onFavorite = { vm.toggleFavorite(item) },
             onDetails = { preview = null; details = item },
             onShare = { appScope.launch { shareItems(context, listOf(item), vm) } },
             onOpenExternal = { appScope.launch { openExternal(context, item, vm) } }
@@ -808,16 +908,47 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
     if (archiveItems.isNotEmpty()) {
         val itemsToArchive = archiveItems
-        NameDialog(
-            title = stringResource(R.string.zip_create_title),
-            hint = stringResource(R.string.zip_name),
-            initial = if (itemsToArchive.size == 1) itemsToArchive.first().name.substringBeforeLast('.', itemsToArchive.first().name) + ".zip" else stringResource(R.string.zip_default_name),
+        CreateArchiveDialog(
+            initial = if (itemsToArchive.size == 1) {
+                itemsToArchive.first().let { if (it.isDirectory) it.name else it.name.substringBeforeLast('.', it.name) }
+            } else stringResource(R.string.zip_default_name),
             onDismiss = { archiveItems = emptyList() }
-        ) { name ->
-            vm.createArchive(itemsToArchive, name)
+        ) { name, format, password ->
+            vm.createArchive(itemsToArchive, name, format, password)
             archiveItems = emptyList()
             selectedUris = emptySet()
         }
+    }
+
+    val passwordRequest by vm.passwordRequest.collectAsStateWithLifecycle()
+    passwordRequest?.let { request ->
+        ArchivePasswordDialog(
+            name = request.name,
+            wrong = request.wrong,
+            onDismiss = vm::dismissArchivePassword,
+            onConfirm = vm::submitArchivePassword
+        )
+    }
+
+    val identityChange by vm.identityChange.collectAsStateWithLifecycle()
+    identityChange?.let { change -> IdentityChangeDialog(change, onTrust = vm::trustIdentity, onReject = vm::rejectIdentity) }
+
+    conflictsOf?.let { id ->
+        val entry = offlineEntries.firstOrNull { it.id == id }
+        if (entry == null || entry.conflicts.isEmpty()) conflictsOf = null
+        else ConflictsDialog(entry, onChoice = { conflict, choice -> vm.resolveOfflineConflict(entry, conflict, choice) }, onDismiss = { conflictsOf = null })
+    }
+
+    val cancelRequest by vm.cancelRequest.collectAsStateWithLifecycle()
+    if (cancelRequest != null) {
+        AlertDialog(
+            onDismissRequest = vm::dismissCancel,
+            icon = { Icon(Icons.Default.Unarchive, null) },
+            title = { Text(stringResource(R.string.extract_cancel_title)) },
+            text = { Text(stringResource(R.string.extract_cancel_text)) },
+            confirmButton = { TextButton(onClick = vm::confirmCancel) { Text(stringResource(R.string.extract_cancel_confirm)) } },
+            dismissButton = { TextButton(onClick = vm::dismissCancel) { Text(stringResource(R.string.extract_cancel_continue)) } }
+        )
     }
 
     // Instalator jest osobnym procesem, wiec plik musi najpierw trafic do
@@ -914,6 +1045,12 @@ private fun ComputerHome(
     onOpenPinned: (PinnedFolder) -> Unit,
     onOpenStorage: (DeviceStorage) -> Unit,
     onOpenSource: (StorageSource) -> Unit,
+    offlineEntries: List<OfflineStore.Entry>,
+    offlineProgress: Map<String, OfflineStore.Progress>,
+    onOpenOffline: (OfflineStore.Entry) -> Unit,
+    onRemoveOffline: (OfflineStore.Entry) -> Unit,
+    onConflicts: (OfflineStore.Entry) -> Unit,
+    onSyncOffline: () -> Unit,
     onGrantAccess: () -> Unit,
     onAddFolder: () -> Unit,
     trashCount: Int,
@@ -1044,6 +1181,178 @@ private fun ComputerHome(
             items(connectedSources, key = { "source_${it.type.name}" }) { source ->
                 ConnectedSourceCard(source = source, onClick = { onOpenSource(source) })
             }
+        }
+
+        if (offlineEntries.isNotEmpty()) {
+            item {
+                Row(
+                    Modifier.padding(start = 16.dp, end = 8.dp).padding(top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SectionTitle(stringResource(R.string.offline_title), Modifier.weight(1f))
+                    TextButton(onClick = onSyncOffline, enabled = offlineProgress.isEmpty()) {
+                        Icon(Icons.Default.Sync, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.offline_sync))
+                    }
+                }
+            }
+            items(offlineEntries, key = { "offline_${it.id}" }) { entry ->
+                OfflineEntryRow(
+                    entry, offlineProgress[entry.id],
+                    onOpen = { onOpenOffline(entry) },
+                    onRemove = { onRemoveOffline(entry) },
+                    onConflicts = { onConflicts(entry) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfflineEntryRow(
+    entry: OfflineStore.Entry,
+    progress: OfflineStore.Progress?,
+    onOpen: () -> Unit,
+    onRemove: () -> Unit,
+    onConflicts: () -> Unit
+) {
+    var menu by remember { mutableStateOf(false) }
+    Surface(
+        onClick = onOpen,
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Row(Modifier.padding(start = 14.dp, top = 10.dp, bottom = 10.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (entry.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
+                null,
+                tint = if (entry.isDirectory) LocalFileTypeColors.current.folder else MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(entry.name, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                val status = when {
+                    progress != null -> stringResource(R.string.offline_syncing, formatSize(progress.bytes))
+                    entry.error != null -> stringResource(R.string.offline_failed, entry.error)
+                    entry.lastSync > 0 -> stringResource(R.string.offline_synced, formatDate(entry.lastSync), formatSize(entry.bytes))
+                    else -> stringResource(R.string.offline_never)
+                }
+                Text(
+                    status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (entry.error != null && progress == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (progress != null) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 4.dp))
+                if (entry.conflicts.isNotEmpty()) {
+                    TextButton(onClick = onConflicts, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                        Icon(Icons.Default.Warning, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            pluralStringResource(R.plurals.offline_conflicts, entry.conflicts.size, entry.conflicts.size),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+            Box {
+                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_options)) }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.offline_remove)) },
+                        leadingIcon = { Icon(Icons.Default.CloudOff, null) },
+                        onClick = { menu = false; onRemove() }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Rozbieżne wersje plików offline: obie wersje i wybór, którą zachować. */
+@Composable
+private fun ConflictsDialog(
+    entry: OfflineStore.Entry,
+    onChoice: (OfflineStore.Conflict, OfflineStore.Choice) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.Warning, null) },
+        title = { Text(stringResource(R.string.offline_conflicts_title)) },
+        text = {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                items(entry.conflicts, key = { it.path }) { conflict ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(conflict.path, fontWeight = FontWeight.SemiBold)
+                        val server = if (conflict.remoteDeleted) stringResource(R.string.offline_version_deleted)
+                        else OfflineNotifier.describe(context, conflict.remoteSize, conflict.remoteModified)
+                        Text(stringResource(R.string.offline_server_version, server), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            stringResource(R.string.offline_phone_version, OfflineNotifier.describe(context, conflict.localSize, conflict.localModified)),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedButton(onClick = { onChoice(conflict, OfflineStore.Choice.REMOTE) }, contentPadding = PaddingValues(horizontal = 10.dp)) {
+                                Text(stringResource(R.string.offline_keep_remote))
+                            }
+                            OutlinedButton(onClick = { onChoice(conflict, OfflineStore.Choice.LOCAL) }, contentPadding = PaddingValues(horizontal = 10.dp)) {
+                                Text(stringResource(R.string.offline_keep_local))
+                            }
+                            OutlinedButton(onClick = { onChoice(conflict, OfflineStore.Choice.BOTH) }, contentPadding = PaddingValues(horizontal = 10.dp)) {
+                                Text(stringResource(R.string.offline_keep_both))
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
+    )
+}
+
+/** Serwer przedstawił się innym kluczem albo certyfikatem — decyzja użytkownika. */
+@Composable
+private fun IdentityChangeDialog(change: pl.arma.files.net.ServerIdentityChange, onTrust: () -> Unit, onReject: () -> Unit) {
+    val ssh = change.kind == pl.arma.files.net.ServerIdentityChange.Kind.SSH_KEY
+    AlertDialog(
+        onDismissRequest = onReject,
+        icon = { Icon(Icons.Default.GppMaybe, null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text(stringResource(if (ssh) R.string.identity_title_ssh else R.string.identity_title_tls)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.identity_text, change.server))
+                Text(stringResource(R.string.identity_old), style = MaterialTheme.typography.labelLarge)
+                Text(change.oldFingerprint ?: "—", fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.identity_new), style = MaterialTheme.typography.labelLarge)
+                Text(change.newFingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+            }
+        },
+        confirmButton = { TextButton(onClick = onTrust) { Text(stringResource(R.string.identity_trust)) } },
+        dismissButton = { TextButton(onClick = onReject) { Text(stringResource(R.string.identity_reject)) } }
+    )
+}
+
+/** Lista z kopii offline, bo serwer nie odpowiada. */
+@Composable
+private fun OfflineBanner(since: Long) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp).fillMaxWidth()
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CloudOff, null, Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(
+                stringResource(R.string.offline_banner, if (since > 0) formatDate(since) else "—"),
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -1207,8 +1516,31 @@ private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
  * Rozbija bieżącą ścieżkę na klikalne człony, licząc od korzenia źródła.
  * Poza korzeniem nie schodzimy — użytkownik nie ma tam dostępu.
  */
-private fun breadcrumbs(root: Uri?, current: Uri?, rootLabel: (Uri) -> String?): List<Pair<String, Uri>> {
+private fun breadcrumbs(
+    root: Uri?,
+    current: Uri?,
+    rootLabel: (Uri) -> String?,
+    archiveSource: (Uri) -> Uri? = { null }
+): List<Pair<String, Uri>> {
     if (current == null) return emptyList()
+    // W archiwum: ścieżka do pliku archiwum, potem jego wnętrze. Człon
+    // z nazwą archiwum prowadzi do jego korzenia, a nie do pliku.
+    if (ArchiveRepository.isArchive(current)) {
+        val archiveRoot = current.buildUpon().path("/").build()
+        val source = archiveSource(current)
+        val outer = source?.let { breadcrumbs(root, it, rootLabel, archiveSource) }
+            ?.dropLast(1)
+            ?.takeIf { source.scheme == "file" || ArchiveRepository.isArchive(source) || RemoteRepository.isRemoteScheme(source.scheme) }
+            .orEmpty()
+        val crumbs = outer.toMutableList()
+        crumbs += (rootLabel(archiveRoot) ?: folderLabel(archiveRoot)) to archiveRoot
+        var path = ""
+        ArchiveRepository.innerPath(current).split('/').filter { it.isNotBlank() }.forEach { segment ->
+            path = "$path/$segment"
+            crumbs += segment to current.buildUpon().path(path).build()
+        }
+        return crumbs
+    }
     val rootPath = root?.path.orEmpty().trimEnd('/')
     val currentPath = current.path.orEmpty().trimEnd('/')
     val rootName = root?.let(rootLabel) ?: folderLabel(root)
@@ -1524,6 +1856,11 @@ private fun FileRow(
                 maxLines = 1
             )
         }
+        val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
+        if (offlineEntries.any { it.source == item.uri.toString() }) {
+            Spacer(Modifier.width(6.dp))
+            Icon(Icons.Default.OfflinePin, stringResource(R.string.offline_make), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+        }
         if (favorite) {
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Default.Star, null, Modifier.size(16.dp), tint = LocalFileTypeColors.current.folder)
@@ -1619,7 +1956,7 @@ private fun FileVisual(
             }
             // Pobranie kilkudziesięciu megabajtów z serwera po to, by pokazać
             // kafelek wielkości paznokcia, kosztuje więcej, niż daje.
-            if (vm.isRemote(item.uri) && item.size > REMOTE_THUMBNAIL_LIMIT) {
+            if ((vm.isRemote(item.uri) || vm.isArchive(item.uri)) && item.size > REMOTE_THUMBNAIL_LIMIT) {
                 failed = true
                 return@LaunchedEffect
             }
@@ -1721,7 +2058,7 @@ private val CODE_EXTENSIONS = setOf(
 )
 
 private fun isArchive(item: FileItem): Boolean =
-    isZip(item) || item.name.substringAfterLast('.', "").lowercase(Locale.ROOT) in setOf("rar", "7z", "tar", "gz", "tgz", "xz", "bz2")
+    isZip(item) || ArchiveFormats.canBrowse(item.name)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1729,6 +2066,14 @@ private fun MultiSelectionTopBar(
     count: Int,
     canRename: Boolean,
     canExtract: Boolean,
+    canBrowse: Boolean,
+    canExtractToOther: Boolean,
+    readOnly: Boolean,
+    canOffline: Boolean,
+    allOffline: Boolean,
+    onOffline: (remove: Boolean) -> Unit,
+    onBrowse: () -> Unit,
+    onExtractToOther: () -> Unit,
     onClose: () -> Unit,
     onSelectAll: () -> Unit,
     onFavorite: () -> Unit,
@@ -1751,20 +2096,29 @@ private fun MultiSelectionTopBar(
         actions = {
             IconButton(onClick = onFavorite) { Icon(Icons.Default.StarBorder, stringResource(R.string.nav_favorites)) }
             IconButton(onClick = onCopy) { Icon(Icons.Default.ContentCopy, stringResource(R.string.common_copy)) }
-            IconButton(onClick = onCut) { Icon(Icons.Default.ContentCut, stringResource(R.string.common_cut)) }
+            if (!readOnly) IconButton(onClick = onCut) { Icon(Icons.Default.ContentCut, stringResource(R.string.common_cut)) }
             Box {
                 IconButton(onClick = { more = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_more)) }
                 DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.select_all)) }, leadingIcon = { Icon(Icons.Default.SelectAll, null) }, onClick = { more = false; onSelectAll() })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.zip_pack)) }, leadingIcon = { Icon(Icons.Default.FolderZip, null) }, onClick = { more = false; onArchive() })
+                    if (!readOnly) DropdownMenuItem(text = { Text(stringResource(R.string.zip_pack)) }, leadingIcon = { Icon(Icons.Default.FolderZip, null) }, onClick = { more = false; onArchive() })
+                    if (canOffline) DropdownMenuItem(
+                        text = { Text(stringResource(if (allOffline) R.string.offline_remove else R.string.offline_make)) },
+                        leadingIcon = { Icon(if (allOffline) Icons.Default.CloudOff else Icons.Default.OfflinePin, null) },
+                        onClick = { more = false; onOffline(allOffline) }
+                    )
+                    if (canBrowse) DropdownMenuItem(text = { Text(stringResource(R.string.archive_browse)) }, leadingIcon = { Icon(Icons.Default.FolderOpen, null) }, onClick = { more = false; onBrowse() })
                     if (canExtract) DropdownMenuItem(text = { Text(stringResource(R.string.zip_extract_here)) }, leadingIcon = { Icon(Icons.Default.Unarchive, null) }, onClick = { more = false; onExtract() })
-                    if (canRename) DropdownMenuItem(text = { Text(stringResource(R.string.common_rename)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { more = false; onRename() })
+                    if (canExtract && canExtractToOther) DropdownMenuItem(text = { Text(stringResource(R.string.archive_extract_other_pane)) }, leadingIcon = { Icon(Icons.Default.Unarchive, null) }, onClick = { more = false; onExtractToOther() })
+                    if (canRename && !readOnly) DropdownMenuItem(text = { Text(stringResource(R.string.common_rename)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { more = false; onRename() })
                     if (canRename) DropdownMenuItem(text = { Text(stringResource(R.string.common_properties)) }, leadingIcon = { Icon(Icons.Default.Info, null) }, onClick = { more = false; onDetails() })
                     if (canPin) DropdownMenuItem(text = { Text(stringResource(R.string.pin_to_home)) }, leadingIcon = { Icon(Icons.Default.PushPin, null) }, onClick = { more = false; onPin() })
                     if (canPin) DropdownMenuItem(text = { Text(stringResource(R.string.pinned_open_new_tab)) }, leadingIcon = { Icon(Icons.Default.Tab, null) }, onClick = { more = false; onOpenInNewTab() })
                     DropdownMenuItem(text = { Text(stringResource(R.string.common_share)) }, leadingIcon = { Icon(Icons.Default.Share, null) }, onClick = { more = false; onShare() })
-                    HorizontalDivider()
-                    DropdownMenuItem(text = { Text(stringResource(R.string.common_delete)) }, leadingIcon = { Icon(Icons.Default.DeleteOutline, null) }, onClick = { more = false; onDelete() })
+                    if (!readOnly) {
+                        HorizontalDivider()
+                        DropdownMenuItem(text = { Text(stringResource(R.string.common_delete)) }, leadingIcon = { Icon(Icons.Default.DeleteOutline, null) }, onClick = { more = false; onDelete() })
+                    }
                 }
             }
         }
@@ -1887,7 +2241,8 @@ private fun PreviewSheet(
                             vm = vm,
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         )
-                        FilledTonalButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
+                        // Plik w archiwum można tylko czytać.
+                        if (!vm.isArchive(item.uri)) FilledTonalButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Default.Edit, null)
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.accounts_edit))
@@ -1960,8 +2315,11 @@ private fun NativeImagePreview(
                                 translationX = offsetX
                                 translationY = offsetY
                             }
-                            .pointerInput(item.uri) {
-                                detectTransformGestures { _, pan, zoom, _ ->
+                            .imageGestures(
+                                key = item.uri,
+                                canNavigate = canNavigate,
+                                scale = { scale },
+                                onTransform = { pan, zoom ->
                                     val next = (scale * zoom).coerceIn(1f, 8f)
                                     scale = next
                                     if (next > 1.01f) {
@@ -1972,28 +2330,9 @@ private fun NativeImagePreview(
                                         offsetX = 0f
                                         offsetY = 0f
                                     }
-                                }
-                            }
-                            .pointerInput(item.uri, canNavigate) {
-                                if (!canNavigate) return@pointerInput
-                                var dragged = 0f
-                                detectHorizontalDragGestures(
-                                    onDragStart = { dragged = 0f },
-                                    onDragEnd = {
-                                        // Przewijamy tylko przy nieprzybliżonym
-                                        // obrazie — inaczej gest kolidowałby z
-                                        // przesuwaniem powiększonego kadru.
-                                        if (scale <= 1.01f && kotlin.math.abs(dragged) > 120f) {
-                                            onNavigate(if (dragged < 0) 1 else -1)
-                                        }
-                                    }
-                                ) { change, amount ->
-                                    if (scale <= 1.01f) {
-                                        dragged += amount
-                                        change.consume()
-                                    }
-                                }
-                            }
+                                },
+                                onNavigate = onNavigate
+                            )
                     )
                 }
                 if (bitmap == null && error == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -2085,6 +2424,72 @@ private fun SvgImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: 
     }
 }
 
+/**
+ * Powiększanie, przesuwanie i przewijanie zdjęć w jednym geście. Dwa osobne
+ * detektory się wykluczały: szczypanie zjadało ruch palca, zanim przewijanie
+ * go zobaczyło, i zdjęcia nie dało się zmienić.
+ */
+private fun Modifier.imageGestures(
+    key: Any,
+    canNavigate: Boolean,
+    scale: () -> Float,
+    onTransform: (pan: Offset, zoom: Float) -> Unit,
+    onNavigate: (Int) -> Unit
+): Modifier = pointerInput(key, canNavigate) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        var dragged = 0f
+        var pinched = false
+        do {
+            val event = awaitPointerEvent()
+            if (event.changes.count { it.pressed } >= 2) pinched = true
+            val zoom = event.calculateZoom()
+            val pan = event.calculatePan()
+            if (pinched || scale() > 1.01f) onTransform(pan, zoom) else dragged += pan.x
+            event.changes.forEach { if (it.positionChanged()) it.consume() }
+        } while (event.changes.any { it.pressed })
+        if (canNavigate && !pinched && scale() <= 1.01f && kotlin.math.abs(dragged) > 120f) {
+            onNavigate(if (dragged < 0) 1 else -1)
+        }
+    }
+}
+
+@Composable
+private fun LandscapeImageViewer(
+    item: FileItem,
+    vm: FileManagerViewModel,
+    siblings: List<FileItem>,
+    onNavigate: (FileItem) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val position = siblings.indexOfFirst { it.uri == item.uri }
+    val step: (Int) -> Unit = { delta -> siblings.getOrNull(position + delta)?.let(onNavigate) }
+    val label = if (siblings.size > 1 && position >= 0) "${item.name} · ${position + 1} / ${siblings.size}" else item.name
+    if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
+        var uri by remember(item.uri) { mutableStateOf<Uri?>(null) }
+        LaunchedEffect(item.uri) { uri = runCatching { vm.prepareImageUri(item) }.getOrNull() }
+        uri?.let { FullscreenSvgViewer(uri = it, name = item.name, onDismiss = onDismiss) }
+        return
+    }
+    var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
+    var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
+    LaunchedEffect(item.uri, item.lastModified) {
+        error = null
+        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096) }
+            .onFailure { error = it.message ?: text(R.string.err_image_open) }
+            .getOrNull()
+    }
+    FullscreenBitmapViewer(
+        image = bitmap,
+        error = error,
+        name = item.name,
+        onDismiss = onDismiss,
+        onNavigate = step,
+        canNavigate = siblings.size > 1 && position >= 0,
+        position = label
+    )
+}
+
 @Composable
 private fun ImmersiveDialogSystemBars() {
     val view = LocalView.current
@@ -2099,12 +2504,13 @@ private fun ImmersiveDialogSystemBars() {
 
 @Composable
 private fun FullscreenBitmapViewer(
-    image: Bitmap,
+    image: Bitmap?,
     name: String,
     onDismiss: () -> Unit,
     onNavigate: (Int) -> Unit = {},
     canNavigate: Boolean = false,
-    position: String = ""
+    position: String = "",
+    error: String? = null
 ) {
     var scale by remember(name) { mutableFloatStateOf(1f) }
     var offsetX by remember(name) { mutableFloatStateOf(0f) }
@@ -2117,7 +2523,11 @@ private fun FullscreenBitmapViewer(
         ImmersiveDialogSystemBars()
         Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
-                Image(
+                if (image == null) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        if (error == null) CircularProgressIndicator() else Text(error, color = Color.White)
+                    }
+                } else Image(
                     bitmap = image.asImageBitmap(),
                     contentDescription = name,
                     contentScale = ContentScale.Fit,
@@ -2130,25 +2540,11 @@ private fun FullscreenBitmapViewer(
                             translationX = offsetX
                             translationY = offsetY
                         }
-                        .pointerInput(name, canNavigate) {
-                            if (!canNavigate) return@pointerInput
-                            var dragged = 0f
-                            detectHorizontalDragGestures(
-                                onDragStart = { dragged = 0f },
-                                onDragEnd = {
-                                    if (scale <= 1.01f && kotlin.math.abs(dragged) > 120f) {
-                                        onNavigate(if (dragged < 0) 1 else -1)
-                                    }
-                                }
-                            ) { change, amount ->
-                                if (scale <= 1.01f) {
-                                    dragged += amount
-                                    change.consume()
-                                }
-                            }
-                        }
-                        .pointerInput(name) {
-                            detectTransformGestures { _, pan, zoom, _ ->
+                        .imageGestures(
+                            key = name,
+                            canNavigate = canNavigate,
+                            scale = { scale },
+                            onTransform = { pan, zoom ->
                                 val next = (scale * zoom).coerceIn(1f, 8f)
                                 scale = next
                                 if (next > 1.01f) {
@@ -2159,8 +2555,9 @@ private fun FullscreenBitmapViewer(
                                     offsetX = 0f
                                     offsetY = 0f
                                 }
-                            }
-                        }
+                            },
+                            onNavigate = onNavigate
+                        )
                 )
 
                 Surface(
@@ -2185,7 +2582,9 @@ private fun FullscreenBitmapViewer(
                             position,
                             color = Color.White,
                             style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 420.dp).padding(horizontal = 12.dp, vertical = 8.dp)
                         )
                     }
                 }
@@ -2401,6 +2800,112 @@ private fun NameDialog(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CreateArchiveDialog(
+    initial: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String, ArchiveFormat, String?) -> Unit
+) {
+    var name by remember(initial) { mutableStateOf(initial) }
+    var format by rememberSaveable { mutableStateOf(ArchiveFormat.ZIP) }
+    var password by remember { mutableStateOf("") }
+    var visible by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.FolderZip, null) },
+        title = { Text(stringResource(R.string.zip_create_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.zip_name)) },
+                    suffix = { Text(".${format.extension}") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                Text(stringResource(R.string.archive_format), style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ArchiveFormat.entries.forEach { option ->
+                        FilterChip(
+                            selected = option == format,
+                            onClick = { format = option },
+                            label = { Text(option.extension.uppercase(Locale.ROOT)) }
+                        )
+                    }
+                }
+                if (format.supportsPassword) {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.archive_password_optional)) },
+                        supportingText = { Text(stringResource(R.string.archive_password_aes)) },
+                        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { visible = !visible }) {
+                                Icon(if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                } else {
+                    Text(
+                        stringResource(R.string.archive_no_password),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = name.isNotBlank(), onClick = {
+                onConfirm(name.trim(), format, password.takeIf { format.supportsPassword && it.isNotEmpty() })
+            }) { Text(stringResource(R.string.zip_pack)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
+    )
+}
+
+@Composable
+private fun ArchivePasswordDialog(name: String, wrong: Boolean, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var password by remember(name, wrong) { mutableStateOf("") }
+    var visible by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.Lock, null) },
+        title = { Text(stringResource(R.string.archive_password_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(name, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    singleLine = true,
+                    isError = wrong,
+                    label = { Text(stringResource(R.string.archive_password)) },
+                    supportingText = if (wrong) {
+                        { Text(stringResource(R.string.archive_password_wrong)) }
+                    } else null,
+                    visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { visible = !visible }) {
+                            Icon(if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
+        },
+        confirmButton = { TextButton(enabled = password.isNotEmpty(), onClick = { onConfirm(password) }) { Text("OK") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
+    )
+}
+
 @Composable
 private fun EmptyStorage(onPick: () -> Unit) {
     Box(
@@ -2483,11 +2988,15 @@ private fun openItem(
         // APK nie ma sensownego podglądu — kliknięcie ma po prostu instalować,
         // tak jak w systemowym menedżerze plików.
         isApk(item) -> {
-            vm.addRecent(item.uri)
+            vm.addRecent(item)
             onInstallApk(item)
         }
+        ArchiveFormats.canBrowse(item.name) -> {
+            vm.addRecent(item)
+            vm.openArchive(item)
+        }
         else -> {
-            vm.addRecent(item.uri)
+            vm.addRecent(item)
             onOpenFile(item)
         }
     }
@@ -2544,8 +3053,8 @@ private fun matchesCategory(item: FileItem, category: FileCategory): Boolean = w
     FileCategory.IMAGES -> !item.isDirectory && item.mimeType.startsWith("image/")
     FileCategory.VIDEO -> !item.isDirectory && item.mimeType.startsWith("video/")
     FileCategory.AUDIO -> !item.isDirectory && item.mimeType.startsWith("audio/")
-    FileCategory.ARCHIVES -> !item.isDirectory && (isZip(item) || item.name.endsWith(".rar", true) || item.name.endsWith(".7z", true))
-    FileCategory.DOCUMENTS -> !item.isDirectory && !item.mimeType.startsWith("image/") && !item.mimeType.startsWith("video/") && !item.mimeType.startsWith("audio/") && !isZip(item)
+    FileCategory.ARCHIVES -> !item.isDirectory && (isZip(item) || ArchiveFormats.canBrowse(item.name))
+    FileCategory.DOCUMENTS -> !item.isDirectory && !item.mimeType.startsWith("image/") && !item.mimeType.startsWith("video/") && !item.mimeType.startsWith("audio/") && !isZip(item) && !ArchiveFormats.canBrowse(item.name)
 }
 
 private fun folderLabel(uri: Uri?): String {

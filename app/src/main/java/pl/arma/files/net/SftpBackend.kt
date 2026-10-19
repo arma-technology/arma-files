@@ -7,6 +7,7 @@ import net.schmizz.sshj.sftp.FileMode
 import net.schmizz.sshj.sftp.OpenMode
 import net.schmizz.sshj.sftp.SFTPClient
 import net.schmizz.sshj.common.KeyType
+import net.schmizz.sshj.common.SecurityUtils
 import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.transport.verification.OpenSSHKnownHosts
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier
@@ -91,16 +92,33 @@ class SftpBackend(
     private class TrustOnFirstUse(file: File) : OpenSSHKnownHosts(file.apply { parentFile?.mkdirs(); if (!exists()) createNewFile() }) {
         override fun hostKeyUnverifiableAction(hostname: String, key: PublicKey): Boolean {
             runCatching {
-                val entry = HostEntry(null, hostname, KeyType.fromKey(key), key)
+                val entry = OpenSSHKnownHosts.HostEntry(null, hostname, KeyType.fromKey(key), key)
                 entries().add(entry)
                 write(entry)
             }
             return true
         }
 
-        override fun hostKeyChangedAction(hostname: String, key: PublicKey): Boolean =
-            throw IOException(text(R.string.sftp_key_changed, hostname))
+        override fun hostKeyChangedAction(hostname: String, key: PublicKey): Boolean {
+            val type = KeyType.fromKey(key)
+            val old = entries().firstOrNull { runCatching { it.appliesTo(type, hostname) }.getOrDefault(false) }
+                ?: entries().firstOrNull { runCatching { it.appliesTo(hostname) }.getOrDefault(false) }
+            throw HostKeyChangedException(
+                ServerIdentityChange(
+                    kind = ServerIdentityChange.Kind.SSH_KEY,
+                    server = hostname,
+                    oldFingerprint = old?.fingerprint,
+                    newFingerprint = SecurityUtils.getFingerprint(key),
+                    accept = { replaceKnownHost(knownHostsFile, hostname, key) }
+                )
+            )
+        }
+
+        private val knownHostsFile = file
     }
+
+    class HostKeyChangedException(override val change: ServerIdentityChange) :
+        IOException(text(R.string.sftp_key_changed, change.server)), IdentityChangeCarrier
 
     private fun close(session: Session) {
         runCatching { session.sftp.close() }
@@ -234,4 +252,14 @@ class SftpBackend(
             }
         }
     }
+}
+
+/** Zastępuje zapamiętane klucze serwera nowym — po decyzji użytkownika. */
+private fun replaceKnownHost(file: File, hostname: String, key: PublicKey) = synchronized(SftpBackend::class.java) {
+    val kept = file.takeIf { it.exists() }?.readLines().orEmpty().filter { line ->
+        val hosts = line.trim().substringBefore(' ').split(',')
+        line.isNotBlank() && hostname !in hosts
+    }
+    val entry = OpenSSHKnownHosts.HostEntry(null, hostname, KeyType.fromKey(key), key)
+    file.writeText((kept + entry.line).joinToString("\n", postfix = "\n"))
 }

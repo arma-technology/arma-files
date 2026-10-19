@@ -12,8 +12,13 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md) �
 **Pliki**
 - ekran „Mój komputer”: przypięte foldery, pamięć wbudowana, karty SD,
   podłączone zasoby sieciowe i chmurowe
-- kopiowanie i przenoszenie między dowolnymi źródłami w tle, kosz, ZIP,
+- kopiowanie i przenoszenie między dowolnymi źródłami w tle, kosz,
   zmiana nazwy, SHA-256, Ostatnie i Ulubione
+- **archiwa** otwierane jak foldery i rozpakowywane w tle: ZIP (także
+  z hasłem ZipCrypto/AES), 7z (także z hasłem), RAR i RAR5, tar oraz
+  tar.gz/bz2/xz/zst/lz4/br, gz, bz2, xz, zst, lzma, ISO, CAB, LHA, XAR, ar/deb,
+  cpio, arj; na żądanie także APK, DOCX, ODT, EPUB i inne oparte na ZIP;
+  tworzenie ZIP (z hasłem AES-256), 7z, tar, tar.gz, tar.xz, tar.zst
 - indeks plików z wyszukiwaniem i statystykami folderów
 - sortowanie zapamiętywane osobno dla każdego folderu
 
@@ -38,8 +43,9 @@ przenieść do innej aplikacji — opis w [viewer/README.md](viewer/README.md).
 
 ## Budowanie
 
-Wymagania: JDK 17, Android SDK 36, NDK 28.2 i CMake 3.31 (dla modułu `dwg`),
-[Git LFS](https://git-lfs.com) — skompilowane biblioteki LibreDWG są w LFS.
+Wymagania: JDK 17, Android SDK 36, NDK 28.2 i CMake 3.31 (dla modułów `dwg`
+i `libarchive`), [Git LFS](https://git-lfs.com) — skompilowane biblioteki
+LibreDWG i libarchive są w LFS.
 
 ```bash
 git lfs install
@@ -49,7 +55,8 @@ cd aplikacje-android-arma-files
 scripts/test.sh                # testy jednostkowe
 ```
 
-Biblioteki LibreDWG można zbudować samodzielnie: `dwg/build-libredwg.sh`.
+Biblioteki można zbudować samodzielnie: `dwg/build-libredwg.sh`,
+`libarchive/build-libarchive.sh`.
 
 Opcjonalnie w `local.properties` (plik poza repozytorium):
 
@@ -81,5 +88,6 @@ Twojego wyboru) dowolnej późniejszej. Rozpowszechniany jest bez jakiejkolwiek
 gwarancji.
 
 Dołączone biblioteki mają licencje zgodne z GPL-3.0: LibreDWG (GPL-3.0+),
-PdfBox-Android, AndroidX, Coil, OkHttp, Commons Net, SSHJ
-(Apache 2.0), jcifs-ng (LGPL-2.1), SLF4J (MIT).
+PdfBox-Android, AndroidX, Coil, OkHttp, Commons Net, SSHJ, Commons Compress,
+zip4j (Apache 2.0), jcifs-ng (LGPL-2.1), SLF4J, Brotli (MIT), libarchive,
+zstd-jni (BSD-2-Clause), XZ for Java (0BSD).

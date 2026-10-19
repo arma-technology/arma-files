@@ -98,6 +98,7 @@ android {
 dependencies {
     implementation(project(":viewer"))
     implementation(project(":dwg"))
+    implementation(project(":libarchive"))
     implementation(platform("androidx.compose:compose-bom:2025.05.01"))
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.compose.material3:material3")
@@ -118,6 +119,16 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-nop:2.0.17")
+    // Archiwa: tar, 7z, ar, cpio, arj i kompresory (gz, bz2, xz, lzma, zstd,
+    // lz4, brotli, snappy, Z). ZIP przez zip4j, bo ten czyta też szyfrowane
+    // (ZipCrypto i AES) i potrafi je tworzyć.
+    implementation("org.apache.commons:commons-compress:1.28.0")
+    implementation("org.tukaani:xz:1.10")
+    implementation("org.brotli:dec:0.1.2")
+    implementation("com.github.luben:zstd-jni:1.5.7-4@aar")
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
+    // Okresowa synchronizacja kopii offline w tle.
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")

@@ -21,6 +21,48 @@
 - pole portu w edytorze połączenia daje się wyczyścić i wpisać od nowa
   (wcześniej ostatnia cyfra zostawała); puste oznacza port domyślny
 - plik otwarty z innej aplikacji pokazuje rozmiar zamiast „0 B”
+- **archiwa jak foldery**: dotknięcie ZIP, 7z, RAR/RAR5, tar (także
+  skompresowanego), gz, bz2, xz, zst, ISO, CAB, LHA i innych otwiera je jak
+  folder; pliki z wnętrza da się podglądać, kopiować i wypakowywać wybiórczo;
+  „Przeglądaj zawartość” dla APK, DOCX, ODT, EPUB i innych opartych na ZIP
+- archiwa z hasłem: ZIP (ZipCrypto i AES) i 7z, także z zaszyfrowanym spisem;
+  polskie nazwy z archiwów ZIP utworzonych w Windows (CP852)
+- rozpakowywanie w kolejce operacji z postępem i działaniem w tle; „Anuluj”
+  wstrzymuje i pyta, a po potwierdzeniu usuwa wypakowane do tej pory pliki
+- pakowanie do ZIP (opcjonalnie z hasłem AES-256), 7z, tar, tar.gz, tar.xz
+  i tar.zst
+- obraz w poziomie od razu na pełnym ekranie z narzędziami na nim; rysunek
+  CAD wypełnia cały ekran i otwiera się w całości
+- **dostępne offline**: pliki i foldery z serwerów można trzymać w telefonie;
+  bez zasięgu albo gdy serwer nie odpowiada w 5 s, lista i pliki otwierają się
+  z kopii (z paskiem „kopia offline z …”), a zmiany zapisane bez połączenia
+  trafiają do kopii; sekcja „Dostępne offline” na ekranie głównym
+- synchronizacja offline w obie strony: zmiana tylko na serwerze trafia do
+  telefonu, zmiana tylko w telefonie — na serwer; gdy plik zmienił się po obu
+  stronach, powiadomienie „Rozbieżność wersji” pokazuje rozmiar i datę obu
+  wersji i pyta, którą zachować (z serwera, z telefonu albo obie)
+- ustawienia plików offline: miejsce kopii (pamięć aplikacji albo folder
+  „ARMA Files offline”, z przeniesieniem istniejących kopii), synchronizacja
+  w tle co 15 min / 1 h / 6 h / 24 h albo ręcznie, tylko przez Wi-Fi
+- zmieniony klucz serwera SFTP albo certyfikat FTPS: okno z zapamiętanym
+  i nowym odciskiem oraz decyzją „Zaufaj nowemu” / „Nie łącz” (wcześniej
+  połączenie było zablokowane na stałe)
+- aplikacja prosi o zgodę na powiadomienia (Android 13+) — bez niej nie było
+  widać nawet postępu kopiowania
+- **odświeżanie na żywo**: folder w pamięci telefonu i na SMB odświeża się sam,
+  gdy coś się w nim zmieni (SMB przez powiadomienia serwera); FTP, SFTP
+  i WebDAV są sprawdzane co 15 s; po powrocie do aplikacji widoczne foldery
+  są sprawdzane od razu
+- Ostatnie i Ulubione nie łączą się z serwerami przy starcie (nazwa, rozmiar
+  i data są zapamiętane), więc niedostępny serwer nie spowalnia startu
+- **limit pamięci podręcznej** (Ustawienia): rozmiar (domyślnie 500 MB) i wiek
+  (domyślnie 7 dni bez użycia) dla rysunków DWG przekonwertowanych do DXF,
+  kopii plików z sieci i archiwów; „Wyczyść teraz”
+- poprawka: po edycji połączenia sieciowego aplikacja do restartu łączyła się
+  ze starym adresem albo portem
+- PDF i CAD: pionową stronę na telefonie w poziomie da się oddalić do całej
+  strony (wcześniej najmniej do szerokości ekranu); „Dopasuj” przełącza
+  między szerokością a całą stroną
 - Android 16 (API 36) jako docelowy; poprawka karty Język przy kontekście
   z podmienionym językiem
 - po zmianie języka aplikacja zostaje na bieżącym ekranie, a tytuły kart

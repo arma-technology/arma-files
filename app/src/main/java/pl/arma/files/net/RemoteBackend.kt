@@ -32,6 +32,18 @@ interface RemoteBackend {
 
     /** Zamyka połączenia trzymane w puli — wołane przy usunięciu konta. */
     fun disconnect(accountId: String) = Unit
+
+    /**
+     * Powiadamianie o zmianach w folderze; null, gdy protokół tego nie ma
+     * (FTP, SFTP, WebDAV) — wtedy folder jest co jakiś czas odpytywany.
+     */
+    fun watch(account: RemoteAccount, path: String): RemoteWatch? = null
+}
+
+/** Obserwacja folderu na serwerze. */
+interface RemoteWatch : java.io.Closeable {
+    /** Czeka, aż w folderze coś się zmieni. Rzuca, gdy połączenie padnie. */
+    fun await()
 }
 
 /** Narzędzia do składania ścieżek wspólne dla wszystkich backendów. */

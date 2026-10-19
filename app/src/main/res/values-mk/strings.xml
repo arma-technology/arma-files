@@ -39,6 +39,22 @@
     <string name="apk_allow">Дозволете ѝ на ARMA Files да инсталира апликации, па обидете се повторно.</string>
     <string name="apk_failed">Инсталаторот не можеше да се стартува.</string>
     <string name="apk_unsupported">Оваа верзија на Android не дозволува инсталирање APK-датотеки од апликации.</string>
+    <string name="archive_browse">Прегледај содржина</string>
+    <string name="archive_extract_all">Распакувај сè</string>
+    <string name="archive_extract_other_pane">Распакувај во другиот панел</string>
+    <string name="archive_format">Формат</string>
+    <string name="archive_no_password">Овој формат не поддржува лозинка.</string>
+    <string name="archive_password">Лозинка</string>
+    <string name="archive_password_aes">Шифрирање AES-256</string>
+    <string name="archive_password_optional">Лозинка (опционално)</string>
+    <string name="archive_password_title">Архива заштитена со лозинка</string>
+    <string name="archive_password_wrong">Погрешна лозинка</string>
+    <string name="cache_clear">Исчисти сега</string>
+    <string name="cache_limit_age">Бриши ако не се користени подолго од</string>
+    <string name="cache_limit_size">Најмногу</string>
+    <string name="cache_text">Копии на датотеки од сервери и архиви и DWG цртежи претворени за преглед. Кога ќе се надмине ограничувањето, прво се бришат најодамна користените.</string>
+    <string name="cache_title">Кеш меморија</string>
+    <string name="cache_used">Зафатено: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Архиви</string>
     <string name="category_audio">Аудио</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Не успеа добивањето пристап.</string>
     <string name="err_account_missing">Врската не постои или е избришана.</string>
     <string name="err_apk_prepare">APK-датотеката не можеше да се подготви.</string>
+    <string name="err_archive_format">Неподдржана или оштетена архива.</string>
+    <string name="err_archive_gone">Архивата повеќе не е достапна.</string>
+    <string name="err_archive_rar">Шифрираните RAR архиви не се поддржани.</string>
+    <string name="err_archive_read_only">Архивата е само за читање. Распакувајте ги датотеките за да ги менувате.</string>
     <string name="err_attach_failed">Изворот не можеше да се поврзе.</string>
     <string name="err_attach_in_settings">Поврзете го овој извор во Поставки.</string>
     <string name="err_cannot_read_folder">Папката не може да се прочита: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Одредишната папка не можеше да се создаде.</string>
     <string name="err_zip_create">Архивата не можеше да се создаде.</string>
     <string name="err_zip_unsafe">Архивата содржи небезбедна патека.</string>
+    <string name="extract_cancel_confirm">Прекини и избриши</string>
+    <string name="extract_cancel_continue">Продолжи</string>
+    <string name="extract_cancel_text">Распакувањето е паузирано. Досега распакуваните датотеки и папки ќе бидат избришани.</string>
+    <string name="extract_cancel_title">Да се прекине распакувањето?</string>
     <string name="fab_new">Ново</string>
     <string name="fav_add">Додај во омилени</string>
     <string name="fav_remove">Отстрани од омилени</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Копирање</string>
     <string name="history_delete">Бришење</string>
     <string name="history_empty">Тука ќе се појават завршените операции. Копирањето, преместувањето и корпата можат да се вратат од тука.</string>
+    <string name="history_extract">Распакување</string>
     <string name="history_move">Преместување</string>
     <string name="history_restore">Враќање</string>
     <string name="history_title">Историја на операции</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Закачени папки</string>
     <string name="home_this_computer">Овој компјутер</string>
     <string name="home_title">Мој компјутер</string>
+    <string name="identity_new">Нов отпечаток</string>
+    <string name="identity_old">Запомнет отпечаток</string>
+    <string name="identity_reject">Не поврзувај</string>
+    <string name="identity_text">%1$s се претставува поинаку од првото поврзување. Тоа се случува по преинсталирање или замена на серверот, но може да значи и лажно претставување. Верувајте само ако знаете зошто се променило.</string>
+    <string name="identity_title_ssh">Клучот на серверот е променет</string>
+    <string name="identity_title_tls">Сертификатот на серверот е променет</string>
+    <string name="identity_trust">Верувај на новиот</string>
     <string name="image_position">%1$d од %2$d · повлечете настрана за друга фотографија</string>
     <string name="index_build">Изгради</string>
     <string name="index_build_hint">Изградете индекс за пребарување на целата меморија</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP-архивата е создадена</string>
     <string name="notif_channel">Операции со датотеки</string>
     <string name="notif_channel_desc">Напредок на копирање, преместување и бришење</string>
+    <string name="offline_added">Додадено офлајн — преземање во позадина</string>
+    <string name="offline_banner">Серверот е недостапен — се прикажува офлајн копијата од %1$s</string>
+    <string name="offline_busy">Претходната синхронизација сè уште трае — обидете се подоцна.</string>
+    <string name="offline_conflict_channel">Несогласувања на офлајн датотеки</string>
+    <string name="offline_conflict_text">Датотеката е променета и на серверот и на телефонот. Која верзија да се задржи?
+Сервер: %1$s
+Телефон: %2$s</string>
+    <string name="offline_conflict_title">Несогласувани верзии: %1$s</string>
+    <string name="offline_conflicts_title">Несогласувани верзии</string>
+    <string name="offline_failed">Синхронизацијата не успеа: %1$s</string>
+    <string name="offline_folder_unavailable">Не може да се запишува во папката — потребен е „Пристап до сите датотеки“.</string>
+    <string name="offline_interval">Синхронизирај автоматски</string>
+    <string name="offline_interval_manual">Рачно</string>
+    <string name="offline_keep_both">Двете</string>
+    <string name="offline_keep_local">Од телефонот</string>
+    <string name="offline_keep_remote">Од серверот</string>
+    <string name="offline_location">Каде да се чуваат копиите</string>
+    <string name="offline_location_app">Меморија на апликацијата</string>
+    <string name="offline_location_app_hint">Невидлива за други апликации; се брише со деинсталирање на ARMA Files.</string>
+    <string name="offline_location_folder">Папка „ARMA Files offline“</string>
+    <string name="offline_location_folder_hint">Во меморијата на телефонот, видлива за други апликации; останува по деинсталирањето.</string>
+    <string name="offline_make">Достапно офлајн</string>
+    <string name="offline_missing">Оваа ставка повеќе не постои на серверот.</string>
+    <string name="offline_never">Чека синхронизација</string>
+    <string name="offline_only_remote">Офлајн може да се чуваат само датотеки и папки од сервери.</string>
+    <string name="offline_phone_suffix">телефон</string>
+    <string name="offline_phone_version">Телефон: %1$s</string>
+    <string name="offline_remove">Отстрани од офлајн</string>
+    <string name="offline_server_version">Сервер: %1$s</string>
+    <string name="offline_settings_title">Офлајн датотеки</string>
+    <string name="offline_sync">Синхронизирај</string>
+    <string name="offline_synced">Синхронизирано %1$s · %2$s</string>
+    <string name="offline_syncing">Синхронизација… %1$s</string>
+    <string name="offline_title">Достапно офлајн</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">избришано</string>
+    <string name="offline_wifi_only">Само преку Wi-Fi</string>
     <string name="op_copy">Копирање</string>
     <string name="op_delete">Бришење</string>
+    <string name="op_extract">Распакување</string>
     <string name="op_move">Преместување</string>
     <string name="op_restore">Враќање</string>
     <string name="op_trash">Преместување во корпа</string>
@@ -336,6 +406,7 @@
     <string name="trash_with_count">Корпа (%1$d)</string>
     <string name="undo_copied">Копирани: %1$d</string>
     <string name="undo_done">Готово: %1$d</string>
+    <string name="undo_extracted">Распакувани: %1$d</string>
     <string name="undo_moved">Преместени: %1$d</string>
     <string name="undo_skipped_suffix">, прескокнати %1$d</string>
     <string name="undo_trashed">Во корпа: %1$d</string>
@@ -344,14 +415,18 @@
     <string name="welcome_pick">Избери папка</string>
     <string name="welcome_text">Изберете почетна папка. Android ќе го запамети пристапот, па апликацијата ќе може да се врати во неа и по рестартирање.</string>
     <string name="welcome_title">Добредојдовте во ARMA Files</string>
-    <string name="zip_create_title">Создај ZIP-архива</string>
+    <string name="zip_create_title">Создај архива</string>
     <string name="zip_default_name">arhiva.zip</string>
     <string name="zip_extract_here">Распакувај тука</string>
     <string name="zip_name">Име на архивата</string>
-    <string name="zip_pack">Компримирај во ZIP</string>
+    <string name="zip_pack">Компримирај</string>
     <string name="zoom_fit">Прилагоди</string>
     <string name="zoom_in">Зголеми</string>
     <string name="zoom_out">Намали</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d ден</item>
+        <item quantity="other">%1$d дена</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Да се избрише %1$d ставка?</item>
         <item quantity="other">Да се избришат %1$d ставки?</item>
@@ -375,5 +450,9 @@
     <plurals name="n_lines">
         <item quantity="one">%1$d ред</item>
         <item quantity="other">%1$d редови</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d несогласување — изберете верзија</item>
+        <item quantity="other">%1$d несогласувања — изберете верзии</item>
     </plurals>
 </resources>

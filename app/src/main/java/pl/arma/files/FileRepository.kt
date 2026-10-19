@@ -8,26 +8,114 @@ import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import pl.arma.files.archive.ArchiveFormat
+import pl.arma.files.archive.ArchiveRepository
+import pl.arma.files.archive.ArchiveWriter
 import pl.arma.files.net.AccountStore
 import pl.arma.files.net.RemoteAccount
 import pl.arma.files.ops.FileOps
 import java.security.MessageDigest
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
 
 class FileRepository(private val context: Context) : FileOps {
+    private companion object {
+        const val OFFLINE_PATIENCE_MS = 5_000L
+    }
+
     private val resolver: ContentResolver get() = context.contentResolver
     private val accounts = AccountStore(context)
     private val remote = RemoteRepository(accounts, java.io.File(context.filesDir, "known_hosts"))
+    val archives = ArchiveRepository(
+        context,
+        openSource = ::openInput,
+        sourceSignature = { uri ->
+            if (uri.scheme == "file") fileFor(uri).let { "${it.length()}|${it.lastModified()}" }
+            else itemInfoBlocking(uri)?.let { "${it.size}|${it.lastModified}" }.orEmpty()
+        },
+        localFile = { uri -> if (uri.scheme == "file") fileFor(uri) else null }
+    )
+
+    /** Kopie offline; ustawiane przez aplikację zaraz po utworzeniu repozytorium. */
+    @Volatile
+    var offline: OfflineStore? = null
+
+    /** Adresy, których ostatnia lista przyszła z kopii offline, a nie z serwera. */
+    private val servedOffline = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    fun servedOffline(uri: Uri): Boolean = uri.toString() in servedOffline
+
+    private fun networkDown(): Boolean =
+        context.getSystemService(android.net.ConnectivityManager::class.java)?.activeNetwork == null
+
+    /**
+     * Serwer, a gdy nie odpowiada — kopia offline. Bez żadnej sieci od razu
+     * kopia: nie ma sensu czekać na limit czasu połączenia. Gdy kopia jest,
+     * a serwer milczy dłużej niż [OFFLINE_PATIENCE_MS], też pokazujemy kopię —
+     * zawieszony serwer potrafi nie odpowiadać przez minutę. Odpytywanie
+     * folderu wróci do serwera, gdy ten się odezwie.
+     */
+    private fun <T> remoteOrOffline(
+        uri: Uri,
+        online: () -> T,
+        /** Bez limitu 5 s: spóźnione otwarcie zapisu na serwerze wyzerowałoby tam plik. */
+        waitForServer: Boolean = false,
+        fromCopy: (OfflineStore) -> T?
+    ): T {
+        val store = offline
+        val hasCopy = store?.localFile(uri) != null
+        fun copy(): T? = store?.let { runCatching { fromCopy(it) }.getOrNull() }
+        if (hasCopy && networkDown()) {
+            copy()?.let { servedOffline += uri.toString(); return it }
+        }
+        return try {
+            val result = if (!hasCopy || waitForServer) online() else {
+                val abandoned = java.util.concurrent.atomic.AtomicBoolean(false)
+                val task = java.util.concurrent.FutureTask {
+                    online().also { late ->
+                        // Odpowiedź po czasie: kopia już pokazana, a otwarty
+                        // strumień trzymałby połączenie z puli.
+                        if (abandoned.get()) (late as? java.io.Closeable)?.let { runCatching { it.close() } }
+                    }
+                }
+                Thread(task, "remote-or-offline").apply { isDaemon = true }.start()
+                try {
+                    task.get(OFFLINE_PATIENCE_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+                } catch (e: java.util.concurrent.TimeoutException) {
+                    abandoned.set(true)
+                    throw e
+                } catch (e: java.util.concurrent.ExecutionException) {
+                    throw e.cause ?: e
+                }
+            }
+            servedOffline -= uri.toString()
+            result
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            val fallback = if (hasCopy) copy() else null
+            if (fallback == null) throw e
+            servedOffline += uri.toString()
+            fallback
+        }
+    }
+
+    /** Wprost z serwera, z pominięciem kopii — dla synchronizacji offline. */
+    fun remoteList(uri: Uri): List<FileItem> = remote.listChildren(uri)
+
+    fun remoteInfo(uri: Uri): FileItem? = remote.itemInfo(uri)
+
+    fun remoteInput(uri: Uri): InputStream = remote.openInput(uri)
+
+    fun remoteOutput(uri: Uri): OutputStream = remote.openOutput(uri)
+
+    fun remoteCreateFile(parent: Uri, name: String): Uri = remote.createFile(parent, name)
+
+    fun remoteCreateFolder(parent: Uri, name: String): Uri = remote.createFolder(parent, name)
 
     override suspend fun listChildren(parent: Uri): List<FileItem> = withContext(Dispatchers.IO) {
         listChildrenBlocking(parent)
@@ -83,6 +171,7 @@ class FileRepository(private val context: Context) : FileOps {
 
     suspend fun rename(item: FileItem, newName: String): Uri? = withContext(Dispatchers.IO) {
         when {
+            ArchiveRepository.isArchive(item.uri) -> archives.readOnly()
             remote.isRemote(item.uri) -> remote.rename(item, newName)
             item.uri.scheme == "file" -> {
                 val source = fileFor(item.uri)
@@ -145,52 +234,31 @@ class FileRepository(private val context: Context) : FileOps {
         created
     }
 
-    suspend fun createZip(items: List<FileItem>, targetParent: Uri, archiveName: String): Uri = withContext(Dispatchers.IO) {
-        val safeName = archiveName.trim().let { if (it.endsWith(".zip", true)) it else "$it.zip" }
-        val zipUri = createFileBlocking(targetParent, safeName, "application/zip")
+    /** Pakuje [items] do nowego archiwum w [targetParent]; przy błędzie nie zostawia połowy pliku. */
+    suspend fun createArchive(
+        items: List<FileItem>,
+        targetParent: Uri,
+        archiveName: String,
+        format: ArchiveFormat,
+        password: CharArray?
+    ): Uri = withContext(Dispatchers.IO) {
+        val trimmed = archiveName.trim()
+        val safeName = if (trimmed.endsWith(".${format.extension}", true)) trimmed else "$trimmed.${format.extension}"
+        val archiveUri = createFileBlocking(targetParent, safeName, guessMime(safeName))
             ?: throw IOException(text(R.string.err_zip_create))
         try {
-            openOutput(zipUri).use { raw ->
-                ZipOutputStream(BufferedOutputStream(raw)).use { zip ->
-                    items.forEach { addToZip(zip, it, "") }
-                }
+            val source = object : ArchiveWriter.Source {
+                override fun children(item: FileItem) = listChildrenBlocking(item.uri)
+                override fun open(item: FileItem) = openInput(item.uri)
             }
-            zipUri
+            ArchiveWriter.write(format, items, source, password, File(context.cacheDir, "archive_out")) {
+                openOutput(archiveUri)
+            }
+            archiveUri
         } catch (e: Exception) {
-            runCatching { itemInfoBlocking(zipUri)?.let(::deleteBlocking) }
+            runCatching { itemInfoBlocking(archiveUri)?.let(::deleteBlocking) }
             throw e
         }
-    }
-
-    suspend fun extractZip(zipItem: FileItem, targetParent: Uri): Uri = withContext(Dispatchers.IO) {
-        val base = zipItem.name.substringBeforeLast('.', zipItem.name).ifBlank { "Rozpakowane" }
-        val outputRoot = createFolderBlocking(targetParent, base)
-            ?: throw IOException(text(R.string.err_target_folder))
-        val directories = mutableMapOf("" to outputRoot)
-
-        openInput(zipItem.uri).use { raw ->
-            ZipInputStream(BufferedInputStream(raw)).use { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    val cleanPath = sanitizeZipPath(entry.name)
-                    if (cleanPath.isNotBlank()) {
-                        if (entry.isDirectory) {
-                            ensureDirectoryPath(outputRoot, cleanPath.trimEnd('/'), directories)
-                        } else {
-                            val parentPath = cleanPath.substringBeforeLast('/', "")
-                            val fileName = cleanPath.substringAfterLast('/')
-                            val parent = ensureDirectoryPath(outputRoot, parentPath, directories)
-                            val outUri = createFileBlocking(parent, fileName, guessMime(fileName))
-                                ?: throw IOException(text(R.string.err_create_named, fileName))
-                            openOutput(outUri).use { out -> zip.copyTo(out) }
-                        }
-                    }
-                    zip.closeEntry()
-                    entry = zip.nextEntry
-                }
-            }
-        }
-        outputRoot
     }
 
     suspend fun sha256(uri: Uri): String = withContext(Dispatchers.IO) { sha256Blocking(uri) }
@@ -213,6 +281,7 @@ class FileRepository(private val context: Context) : FileOps {
 
     fun displayName(uri: Uri): String? {
         if (remote.isRemote(uri)) return uri.lastPathSegment
+        if (ArchiveRepository.isArchive(uri)) return uri.lastPathSegment ?: archives.archiveName(uri)
         if (uri.scheme == "file") return fileFor(uri).name
         val projection = arrayOf(OpenableColumns.DISPLAY_NAME)
         return resolver.query(uri, projection, null, null, null)?.use { c ->
@@ -223,7 +292,7 @@ class FileRepository(private val context: Context) : FileOps {
     /** Rozmiar i data bez łączenia z siecią — z pliku albo od dostawcy treści; zera, gdy nieznane. */
     fun localSizeAndDate(uri: Uri): Pair<Long, Long> = runCatching {
         when {
-            remote.isRemote(uri) -> 0L to 0L
+            remote.isRemote(uri) || ArchiveRepository.isArchive(uri) -> 0L to 0L
             uri.scheme == "file" -> fileFor(uri).let { it.length() to it.lastModified() }
             else -> resolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { c ->
                 if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) to 0L else null
@@ -243,6 +312,9 @@ class FileRepository(private val context: Context) : FileOps {
 
     fun remoteRoot(account: RemoteAccount): Uri = RemoteRepository.rootOf(account)
 
+    /** Obserwacja folderu na serwerze; null, gdy protokół jej nie ma. */
+    fun watchRemote(uri: Uri): pl.arma.files.net.RemoteWatch? = if (remote.isRemote(uri)) remote.watch(uri) else null
+
     fun disconnectRemote(account: RemoteAccount) = remote.disconnect(account)
 
     /**
@@ -255,19 +327,28 @@ class FileRepository(private val context: Context) : FileOps {
             .size
 
     override fun openInput(uri: Uri): InputStream = when {
-        remote.isRemote(uri) -> remote.openInput(uri)
+        remote.isRemote(uri) -> remoteOrOffline(uri, { remote.openInput(uri) }) { store ->
+            store.localFile(uri)?.takeIf { it.isFile }?.let(::FileInputStream)
+        }
+        ArchiveRepository.isArchive(uri) -> archives.openInput(uri)
         uri.scheme == "file" -> FileInputStream(fileFor(uri))
         else -> resolver.openInputStream(uri) ?: throw IOException(text(R.string.err_open_read))
     }
 
     override fun openOutput(uri: Uri): OutputStream = when {
-        remote.isRemote(uri) -> remote.openOutput(uri)
+        // Bez serwera zapis trafia do kopii offline; synchronizacja wyśle go
+        // później albo zgłosi rozbieżność, jeśli plik zmienił się też na serwerze.
+        remote.isRemote(uri) -> remoteOrOffline(uri, { remote.openOutput(uri) }, waitForServer = true) { store ->
+            store.localFile(uri)?.takeIf { it.isFile }?.let { FileOutputStream(it, false) }
+        }
+        ArchiveRepository.isArchive(uri) -> archives.readOnly()
         uri.scheme == "file" -> FileOutputStream(fileFor(uri), false)
         else -> resolver.openOutputStream(uri, "w") ?: throw IOException(text(R.string.err_open_write))
     }
 
     private fun deleteBlocking(item: FileItem): Boolean = when {
         remote.isRemote(item.uri) -> remote.delete(item)
+        ArchiveRepository.isArchive(item.uri) -> archives.readOnly()
         item.uri.scheme == "file" -> {
             val file = fileFor(item.uri)
             if (file.isDirectory) file.deleteRecursively() else file.delete()
@@ -289,41 +370,9 @@ class FileRepository(private val context: Context) : FileOps {
         }
     }
 
-    private fun addToZip(zip: ZipOutputStream, item: FileItem, prefix: String) {
-        val entryName = if (prefix.isBlank()) item.name else "$prefix/${item.name}"
-        if (item.isDirectory) {
-            zip.putNextEntry(ZipEntry("$entryName/"))
-            zip.closeEntry()
-            listChildrenBlocking(item.uri).forEach { child -> addToZip(zip, child, entryName) }
-        } else {
-            zip.putNextEntry(ZipEntry(entryName))
-            openInput(item.uri).use { it.copyTo(zip) }
-            zip.closeEntry()
-        }
-    }
-
-    private fun sanitizeZipPath(path: String): String {
-        val normalized = path.replace('\\', '/').trimStart('/')
-        val parts = normalized.split('/').filter { it.isNotBlank() && it != "." }
-        if (parts.any { it == ".." }) throw IOException(text(R.string.err_zip_unsafe))
-        return parts.joinToString("/") + if (normalized.endsWith('/')) "/" else ""
-    }
-
-    private fun ensureDirectoryPath(root: Uri, path: String, cache: MutableMap<String, Uri>): Uri {
-        if (path.isBlank()) return root
-        var current = root
-        var built = ""
-        path.split('/').filter { it.isNotBlank() }.forEach { part ->
-            built = if (built.isBlank()) part else "$built/$part"
-            current = cache[built] ?: createFolderBlocking(current, part)
-                ?.also { cache[built] = it }
-                ?: throw IOException(text(R.string.err_folder_create_named, part))
-        }
-        return current
-    }
-
     private fun createFolderBlocking(parent: Uri, name: String): Uri? = when {
         remote.isRemote(parent) -> remote.createFolder(parent, name)
+        ArchiveRepository.isArchive(parent) -> archives.readOnly()
         parent.scheme == "file" -> {
             val child = uniqueChild(fileFor(parent), name, directory = true)
             if (child.mkdirs()) Uri.fromFile(child) else null
@@ -333,6 +382,7 @@ class FileRepository(private val context: Context) : FileOps {
 
     private fun createFileBlocking(parent: Uri, name: String, mime: String): Uri? = when {
         remote.isRemote(parent) -> remote.createFile(parent, name)
+        ArchiveRepository.isArchive(parent) -> archives.readOnly()
         parent.scheme == "file" -> {
             val child = uniqueChild(fileFor(parent), name, directory = false)
             child.parentFile?.mkdirs()
@@ -342,7 +392,8 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     private fun listChildrenBlocking(parent: Uri): List<FileItem> {
-        if (remote.isRemote(parent)) return remote.listChildren(parent)
+        if (remote.isRemote(parent)) return remoteOrOffline(parent, { remote.listChildren(parent) }) { it.list(parent) }
+        if (ArchiveRepository.isArchive(parent)) return archives.listChildren(parent)
         if (parent.scheme == "file") {
             val dir = fileFor(parent)
             return dir.listFiles().orEmpty()
@@ -382,7 +433,8 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     private fun itemInfoBlocking(uri: Uri): FileItem? {
-        if (remote.isRemote(uri)) return remote.itemInfo(uri)
+        if (remote.isRemote(uri)) return remoteOrOffline(uri, { remote.itemInfo(uri) }) { it.info(uri) }
+        if (ArchiveRepository.isArchive(uri)) return archives.itemInfo(uri)
         if (uri.scheme == "file") return fileItem(fileFor(uri)).takeIf { fileFor(uri).exists() }
 
         val projection = arrayOf(

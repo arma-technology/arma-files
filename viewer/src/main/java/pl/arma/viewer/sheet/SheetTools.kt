@@ -88,6 +88,7 @@ internal fun SheetTools(
     currentPage: Int,
     pageCount: Int,
     zoomPercent: Int,
+    minZoomPercent: Int,
     commentCount: Int,
     hasLayers: Boolean,
     dirty: Boolean,
@@ -161,7 +162,7 @@ internal fun SheetTools(
         }
         Spacer(Modifier.width(4.dp))
         // Mnożnik zamiast stałego kroku: do dużych powiększeń nie da się dojść po 25%.
-        IconButton(onClick = onZoomOut, enabled = zoomPercent > 100, modifier = button) {
+        IconButton(onClick = onZoomOut, enabled = zoomPercent > minZoomPercent, modifier = button) {
             Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_zoom_out))
         }
         Text("$zoomPercent%", style = MaterialTheme.typography.labelLarge)

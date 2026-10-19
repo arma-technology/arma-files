@@ -45,6 +45,10 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".OfflineConflictReceiver"
+            android:exported="false" />
+
         <service
             android:name=".FileOperationService"
             android:exported="false"

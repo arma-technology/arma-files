@@ -27,6 +27,10 @@ import kotlin.coroutines.resumeWithException
  */
 object LibreDwgConverter : SheetDocuments.DwgConverter {
 
+    /** Limit wyników w pamięci podręcznej; gospodarz może go zmienić. */
+    @Volatile
+    var cacheLimitBytes: Long = 1_500_000_000L
+
     /** Rejestruje konwerter w przeglądarce. */
     fun install() {
         SheetDocuments.dwgConverter = this
@@ -63,12 +67,12 @@ object LibreDwgConverter : SheetDocuments.DwgConverter {
         return digest.digest().joinToString("") { "%02x".format(it) }.take(24)
     }
 
-    /** Pamięć podręczna do 1,5 GB — najstarsze wyniki wylatują pierwsze. */
+    /** Pamięć podręczna do [cacheLimitBytes] — najdawniej używane wyniki wylatują pierwsze. */
     private fun trim(dir: File, keep: File) {
         val files = dir.listFiles { f -> f.extension == "dxb" }?.sortedBy { it.lastModified() } ?: return
         var total = files.sumOf { it.length() }
         for (f in files) {
-            if (total <= 1_500_000_000L) break
+            if (total <= cacheLimitBytes) break
             if (f == keep) continue
             total -= f.length()
             f.delete()

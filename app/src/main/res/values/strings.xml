@@ -40,6 +40,22 @@
     <string name="apk_allow">Allow ARMA Files to install apps, then try again.</string>
     <string name="apk_failed">Could not start the installer.</string>
     <string name="apk_unsupported">This Android version does not allow installing APK files from apps.</string>
+    <string name="archive_browse">Browse contents</string>
+    <string name="archive_extract_all">Extract all</string>
+    <string name="archive_extract_other_pane">Extract to other pane</string>
+    <string name="archive_format">Format</string>
+    <string name="archive_no_password">This format cannot be password-protected.</string>
+    <string name="archive_password">Password</string>
+    <string name="archive_password_aes">Encrypted with AES-256</string>
+    <string name="archive_password_optional">Password (optional)</string>
+    <string name="archive_password_title">Password-protected archive</string>
+    <string name="archive_password_wrong">Wrong password</string>
+    <string name="cache_clear">Clear now</string>
+    <string name="cache_limit_age">Remove when unused for</string>
+    <string name="cache_limit_size">At most</string>
+    <string name="cache_text">Copies of files from servers and archives, and DWG drawings converted for viewing. When a limit is exceeded, the least recently used are removed first.</string>
+    <string name="cache_title">Cache</string>
+    <string name="cache_used">Used: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archives</string>
     <string name="category_audio">Audio</string>
@@ -113,6 +129,10 @@
     <string name="err_access_failed">Could not get access.</string>
     <string name="err_account_missing">The connection does not exist or has been deleted.</string>
     <string name="err_apk_prepare">Could not prepare the APK file.</string>
+    <string name="err_archive_format">Unsupported or damaged archive.</string>
+    <string name="err_archive_gone">The archive is no longer available.</string>
+    <string name="err_archive_rar">Encrypted RAR archives are not supported.</string>
+    <string name="err_archive_read_only">Archives are read-only. Extract the files to change them.</string>
     <string name="err_attach_failed">Could not attach the source.</string>
     <string name="err_attach_in_settings">Attach this source in Settings.</string>
     <string name="err_cannot_read_folder">Cannot read the folder: %1$s</string>
@@ -155,6 +175,10 @@
     <string name="err_target_folder">Could not create the target folder.</string>
     <string name="err_zip_create">Could not create the archive.</string>
     <string name="err_zip_unsafe">The archive contains an unsafe path.</string>
+    <string name="extract_cancel_confirm">Stop and delete</string>
+    <string name="extract_cancel_continue">Continue</string>
+    <string name="extract_cancel_text">Extraction is paused. Files and folders extracted so far will be deleted.</string>
+    <string name="extract_cancel_title">Stop extracting?</string>
     <string name="fab_new">New</string>
     <string name="fav_add">Add to favorites</string>
     <string name="fav_remove">Remove from favorites</string>
@@ -181,6 +205,7 @@
     <string name="history_copy">Copy</string>
     <string name="history_delete">Deletion</string>
     <string name="history_empty">Finished operations appear here. Copying, moving and trashing can be undone from here.</string>
+    <string name="history_extract">Extract</string>
     <string name="history_move">Move</string>
     <string name="history_restore">Restore</string>
     <string name="history_title">Operation history</string>
@@ -189,6 +214,13 @@
     <string name="home_pinned">Pinned folders</string>
     <string name="home_this_computer">This computer</string>
     <string name="home_title">My computer</string>
+    <string name="identity_new">New fingerprint</string>
+    <string name="identity_old">Remembered fingerprint</string>
+    <string name="identity_reject">Don’t connect</string>
+    <string name="identity_text">%1$s identifies itself differently than when you first connected. This happens after reinstalling or replacing the server, but it can also mean someone is impersonating it. Trust the new identity only if you know why it changed.</string>
+    <string name="identity_title_ssh">Server key has changed</string>
+    <string name="identity_title_tls">Server certificate has changed</string>
+    <string name="identity_trust">Trust the new one</string>
     <string name="image_position">%1$d of %2$d · swipe sideways to change photo</string>
     <string name="index_build">Build</string>
     <string name="index_build_hint">Build the index to search all storage</string>
@@ -216,8 +248,46 @@
     <string name="notice_zip_created">ZIP archive created</string>
     <string name="notif_channel">File operations</string>
     <string name="notif_channel_desc">Progress of copying, moving and deleting</string>
+    <string name="offline_added">Added to offline — downloading in the background</string>
+    <string name="offline_banner">Server unavailable — showing the offline copy from %1$s</string>
+    <string name="offline_busy">A previous sync is still running — try again later.</string>
+    <string name="offline_conflict_channel">Offline file conflicts</string>
+    <string name="offline_conflict_text">The file changed both on the server and on the phone. Which version should be kept?
+Server: %1$s
+Phone: %2$s</string>
+    <string name="offline_conflict_title">Version conflict: %1$s</string>
+    <string name="offline_conflicts_title">Version conflicts</string>
+    <string name="offline_failed">Sync failed: %1$s</string>
+    <string name="offline_folder_unavailable">Cannot write to the folder — “All files access” is required.</string>
+    <string name="offline_interval">Sync automatically</string>
+    <string name="offline_interval_manual">Manually</string>
+    <string name="offline_keep_both">Both</string>
+    <string name="offline_keep_local">From phone</string>
+    <string name="offline_keep_remote">From server</string>
+    <string name="offline_location">Where to keep copies</string>
+    <string name="offline_location_app">App storage</string>
+    <string name="offline_location_app_hint">Hidden from other apps; removed when ARMA Files is uninstalled.</string>
+    <string name="offline_location_folder">“ARMA Files offline” folder</string>
+    <string name="offline_location_folder_hint">In phone storage, visible to other apps; kept after uninstalling.</string>
+    <string name="offline_make">Available offline</string>
+    <string name="offline_missing">This item no longer exists on the server.</string>
+    <string name="offline_never">Waiting to sync</string>
+    <string name="offline_only_remote">Only files and folders from servers can be kept offline.</string>
+    <string name="offline_phone_suffix">phone</string>
+    <string name="offline_phone_version">Phone: %1$s</string>
+    <string name="offline_remove">Remove from offline</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Offline files</string>
+    <string name="offline_sync">Sync</string>
+    <string name="offline_synced">Synced %1$s · %2$s</string>
+    <string name="offline_syncing">Syncing… %1$s</string>
+    <string name="offline_title">Available offline</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">deleted</string>
+    <string name="offline_wifi_only">Only over Wi-Fi</string>
     <string name="op_copy">Copying</string>
     <string name="op_delete">Deleting</string>
+    <string name="op_extract">Extracting</string>
     <string name="op_move">Moving</string>
     <string name="op_restore">Restoring</string>
     <string name="op_trash">Moving to trash</string>
@@ -337,6 +407,7 @@ by picking a tab in the bar above.</string>
     <string name="trash_with_count">Trash (%1$d)</string>
     <string name="undo_copied">Copied %1$d</string>
     <string name="undo_done">Done %1$d</string>
+    <string name="undo_extracted">Extracted %1$d</string>
     <string name="undo_moved">Moved %1$d</string>
     <string name="undo_skipped_suffix">, %1$d skipped</string>
     <string name="undo_trashed">Moved to trash %1$d</string>
@@ -345,14 +416,18 @@ by picking a tab in the bar above.</string>
     <string name="welcome_pick">Pick folder</string>
     <string name="welcome_text">Pick a start folder. Android will remember the access, so the app can return to it after a restart.</string>
     <string name="welcome_title">Welcome to ARMA Files</string>
-    <string name="zip_create_title">Create ZIP archive</string>
+    <string name="zip_create_title">Create archive</string>
     <string name="zip_default_name">archive.zip</string>
     <string name="zip_extract_here">Extract here</string>
     <string name="zip_name">Archive name</string>
-    <string name="zip_pack">Compress to ZIP</string>
+    <string name="zip_pack">Compress</string>
     <string name="zoom_fit">Fit</string>
     <string name="zoom_in">Zoom in</string>
     <string name="zoom_out">Zoom out</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Delete %1$d item?</item>
         <item quantity="other">Delete %1$d items?</item>
@@ -376,5 +451,9 @@ by picking a tab in the bar above.</string>
     <plurals name="n_lines">
         <item quantity="one">%1$d line</item>
         <item quantity="other">%1$d lines</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d conflict — choose a version</item>
+        <item quantity="other">%1$d conflicts — choose versions</item>
     </plurals>
 </resources>

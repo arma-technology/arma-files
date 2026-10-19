@@ -39,6 +39,22 @@
     <string name="apk_allow">Leiskite ARMA Files diegti programas ir bandykite dar kartą.</string>
     <string name="apk_failed">Nepavyko paleisti diegimo programos.</string>
     <string name="apk_unsupported">Ši Android versija neleidžia diegti APK failų iš programų.</string>
+    <string name="archive_browse">Naršyti turinį</string>
+    <string name="archive_extract_all">Išskleisti viską</string>
+    <string name="archive_extract_other_pane">Išskleisti į kitą skydelį</string>
+    <string name="archive_format">Formatas</string>
+    <string name="archive_no_password">Šis formatas nepalaiko slaptažodžio.</string>
+    <string name="archive_password">Slaptažodis</string>
+    <string name="archive_password_aes">AES-256 šifravimas</string>
+    <string name="archive_password_optional">Slaptažodis (neprivaloma)</string>
+    <string name="archive_password_title">Slaptažodžiu apsaugotas archyvas</string>
+    <string name="archive_password_wrong">Neteisingas slaptažodis</string>
+    <string name="cache_clear">Išvalyti dabar</string>
+    <string name="cache_limit_age">Šalinti, jei nenaudoti ilgiau nei</string>
+    <string name="cache_limit_size">Daugiausia</string>
+    <string name="cache_text">Failų iš serverių ir archyvų kopijos bei peržiūrai konvertuoti DWG brėžiniai. Viršijus ribą, pirmiausia šalinami seniausiai naudoti.</string>
+    <string name="cache_title">Podėlis</string>
+    <string name="cache_used">Užimta: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archyvai</string>
     <string name="category_audio">Garsas</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Nepavyko gauti prieigos.</string>
     <string name="err_account_missing">Ryšys neegzistuoja arba buvo ištrintas.</string>
     <string name="err_apk_prepare">Nepavyko paruošti APK failo.</string>
+    <string name="err_archive_format">Nepalaikomas arba sugadintas archyvas.</string>
+    <string name="err_archive_gone">Archyvas nebepasiekiamas.</string>
+    <string name="err_archive_rar">Šifruoti RAR archyvai nepalaikomi.</string>
+    <string name="err_archive_read_only">Archyvas skirtas tik skaityti. Norėdami keisti failus, juos išskleiskite.</string>
     <string name="err_attach_failed">Nepavyko prijungti šaltinio.</string>
     <string name="err_attach_in_settings">Prijunkite šį šaltinį nustatymuose.</string>
     <string name="err_cannot_read_folder">Nepavyksta perskaityti aplanko: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Nepavyko sukurti paskirties aplanko.</string>
     <string name="err_zip_create">Nepavyko sukurti archyvo.</string>
     <string name="err_zip_unsafe">Archyve yra nesaugus kelias.</string>
+    <string name="extract_cancel_confirm">Nutraukti ir ištrinti</string>
+    <string name="extract_cancel_continue">Tęsti</string>
+    <string name="extract_cancel_text">Išskleidimas pristabdytas. Iki šiol išskleisti failai ir aplankai bus ištrinti.</string>
+    <string name="extract_cancel_title">Nutraukti išskleidimą?</string>
     <string name="fab_new">Naujas</string>
     <string name="fav_add">Pridėti prie mėgstamų</string>
     <string name="fav_remove">Pašalinti iš mėgstamų</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopijavimas</string>
     <string name="history_delete">Ištrynimas</string>
     <string name="history_empty">Čia atsiras baigtos operacijos. Kopijavimą, perkėlimą ir šiukšlinę galima atšaukti iš čia.</string>
+    <string name="history_extract">Išskleidimas</string>
     <string name="history_move">Perkėlimas</string>
     <string name="history_restore">Atkūrimas</string>
     <string name="history_title">Operacijų istorija</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Prisegti aplankai</string>
     <string name="home_this_computer">Šis kompiuteris</string>
     <string name="home_title">Mano kompiuteris</string>
+    <string name="identity_new">Naujas kontrolinis kodas</string>
+    <string name="identity_old">Įsimintas kontrolinis kodas</string>
+    <string name="identity_reject">Nesijungti</string>
+    <string name="identity_text">%1$s prisistato kitaip nei pirmą kartą jungiantis. Taip būna iš naujo įdiegus ar pakeitus serverį, bet gali reikšti ir apsimetimą. Pasitikėkite tik žinodami priežastį.</string>
+    <string name="identity_title_ssh">Serverio raktas pasikeitė</string>
+    <string name="identity_title_tls">Serverio sertifikatas pasikeitė</string>
+    <string name="identity_trust">Pasitikėti nauju</string>
     <string name="image_position">%1$d iš %2$d · perbraukite į šoną, kad pakeistumėte nuotrauką</string>
     <string name="index_build">Kurti</string>
     <string name="index_build_hint">Sukurkite indeksą, kad galėtumėte ieškoti visoje atmintyje</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP archyvas sukurtas</string>
     <string name="notif_channel">Failų operacijos</string>
     <string name="notif_channel_desc">Kopijavimo, perkėlimo ir trynimo eiga</string>
+    <string name="offline_added">Pridėta neprisijungus — atsisiunčiama fone</string>
+    <string name="offline_banner">Serveris nepasiekiamas — rodoma neprisijungus kopija iš %1$s</string>
+    <string name="offline_busy">Ankstesnis sinchronizavimas dar vyksta — bandykite vėliau.</string>
+    <string name="offline_conflict_channel">Neprisijungus failų nesutapimai</string>
+    <string name="offline_conflict_text">Failas pasikeitė ir serveryje, ir telefone. Kurią versiją palikti?
+Serveris: %1$s
+Telefonas: %2$s</string>
+    <string name="offline_conflict_title">Versijų nesutapimas: %1$s</string>
+    <string name="offline_conflicts_title">Versijų nesutapimai</string>
+    <string name="offline_failed">Sinchronizuoti nepavyko: %1$s</string>
+    <string name="offline_folder_unavailable">Į aplanką rašyti negalima — reikia „Prieigos prie visų failų“.</string>
+    <string name="offline_interval">Sinchronizuoti automatiškai</string>
+    <string name="offline_interval_manual">Rankiniu būdu</string>
+    <string name="offline_keep_both">Abi</string>
+    <string name="offline_keep_local">Iš telefono</string>
+    <string name="offline_keep_remote">Iš serverio</string>
+    <string name="offline_location">Kur laikyti kopijas</string>
+    <string name="offline_location_app">Programos atmintis</string>
+    <string name="offline_location_app_hint">Nematoma kitoms programoms; išnyksta pašalinus ARMA Files.</string>
+    <string name="offline_location_folder">Aplankas „ARMA Files offline“</string>
+    <string name="offline_location_folder_hint">Telefono atmintyje, matomas kitoms programoms; lieka pašalinus programą.</string>
+    <string name="offline_make">Pasiekiama neprisijungus</string>
+    <string name="offline_missing">Šio elemento serveryje nebėra.</string>
+    <string name="offline_never">Laukia sinchronizavimo</string>
+    <string name="offline_only_remote">Neprisijungus galima laikyti tik failus ir aplankus iš serverių.</string>
+    <string name="offline_phone_suffix">telefonas</string>
+    <string name="offline_phone_version">Telefonas: %1$s</string>
+    <string name="offline_remove">Pašalinti iš neprisijungus</string>
+    <string name="offline_server_version">Serveris: %1$s</string>
+    <string name="offline_settings_title">Neprisijungus failai</string>
+    <string name="offline_sync">Sinchronizuoti</string>
+    <string name="offline_synced">Sinchronizuota %1$s · %2$s</string>
+    <string name="offline_syncing">Sinchronizuojama… %1$s</string>
+    <string name="offline_title">Pasiekiama neprisijungus</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">ištrintas</string>
+    <string name="offline_wifi_only">Tik per „Wi-Fi“</string>
     <string name="op_copy">Kopijuojama</string>
     <string name="op_delete">Trinama</string>
+    <string name="op_extract">Išskleidžiama</string>
     <string name="op_move">Perkeliama</string>
     <string name="op_restore">Atkuriama</string>
     <string name="op_trash">Perkeliama į šiukšlinę</string>
@@ -336,6 +406,7 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="trash_with_count">Šiukšlinė (%1$d)</string>
     <string name="undo_copied">Nukopijuota: %1$d</string>
     <string name="undo_done">Atlikta: %1$d</string>
+    <string name="undo_extracted">Išskleista: %1$d</string>
     <string name="undo_moved">Perkelta: %1$d</string>
     <string name="undo_skipped_suffix">, praleista %1$d</string>
     <string name="undo_trashed">Į šiukšlinę: %1$d</string>
@@ -344,14 +415,20 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="welcome_pick">Pasirinkti aplanką</string>
     <string name="welcome_text">Pasirinkite pradinį aplanką. Android įsimins prieigą, todėl programa galės į jį grįžti ir po paleidimo iš naujo.</string>
     <string name="welcome_title">Sveiki atvykę į ARMA Files</string>
-    <string name="zip_create_title">Sukurti ZIP archyvą</string>
+    <string name="zip_create_title">Sukurti archyvą</string>
     <string name="zip_default_name">archyvas.zip</string>
     <string name="zip_extract_here">Išskleisti čia</string>
     <string name="zip_name">Archyvo pavadinimas</string>
-    <string name="zip_pack">Suglaudinti į ZIP</string>
+    <string name="zip_pack">Suglaudinti</string>
     <string name="zoom_fit">Pritaikyti</string>
     <string name="zoom_in">Didinti</string>
     <string name="zoom_out">Mažinti</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d diena</item>
+        <item quantity="few">%1$d dienos</item>
+        <item quantity="many">%1$d dienos</item>
+        <item quantity="other">%1$d dienų</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Ištrinti %1$d elementą?</item>
         <item quantity="few">Ištrinti %1$d elementus?</item>
@@ -387,5 +464,11 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
         <item quantity="few">%1$d eilutės</item>
         <item quantity="many">%1$d eilutės</item>
         <item quantity="other">%1$d eilučių</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d nesutapimas — pasirinkite versiją</item>
+        <item quantity="few">%1$d nesutapimai — pasirinkite versijas</item>
+        <item quantity="many">%1$d nesutapimo — pasirinkite versijas</item>
+        <item quantity="other">%1$d nesutapimų — pasirinkite versijas</item>
     </plurals>
 </resources>

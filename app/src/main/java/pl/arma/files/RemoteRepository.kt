@@ -94,7 +94,14 @@ class RemoteRepository(
 
     private fun <T> withAccount(uri: Uri, block: (RemoteBackend, RemoteAccount, String) -> T): T {
         val account = accountFor(uri)
-        return block(backend(account.type), account, pathOf(uri))
+        return try {
+            block(backend(account.type), account, pathOf(uri))
+        } catch (e: Exception) {
+            // Zmieniony klucz albo certyfikat wymaga decyzji użytkownika —
+            // niezależnie od tego, która operacja go wykryła.
+            pl.arma.files.net.ServerIdentityAlerts.reportIfPresent(e)
+            throw e
+        }
     }
 
     fun listChildren(parent: Uri): List<FileItem> = withAccount(parent) { backend, account, path ->
@@ -153,6 +160,10 @@ class RemoteRepository(
 
     fun openOutput(uri: Uri): OutputStream = withAccount(uri) { backend, account, path ->
         backend.openOutput(account, path)
+    }
+
+    fun watch(uri: Uri): pl.arma.files.net.RemoteWatch? = withAccount(uri) { backend, account, path ->
+        backend.watch(account, path)
     }
 
     /** Zamyka połączenia konta — po zmianie hasła albo usunięciu połączenia. */

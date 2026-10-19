@@ -39,6 +39,22 @@
     <string name="apk_allow">Povoľte ARMA Files inštalovať aplikácie a skúste to znova.</string>
     <string name="apk_failed">Inštalátor sa nepodarilo spustiť.</string>
     <string name="apk_unsupported">Táto verzia Androidu nedovoľuje inštalovať súbory APK z aplikácií.</string>
+    <string name="archive_browse">Prehliadať obsah</string>
+    <string name="archive_extract_all">Rozbaliť všetko</string>
+    <string name="archive_extract_other_pane">Rozbaliť do druhého panela</string>
+    <string name="archive_format">Formát</string>
+    <string name="archive_no_password">Tento formát nepodporuje heslo.</string>
+    <string name="archive_password">Heslo</string>
+    <string name="archive_password_aes">Šifrovanie AES-256</string>
+    <string name="archive_password_optional">Heslo (voliteľné)</string>
+    <string name="archive_password_title">Archív chránený heslom</string>
+    <string name="archive_password_wrong">Nesprávne heslo</string>
+    <string name="cache_clear">Vymazať teraz</string>
+    <string name="cache_limit_age">Mazať, ak sa nepoužili dlhšie ako</string>
+    <string name="cache_limit_size">Najviac</string>
+    <string name="cache_text">Kópie súborov zo serverov a archívov a výkresy DWG prevedené na náhľad. Po prekročení limitu sa najprv mažú najdlhšie nepoužité.</string>
+    <string name="cache_title">Vyrovnávacia pamäť</string>
+    <string name="cache_used">Obsadené: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archívy</string>
     <string name="category_audio">Zvuk</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Nepodarilo sa získať prístup.</string>
     <string name="err_account_missing">Pripojenie neexistuje alebo bolo odstránené.</string>
     <string name="err_apk_prepare">Súbor APK sa nepodarilo pripraviť.</string>
+    <string name="err_archive_format">Nepodporovaný alebo poškodený archív.</string>
+    <string name="err_archive_gone">Archív už nie je dostupný.</string>
+    <string name="err_archive_rar">Šifrované archívy RAR nie sú podporované.</string>
+    <string name="err_archive_read_only">Archív je len na čítanie. Súbory rozbaľte, aby ste ich mohli meniť.</string>
     <string name="err_attach_failed">Zdroj sa nepodarilo pripojiť.</string>
     <string name="err_attach_in_settings">Pripojte tento zdroj v Nastaveniach.</string>
     <string name="err_cannot_read_folder">Priečinok nemožno prečítať: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Cieľový priečinok sa nepodarilo vytvoriť.</string>
     <string name="err_zip_create">Archív sa nepodarilo vytvoriť.</string>
     <string name="err_zip_unsafe">Archív obsahuje nebezpečnú cestu.</string>
+    <string name="extract_cancel_confirm">Prerušiť a odstrániť</string>
+    <string name="extract_cancel_continue">Pokračovať</string>
+    <string name="extract_cancel_text">Rozbaľovanie je pozastavené. Doteraz rozbalené súbory a priečinky budú odstránené.</string>
+    <string name="extract_cancel_title">Prerušiť rozbaľovanie?</string>
     <string name="fab_new">Nový</string>
     <string name="fav_add">Pridať do obľúbených</string>
     <string name="fav_remove">Odstrániť z obľúbených</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopírovanie</string>
     <string name="history_delete">Odstránenie</string>
     <string name="history_empty">Tu sa zobrazia dokončené operácie. Kopírovanie, presun a kôš sa dajú odtiaľto vrátiť.</string>
+    <string name="history_extract">Rozbalenie</string>
     <string name="history_move">Presun</string>
     <string name="history_restore">Obnovenie</string>
     <string name="history_title">História operácií</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Pripnuté priečinky</string>
     <string name="home_this_computer">Tento počítač</string>
     <string name="home_title">Môj počítač</string>
+    <string name="identity_new">Nový odtlačok</string>
+    <string name="identity_old">Uložený odtlačok</string>
+    <string name="identity_reject">Nepripájať</string>
+    <string name="identity_text">%1$s sa predstavuje inak ako pri prvom pripojení. Stáva sa to po preinštalovaní alebo výmene servera, ale môže to znamenať aj podvrhnutie. Dôverujte, len ak viete, prečo sa to zmenilo.</string>
+    <string name="identity_title_ssh">Kľúč servera sa zmenil</string>
+    <string name="identity_title_tls">Certifikát servera sa zmenil</string>
+    <string name="identity_trust">Dôverovať novému</string>
     <string name="image_position">%1$d z %2$d · potiahnite do strany na zmenu fotky</string>
     <string name="index_build">Vytvoriť</string>
     <string name="index_build_hint">Vytvorte index na hľadanie v celom úložisku</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">Archív ZIP vytvorený</string>
     <string name="notif_channel">Operácie so súbormi</string>
     <string name="notif_channel_desc">Priebeh kopírovania, presúvania a odstraňovania</string>
+    <string name="offline_added">Pridané do offline — sťahuje sa na pozadí</string>
+    <string name="offline_banner">Server je nedostupný — zobrazuje sa offline kópia z %1$s</string>
+    <string name="offline_busy">Predchádzajúca synchronizácia ešte prebieha — skúste neskôr.</string>
+    <string name="offline_conflict_channel">Rozpory offline súborov</string>
+    <string name="offline_conflict_text">Súbor sa zmenil na serveri aj v telefóne. Ktorú verziu zachovať?
+Server: %1$s
+Telefón: %2$s</string>
+    <string name="offline_conflict_title">Rozpor verzií: %1$s</string>
+    <string name="offline_conflicts_title">Rozpory verzií</string>
+    <string name="offline_failed">Synchronizácia zlyhala: %1$s</string>
+    <string name="offline_folder_unavailable">Do priečinka nemožno zapisovať — je potrebný „Prístup ku všetkým súborom“.</string>
+    <string name="offline_interval">Synchronizovať automaticky</string>
+    <string name="offline_interval_manual">Ručne</string>
+    <string name="offline_keep_both">Obe</string>
+    <string name="offline_keep_local">Z telefónu</string>
+    <string name="offline_keep_remote">Zo servera</string>
+    <string name="offline_location">Kde uchovávať kópie</string>
+    <string name="offline_location_app">Úložisko aplikácie</string>
+    <string name="offline_location_app_hint">Skryté pred inými aplikáciami; zmizne po odinštalovaní ARMA Files.</string>
+    <string name="offline_location_folder">Priečinok „ARMA Files offline“</string>
+    <string name="offline_location_folder_hint">V úložisku telefónu, viditeľné pre iné aplikácie; zostane aj po odinštalovaní.</string>
+    <string name="offline_make">Dostupné offline</string>
+    <string name="offline_missing">Táto položka už na serveri nie je.</string>
+    <string name="offline_never">Čaká na synchronizáciu</string>
+    <string name="offline_only_remote">Offline možno uložiť len súbory a priečinky zo serverov.</string>
+    <string name="offline_phone_suffix">telefón</string>
+    <string name="offline_phone_version">Telefón: %1$s</string>
+    <string name="offline_remove">Odstrániť z offline</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Offline súbory</string>
+    <string name="offline_sync">Synchronizovať</string>
+    <string name="offline_synced">Synchronizované %1$s · %2$s</string>
+    <string name="offline_syncing">Synchronizácia… %1$s</string>
+    <string name="offline_title">Dostupné offline</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">odstránené</string>
+    <string name="offline_wifi_only">Iba cez Wi-Fi</string>
     <string name="op_copy">Kopírovanie</string>
     <string name="op_delete">Odstraňovanie</string>
+    <string name="op_extract">Rozbaľovanie</string>
     <string name="op_move">Presúvanie</string>
     <string name="op_restore">Obnovovanie</string>
     <string name="op_trash">Presun do koša</string>
@@ -336,6 +406,7 @@ výberom karty v lište hore.</string>
     <string name="trash_with_count">Kôš (%1$d)</string>
     <string name="undo_copied">Skopírované %1$d</string>
     <string name="undo_done">Hotovo %1$d</string>
+    <string name="undo_extracted">Rozbalené: %1$d</string>
     <string name="undo_moved">Presunuté %1$d</string>
     <string name="undo_skipped_suffix">, preskočené %1$d</string>
     <string name="undo_trashed">Presunuté do koša %1$d</string>
@@ -344,14 +415,20 @@ výberom karty v lište hore.</string>
     <string name="welcome_pick">Vybrať priečinok</string>
     <string name="welcome_text">Vyberte počiatočný priečinok. Android si prístup zapamätá, takže sa k nemu aplikácia môže vrátiť aj po reštarte.</string>
     <string name="welcome_title">Vitajte v ARMA Files</string>
-    <string name="zip_create_title">Vytvoriť archív ZIP</string>
+    <string name="zip_create_title">Vytvoriť archív</string>
     <string name="zip_default_name">archiv.zip</string>
     <string name="zip_extract_here">Rozbaliť sem</string>
     <string name="zip_name">Názov archívu</string>
-    <string name="zip_pack">Zbaliť do ZIP</string>
+    <string name="zip_pack">Zbaliť</string>
     <string name="zoom_fit">Prispôsobiť</string>
     <string name="zoom_in">Priblížiť</string>
     <string name="zoom_out">Oddialiť</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d deň</item>
+        <item quantity="few">%1$d dni</item>
+        <item quantity="many">%1$d dňa</item>
+        <item quantity="other">%1$d dní</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Odstrániť %1$d položku?</item>
         <item quantity="few">Odstrániť %1$d položky?</item>
@@ -387,5 +464,11 @@ výberom karty v lište hore.</string>
         <item quantity="few">%1$d riadky</item>
         <item quantity="many">%1$d riadku</item>
         <item quantity="other">%1$d riadkov</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d rozpor — vyberte verziu</item>
+        <item quantity="few">%1$d rozpory — vyberte verzie</item>
+        <item quantity="many">%1$d rozporu — vyberte verzie</item>
+        <item quantity="other">%1$d rozporov — vyberte verzie</item>
     </plurals>
 </resources>

@@ -33,6 +33,28 @@ class LiveServersTest {
         return (System.nanoTime() - start) / 1_000_000
     }
 
+    /** Powiadomienie SMB przychodzi, gdy ktoś inny doda plik do obserwowanego folderu. */
+    @Test
+    fun obserwacjaSmb() {
+        assumeTrue(env("ARMA_NET_TEST") == "1")
+        val port = env("ARMA_SMB")?.toInt() ?: return
+        val account = RemoteAccount(
+            id = "watch", type = RemoteType.SMB, label = "SMB", host = "127.0.0.1",
+            port = port, username = "test", password = "haslo", share = "dane"
+        )
+        val backend = SmbBackend()
+        val writer = SmbBackend()
+        val name = "/sub/obserwacja-${System.nanoTime()}.txt"
+        backend.watch(account, "/sub").use { watch ->
+            val done = java.util.concurrent.CompletableFuture.runAsync { watch.await() }
+            Thread.sleep(500)
+            writer.openOutput(account, name).use { it.write("x".toByteArray()) }
+            done.get(10, java.util.concurrent.TimeUnit.SECONDS)
+            println("  powiadomienie SMB: ok")
+        }
+        writer.delete(account, name, false)
+    }
+
     @Test
     fun scenariusz() {
         assumeTrue(env("ARMA_NET_TEST") == "1")

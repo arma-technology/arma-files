@@ -39,6 +39,22 @@
     <string name="apk_allow">Dopustite aplikaciji ARMA Files instaliranje aplikacija, zatim pokušajte ponovno.</string>
     <string name="apk_failed">Instalacijski program nije se mogao pokrenuti.</string>
     <string name="apk_unsupported">Ova verzija Androida ne dopušta instaliranje APK datoteka iz aplikacija.</string>
+    <string name="archive_browse">Pregledaj sadržaj</string>
+    <string name="archive_extract_all">Raspakuj sve</string>
+    <string name="archive_extract_other_pane">Raspakuj u drugi panel</string>
+    <string name="archive_format">Format</string>
+    <string name="archive_no_password">Ovaj format ne podržava lozinku.</string>
+    <string name="archive_password">Lozinka</string>
+    <string name="archive_password_aes">Šifriranje AES-256</string>
+    <string name="archive_password_optional">Lozinka (neobavezno)</string>
+    <string name="archive_password_title">Arhiva zaštićena lozinkom</string>
+    <string name="archive_password_wrong">Pogrešna lozinka</string>
+    <string name="cache_clear">Očisti sada</string>
+    <string name="cache_limit_age">Briši ako nisu korišteni duže od</string>
+    <string name="cache_limit_size">Najviše</string>
+    <string name="cache_text">Kopije datoteka sa servera i iz arhiva te DWG crteži pretvoreni za pregled. Kada se prekorači ograničenje, prvo se brišu najdavnije korišteni.</string>
+    <string name="cache_title">Keš memorija</string>
+    <string name="cache_used">Zauzeto: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Arhive</string>
     <string name="category_audio">Zvuk</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Pristup nije uspio.</string>
     <string name="err_account_missing">Veza ne postoji ili je izbrisana.</string>
     <string name="err_apk_prepare">APK datoteka nije se mogla pripremiti.</string>
+    <string name="err_archive_format">Nepodržana ili oštećena arhiva.</string>
+    <string name="err_archive_gone">Arhiva više nije dostupna.</string>
+    <string name="err_archive_rar">Šifrovane RAR arhive nisu podržane.</string>
+    <string name="err_archive_read_only">Arhiva je samo za čitanje. Raspakujte datoteke da biste ih mijenjali.</string>
     <string name="err_attach_failed">Izvor se nije mogao povezati.</string>
     <string name="err_attach_in_settings">Povežite ovaj izvor u Postavkama.</string>
     <string name="err_cannot_read_folder">Mapu nije moguće pročitati: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Odredišna mapa nije se mogla stvoriti.</string>
     <string name="err_zip_create">Arhiva se nije mogla stvoriti.</string>
     <string name="err_zip_unsafe">Arhiva sadrži nesiguran put.</string>
+    <string name="extract_cancel_confirm">Prekini i izbriši</string>
+    <string name="extract_cancel_continue">Nastavi</string>
+    <string name="extract_cancel_text">Raspakivanje je pauzirano. Do sada raspakovane datoteke i mape bit će izbrisane.</string>
+    <string name="extract_cancel_title">Prekinuti raspakivanje?</string>
     <string name="fab_new">Novo</string>
     <string name="fav_add">Dodaj u favorite</string>
     <string name="fav_remove">Ukloni iz favorita</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopiranje</string>
     <string name="history_delete">Brisanje</string>
     <string name="history_empty">Ovdje će se pojaviti dovršene operacije. Kopiranje, premještanje i koš mogu se odavde poništiti.</string>
+    <string name="history_extract">Raspakivanje</string>
     <string name="history_move">Premještanje</string>
     <string name="history_restore">Vraćanje</string>
     <string name="history_title">Historija operacija</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Zakačene mape</string>
     <string name="home_this_computer">Ovaj računar</string>
     <string name="home_title">Moj računar</string>
+    <string name="identity_new">Novi otisak</string>
+    <string name="identity_old">Zapamćeni otisak</string>
+    <string name="identity_reject">Ne povezuj</string>
+    <string name="identity_text">%1$s se predstavlja drugačije nego pri prvom povezivanju. To se dešava nakon ponovne instalacije ili zamjene servera, ali može značiti i da se neko lažno predstavlja. Vjerujte samo ako znate zašto se promijenilo.</string>
+    <string name="identity_title_ssh">Ključ servera se promijenio</string>
+    <string name="identity_title_tls">Certifikat servera se promijenio</string>
+    <string name="identity_trust">Vjeruj novom</string>
     <string name="image_position">%1$d od %2$d · povucite ustranu za promjenu fotografije</string>
     <string name="index_build">Izgradi</string>
     <string name="index_build_hint">Izgradite indeks za pretraživanje cijele pohrane</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP arhiva stvorena</string>
     <string name="notif_channel">Operacije s datotekama</string>
     <string name="notif_channel_desc">Napredak kopiranja, premještanja i brisanja</string>
+    <string name="offline_added">Dodano van mreže — preuzimanje u pozadini</string>
+    <string name="offline_banner">Server nije dostupan — prikazuje se kopija van mreže od %1$s</string>
+    <string name="offline_busy">Prethodna sinhronizacija još traje — pokušajte kasnije.</string>
+    <string name="offline_conflict_channel">Neusklađenosti datoteka van mreže</string>
+    <string name="offline_conflict_text">Datoteka je promijenjena i na serveru i na telefonu. Koju verziju zadržati?
+Server: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Neusklađene verzije: %1$s</string>
+    <string name="offline_conflicts_title">Neusklađene verzije</string>
+    <string name="offline_failed">Sinhronizacija nije uspjela: %1$s</string>
+    <string name="offline_folder_unavailable">Nije moguće pisati u mapu — potreban je „Pristup svim datotekama”.</string>
+    <string name="offline_interval">Sinhroniziraj automatski</string>
+    <string name="offline_interval_manual">Ručno</string>
+    <string name="offline_keep_both">Obje</string>
+    <string name="offline_keep_local">S telefona</string>
+    <string name="offline_keep_remote">Sa servera</string>
+    <string name="offline_location">Gdje čuvati kopije</string>
+    <string name="offline_location_app">Memorija aplikacije</string>
+    <string name="offline_location_app_hint">Skriveno od drugih aplikacija; briše se deinstalacijom ARMA Files.</string>
+    <string name="offline_location_folder">Mapa „ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">U memoriji telefona, vidljivo drugim aplikacijama; ostaje nakon deinstalacije.</string>
+    <string name="offline_make">Dostupno van mreže</string>
+    <string name="offline_missing">Ova stavka više ne postoji na serveru.</string>
+    <string name="offline_never">Čeka sinhronizaciju</string>
+    <string name="offline_only_remote">Van mreže se mogu čuvati samo datoteke i mape sa servera.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Ukloni iz van mreže</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Datoteke van mreže</string>
+    <string name="offline_sync">Sinhroniziraj</string>
+    <string name="offline_synced">Sinhronizovano %1$s · %2$s</string>
+    <string name="offline_syncing">Sinhronizacija… %1$s</string>
+    <string name="offline_title">Dostupno van mreže</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">izbrisano</string>
+    <string name="offline_wifi_only">Samo preko Wi-Fi</string>
     <string name="op_copy">Kopiranje</string>
     <string name="op_delete">Brisanje</string>
+    <string name="op_extract">Raspakivanje</string>
     <string name="op_move">Premještanje</string>
     <string name="op_restore">Vraćanje</string>
     <string name="op_trash">Premještanje u koš</string>
@@ -336,6 +406,7 @@ odabirom kartice na traci iznad.</string>
     <string name="trash_with_count">Koš (%1$d)</string>
     <string name="undo_copied">Kopirano: %1$d</string>
     <string name="undo_done">Gotovo: %1$d</string>
+    <string name="undo_extracted">Raspakovano: %1$d</string>
     <string name="undo_moved">Premješteno: %1$d</string>
     <string name="undo_skipped_suffix">, preskočeno %1$d</string>
     <string name="undo_trashed">U koš: %1$d</string>
@@ -344,14 +415,19 @@ odabirom kartice na traci iznad.</string>
     <string name="welcome_pick">Odaberi mapu</string>
     <string name="welcome_text">Odaberite početnu mapu. Android će zapamtiti pristup, pa će joj se aplikacija moći vratiti i nakon ponovnog pokretanja.</string>
     <string name="welcome_title">Dobro došli u ARMA Files</string>
-    <string name="zip_create_title">Stvori ZIP arhivu</string>
+    <string name="zip_create_title">Stvori arhivu</string>
     <string name="zip_default_name">arhiva.zip</string>
     <string name="zip_extract_here">Raspakiraj ovdje</string>
     <string name="zip_name">Naziv arhive</string>
-    <string name="zip_pack">Sažmi u ZIP</string>
+    <string name="zip_pack">Sažmi</string>
     <string name="zoom_fit">Prilagodi</string>
     <string name="zoom_in">Povećaj</string>
     <string name="zoom_out">Smanji</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d dan</item>
+        <item quantity="few">%1$d dana</item>
+        <item quantity="other">%1$d dana</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Izbrisati %1$d stavku?</item>
         <item quantity="few">Izbrisati %1$d stavke?</item>
@@ -381,5 +457,10 @@ odabirom kartice na traci iznad.</string>
         <item quantity="one">%1$d redak</item>
         <item quantity="few">%1$d retka</item>
         <item quantity="other">%1$d redaka</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d neusklađenost — odaberite verziju</item>
+        <item quantity="few">%1$d neusklađenosti — odaberite verzije</item>
+        <item quantity="other">%1$d neusklađenosti — odaberite verzije</item>
     </plurals>
 </resources>

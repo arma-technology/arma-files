@@ -6,6 +6,8 @@ import android.net.Uri
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -150,6 +152,13 @@ class OperationEngine(
             patch(id) { it.copy(status = OperationStatus.COMPLETED, skipped = context.skipped) }
             record(id, OperationStatus.COMPLETED, context)
         } catch (cancellation: CancellationException) {
+            if (operation.kind == OperationKind.EXTRACT) {
+                // Przerwane rozpakowanie nie zostawia połowy archiwum na dysku.
+                withContext(NonCancellable) {
+                    context.created.asReversed().forEach { runCatching { deleteTree(it, context) } }
+                }
+                context.pairs.clear()
+            }
             patch(id) { it.copy(status = OperationStatus.CANCELLED, skipped = context.skipped) }
             record(id, OperationStatus.CANCELLED, context)
             throw cancellation
@@ -216,7 +225,7 @@ class OperationEngine(
             }
         }
 
-        val moving = context.kind != OperationKind.COPY
+        val moving = context.kind != OperationKind.COPY && context.kind != OperationKind.EXTRACT
 
         if (moving && !item.isDirectory) {
             val fast = ops.fastMove(item, targetParent, name)
@@ -232,6 +241,7 @@ class OperationEngine(
             val created = ops.createFolder(targetParent, name)
                 ?: throw IOException(text(R.string.err_folder_create_named, name))
             context.remember(targetParent, name, item.copy(uri = created, name = name))
+            if (topLevel) context.created += item.copy(uri = created, name = name)
             ops.listChildren(item.uri).forEach { child ->
                 coroutineContext.ensureActive()
                 awaitResume()
@@ -246,6 +256,7 @@ class OperationEngine(
             val created = ops.createFile(targetParent, name, mime)
                 ?: throw IOException(text(R.string.err_file_create_named, name))
             context.remember(targetParent, name, item.copy(uri = created, name = name))
+            if (topLevel) context.created += item.copy(uri = created, name = name)
             copyBytes(item, created, context.operationId, name, startedAt)
             if (moving && !ops.delete(item)) {
                 throw IOException(text(R.string.err_move_source_left, item.name))
@@ -386,6 +397,8 @@ class OperationEngine(
      */
     private inner class RunContext(val operationId: String, val kind: OperationKind) {
         val pairs = mutableListOf<Pair<String, String>>()
+        /** Elementy utworzone w katalogu docelowym — do sprzątania po przerwaniu. */
+        val created = mutableListOf<FileItem>()
         var skipped = 0
         private var blanket: ConflictAction? = null
         private val names = mutableMapOf<String, MutableMap<String, FileItem>>()

@@ -39,6 +39,22 @@
     <string name="apk_allow">Atļaujiet ARMA Files instalēt lietotnes un mēģiniet vēlreiz.</string>
     <string name="apk_failed">Neizdevās palaist instalētāju.</string>
     <string name="apk_unsupported">Šī Android versija neļauj instalēt APK failus no lietotnēm.</string>
+    <string name="archive_browse">Pārlūkot saturu</string>
+    <string name="archive_extract_all">Izpakot visu</string>
+    <string name="archive_extract_other_pane">Izpakot otrā panelī</string>
+    <string name="archive_format">Formāts</string>
+    <string name="archive_no_password">Šis formāts neatbalsta paroli.</string>
+    <string name="archive_password">Parole</string>
+    <string name="archive_password_aes">AES-256 šifrēšana</string>
+    <string name="archive_password_optional">Parole (neobligāti)</string>
+    <string name="archive_password_title">Ar paroli aizsargāts arhīvs</string>
+    <string name="archive_password_wrong">Nepareiza parole</string>
+    <string name="cache_clear">Notīrīt tagad</string>
+    <string name="cache_limit_age">Dzēst, ja nav izmantoti ilgāk par</string>
+    <string name="cache_limit_size">Ne vairāk kā</string>
+    <string name="cache_text">Failu kopijas no serveriem un arhīviem, kā arī apskatei pārveidoti DWG rasējumi. Pārsniedzot ierobežojumu, vispirms tiek dzēsti senāk izmantotie.</string>
+    <string name="cache_title">Kešatmiņa</string>
+    <string name="cache_used">Aizņemts: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Arhīvi</string>
     <string name="category_audio">Audio</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Neizdevās iegūt piekļuvi.</string>
     <string name="err_account_missing">Savienojums neeksistē vai ir izdzēsts.</string>
     <string name="err_apk_prepare">Neizdevās sagatavot APK failu.</string>
+    <string name="err_archive_format">Neatbalstīts vai bojāts arhīvs.</string>
+    <string name="err_archive_gone">Arhīvs vairs nav pieejams.</string>
+    <string name="err_archive_rar">Šifrēti RAR arhīvi netiek atbalstīti.</string>
+    <string name="err_archive_read_only">Arhīvs ir tikai lasāms. Lai mainītu failus, izpakojiet tos.</string>
     <string name="err_attach_failed">Neizdevās pievienot avotu.</string>
     <string name="err_attach_in_settings">Pievienojiet šo avotu iestatījumos.</string>
     <string name="err_cannot_read_folder">Nevar nolasīt mapi: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Neizdevās izveidot mērķa mapi.</string>
     <string name="err_zip_create">Neizdevās izveidot arhīvu.</string>
     <string name="err_zip_unsafe">Arhīvā ir nedrošs ceļš.</string>
+    <string name="extract_cancel_confirm">Pārtraukt un dzēst</string>
+    <string name="extract_cancel_continue">Turpināt</string>
+    <string name="extract_cancel_text">Izpakošana ir apturēta. Līdz šim izpakotie faili un mapes tiks dzēsti.</string>
+    <string name="extract_cancel_title">Pārtraukt izpakošanu?</string>
     <string name="fab_new">Jauns</string>
     <string name="fav_add">Pievienot izlasei</string>
     <string name="fav_remove">Noņemt no izlases</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopēšana</string>
     <string name="history_delete">Dzēšana</string>
     <string name="history_empty">Šeit parādīsies pabeigtās darbības. Kopēšanu, pārvietošanu un miskasti var atsaukt no šejienes.</string>
+    <string name="history_extract">Izpakošana</string>
     <string name="history_move">Pārvietošana</string>
     <string name="history_restore">Atjaunošana</string>
     <string name="history_title">Darbību vēsture</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Piespraustās mapes</string>
     <string name="home_this_computer">Šis dators</string>
     <string name="home_title">Mans dators</string>
+    <string name="identity_new">Jaunais nospiedums</string>
+    <string name="identity_old">Saglabātais nospiedums</string>
+    <string name="identity_reject">Neveidot savienojumu</string>
+    <string name="identity_text">%1$s identificējas citādi nekā pirmajā savienojumā. Tā notiek pēc servera pārinstalēšanas vai nomaiņas, bet tas var nozīmēt arī uzdošanos. Uzticieties tikai tad, ja zināt iemeslu.</string>
+    <string name="identity_title_ssh">Servera atslēga ir mainījusies</string>
+    <string name="identity_title_tls">Servera sertifikāts ir mainījies</string>
+    <string name="identity_trust">Uzticēties jaunajam</string>
     <string name="image_position">%1$d no %2$d · velciet uz sāniem, lai mainītu fotoattēlu</string>
     <string name="index_build">Izveidot</string>
     <string name="index_build_hint">Izveidojiet indeksu, lai meklētu visā atmiņā</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP arhīvs izveidots</string>
     <string name="notif_channel">Failu darbības</string>
     <string name="notif_channel_desc">Kopēšanas, pārvietošanas un dzēšanas gaita</string>
+    <string name="offline_added">Pievienots bezsaistei — lejupielāde fonā</string>
+    <string name="offline_banner">Serveris nav pieejams — tiek rādīta bezsaistes kopija no %1$s</string>
+    <string name="offline_busy">Iepriekšējā sinhronizācija vēl notiek — mēģiniet vēlāk.</string>
+    <string name="offline_conflict_channel">Bezsaistes failu neatbilstības</string>
+    <string name="offline_conflict_text">Fails ir mainījies gan serverī, gan tālrunī. Kuru versiju paturēt?
+Serveris: %1$s
+Tālrunis: %2$s</string>
+    <string name="offline_conflict_title">Versiju neatbilstība: %1$s</string>
+    <string name="offline_conflicts_title">Versiju neatbilstības</string>
+    <string name="offline_failed">Sinhronizācija neizdevās: %1$s</string>
+    <string name="offline_folder_unavailable">Mapē nevar rakstīt — nepieciešama “Piekļuve visiem failiem”.</string>
+    <string name="offline_interval">Sinhronizēt automātiski</string>
+    <string name="offline_interval_manual">Manuāli</string>
+    <string name="offline_keep_both">Abas</string>
+    <string name="offline_keep_local">No tālruņa</string>
+    <string name="offline_keep_remote">No servera</string>
+    <string name="offline_location">Kur glabāt kopijas</string>
+    <string name="offline_location_app">Lietotnes krātuve</string>
+    <string name="offline_location_app_hint">Citām lietotnēm nav redzama; tiek dzēsta, atinstalējot ARMA Files.</string>
+    <string name="offline_location_folder">Mape “ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">Tālruņa krātuvē, redzama citām lietotnēm; paliek arī pēc atinstalēšanas.</string>
+    <string name="offline_make">Pieejams bezsaistē</string>
+    <string name="offline_missing">Šī vienuma serverī vairs nav.</string>
+    <string name="offline_never">Gaida sinhronizāciju</string>
+    <string name="offline_only_remote">Bezsaistē var glabāt tikai failus un mapes no serveriem.</string>
+    <string name="offline_phone_suffix">tālrunis</string>
+    <string name="offline_phone_version">Tālrunis: %1$s</string>
+    <string name="offline_remove">Noņemt no bezsaistes</string>
+    <string name="offline_server_version">Serveris: %1$s</string>
+    <string name="offline_settings_title">Bezsaistes faili</string>
+    <string name="offline_sync">Sinhronizēt</string>
+    <string name="offline_synced">Sinhronizēts %1$s · %2$s</string>
+    <string name="offline_syncing">Sinhronizē… %1$s</string>
+    <string name="offline_title">Pieejams bezsaistē</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">dzēsts</string>
+    <string name="offline_wifi_only">Tikai caur Wi-Fi</string>
     <string name="op_copy">Kopē</string>
     <string name="op_delete">Dzēš</string>
+    <string name="op_extract">Izpako</string>
     <string name="op_move">Pārvieto</string>
     <string name="op_restore">Atjauno</string>
     <string name="op_trash">Pārvieto uz miskasti</string>
@@ -336,6 +406,7 @@ izvēloties cilni joslā augšā.</string>
     <string name="trash_with_count">Miskaste (%1$d)</string>
     <string name="undo_copied">Nokopēti: %1$d</string>
     <string name="undo_done">Gatavs: %1$d</string>
+    <string name="undo_extracted">Izpakoti: %1$d</string>
     <string name="undo_moved">Pārvietoti: %1$d</string>
     <string name="undo_skipped_suffix">, izlaisti %1$d</string>
     <string name="undo_trashed">Uz miskasti: %1$d</string>
@@ -344,14 +415,19 @@ izvēloties cilni joslā augšā.</string>
     <string name="welcome_pick">Izvēlēties mapi</string>
     <string name="welcome_text">Izvēlieties sākuma mapi. Android atcerēsies piekļuvi, tāpēc lietotne varēs tajā atgriezties arī pēc restartēšanas.</string>
     <string name="welcome_title">Laipni lūdzam ARMA Files</string>
-    <string name="zip_create_title">Izveidot ZIP arhīvu</string>
+    <string name="zip_create_title">Izveidot arhīvu</string>
     <string name="zip_default_name">arhivs.zip</string>
     <string name="zip_extract_here">Izpakot šeit</string>
     <string name="zip_name">Arhīva nosaukums</string>
-    <string name="zip_pack">Saspiest ZIP</string>
+    <string name="zip_pack">Saspiest</string>
     <string name="zoom_fit">Ietilpināt</string>
     <string name="zoom_in">Tuvināt</string>
     <string name="zoom_out">Tālināt</string>
+    <plurals name="cache_days">
+        <item quantity="zero">%1$d dienu</item>
+        <item quantity="one">%1$d diena</item>
+        <item quantity="other">%1$d dienas</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="zero">Dzēst %1$d vienumus?</item>
         <item quantity="one">Dzēst %1$d vienumu?</item>
@@ -381,5 +457,10 @@ izvēloties cilni joslā augšā.</string>
         <item quantity="zero">%1$d rindu</item>
         <item quantity="one">%1$d rinda</item>
         <item quantity="other">%1$d rindas</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="zero">%1$d neatbilstību — izvēlieties versijas</item>
+        <item quantity="one">%1$d neatbilstība — izvēlieties versiju</item>
+        <item quantity="other">%1$d neatbilstības — izvēlieties versijas</item>
     </plurals>
 </resources>

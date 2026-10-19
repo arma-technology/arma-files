@@ -39,6 +39,22 @@
     <string name="apk_allow">Разрешите ARMA Files устанавливать приложения и повторите попытку.</string>
     <string name="apk_failed">Не удалось запустить установщик.</string>
     <string name="apk_unsupported">Эта версия Android не позволяет устанавливать APK-файлы из приложений.</string>
+    <string name="archive_browse">Просмотреть содержимое</string>
+    <string name="archive_extract_all">Распаковать всё</string>
+    <string name="archive_extract_other_pane">Распаковать в другую панель</string>
+    <string name="archive_format">Формат</string>
+    <string name="archive_no_password">Этот формат не поддерживает пароль.</string>
+    <string name="archive_password">Пароль</string>
+    <string name="archive_password_aes">Шифрование AES-256</string>
+    <string name="archive_password_optional">Пароль (необязательно)</string>
+    <string name="archive_password_title">Архив защищён паролем</string>
+    <string name="archive_password_wrong">Неверный пароль</string>
+    <string name="cache_clear">Очистить сейчас</string>
+    <string name="cache_limit_age">Удалять, если не использовались дольше</string>
+    <string name="cache_limit_size">Не более</string>
+    <string name="cache_text">Копии файлов с серверов и из архивов, а также чертежи DWG, преобразованные для просмотра. При превышении лимита сначала удаляются давно не использованные.</string>
+    <string name="cache_title">Кэш</string>
+    <string name="cache_used">Занято: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Архивы</string>
     <string name="category_audio">Аудио</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Не удалось получить доступ.</string>
     <string name="err_account_missing">Подключение не существует или было удалено.</string>
     <string name="err_apk_prepare">Не удалось подготовить APK-файл.</string>
+    <string name="err_archive_format">Неподдерживаемый или повреждённый архив.</string>
+    <string name="err_archive_gone">Архив больше недоступен.</string>
+    <string name="err_archive_rar">Зашифрованные архивы RAR не поддерживаются.</string>
+    <string name="err_archive_read_only">Архив доступен только для чтения. Распакуйте файлы, чтобы изменить их.</string>
     <string name="err_attach_failed">Не удалось подключить источник.</string>
     <string name="err_attach_in_settings">Подключите этот источник в настройках.</string>
     <string name="err_cannot_read_folder">Не удаётся прочитать папку: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Не удалось создать папку назначения.</string>
     <string name="err_zip_create">Не удалось создать архив.</string>
     <string name="err_zip_unsafe">Архив содержит небезопасный путь.</string>
+    <string name="extract_cancel_confirm">Прервать и удалить</string>
+    <string name="extract_cancel_continue">Продолжить</string>
+    <string name="extract_cancel_text">Распаковка приостановлена. Уже распакованные файлы и папки будут удалены.</string>
+    <string name="extract_cancel_title">Прервать распаковку?</string>
     <string name="fab_new">Создать</string>
     <string name="fav_add">Добавить в избранное</string>
     <string name="fav_remove">Удалить из избранного</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Копирование</string>
     <string name="history_delete">Удаление</string>
     <string name="history_empty">Здесь появятся завершённые операции. Копирование, перемещение и корзину можно отсюда отменить.</string>
+    <string name="history_extract">Распаковка</string>
     <string name="history_move">Перемещение</string>
     <string name="history_restore">Восстановление</string>
     <string name="history_title">История операций</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Закреплённые папки</string>
     <string name="home_this_computer">Этот компьютер</string>
     <string name="home_title">Мой компьютер</string>
+    <string name="identity_new">Новый отпечаток</string>
+    <string name="identity_old">Сохранённый отпечаток</string>
+    <string name="identity_reject">Не подключаться</string>
+    <string name="identity_text">%1$s представляется иначе, чем при первом подключении. Так бывает после переустановки или замены сервера, но это может означать и подмену. Доверяйте, только если знаете причину.</string>
+    <string name="identity_title_ssh">Ключ сервера изменился</string>
+    <string name="identity_title_tls">Сертификат сервера изменился</string>
+    <string name="identity_trust">Доверять новому</string>
     <string name="image_position">%1$d из %2$d · проведите в сторону, чтобы сменить фото</string>
     <string name="index_build">Создать</string>
     <string name="index_build_hint">Создайте индекс для поиска по всей памяти</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP-архив создан</string>
     <string name="notif_channel">Операции с файлами</string>
     <string name="notif_channel_desc">Ход копирования, перемещения и удаления</string>
+    <string name="offline_added">Добавлено в офлайн — загрузка в фоне</string>
+    <string name="offline_banner">Сервер недоступен — показана офлайн-копия от %1$s</string>
+    <string name="offline_busy">Предыдущая синхронизация ещё идёт — попробуйте позже.</string>
+    <string name="offline_conflict_channel">Расхождения офлайн-файлов</string>
+    <string name="offline_conflict_text">Файл изменился и на сервере, и в телефоне. Какую версию сохранить?
+Сервер: %1$s
+Телефон: %2$s</string>
+    <string name="offline_conflict_title">Расхождение версий: %1$s</string>
+    <string name="offline_conflicts_title">Расхождения версий</string>
+    <string name="offline_failed">Ошибка синхронизации: %1$s</string>
+    <string name="offline_folder_unavailable">Невозможно записать в папку — нужен «Доступ ко всем файлам».</string>
+    <string name="offline_interval">Синхронизировать автоматически</string>
+    <string name="offline_interval_manual">Вручную</string>
+    <string name="offline_keep_both">Обе</string>
+    <string name="offline_keep_local">С телефона</string>
+    <string name="offline_keep_remote">С сервера</string>
+    <string name="offline_location">Где хранить копии</string>
+    <string name="offline_location_app">Память приложения</string>
+    <string name="offline_location_app_hint">Не видна другим приложениям; удаляется вместе с ARMA Files.</string>
+    <string name="offline_location_folder">Папка «ARMA Files offline»</string>
+    <string name="offline_location_folder_hint">В памяти телефона, видна другим приложениям; остаётся после удаления.</string>
+    <string name="offline_make">Доступно офлайн</string>
+    <string name="offline_missing">Этого элемента больше нет на сервере.</string>
+    <string name="offline_never">Ожидает синхронизации</string>
+    <string name="offline_only_remote">Офлайн можно сохранить только файлы и папки с серверов.</string>
+    <string name="offline_phone_suffix">телефон</string>
+    <string name="offline_phone_version">Телефон: %1$s</string>
+    <string name="offline_remove">Удалить из офлайн</string>
+    <string name="offline_server_version">Сервер: %1$s</string>
+    <string name="offline_settings_title">Офлайн-файлы</string>
+    <string name="offline_sync">Синхронизировать</string>
+    <string name="offline_synced">Синхронизировано %1$s · %2$s</string>
+    <string name="offline_syncing">Синхронизация… %1$s</string>
+    <string name="offline_title">Доступно офлайн</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">удалён</string>
+    <string name="offline_wifi_only">Только через Wi-Fi</string>
     <string name="op_copy">Копирование</string>
     <string name="op_delete">Удаление</string>
+    <string name="op_extract">Распаковка</string>
     <string name="op_move">Перемещение</string>
     <string name="op_restore">Восстановление</string>
     <string name="op_trash">Перемещение в корзину</string>
@@ -336,6 +406,7 @@
     <string name="trash_with_count">Корзина (%1$d)</string>
     <string name="undo_copied">Скопировано: %1$d</string>
     <string name="undo_done">Готово: %1$d</string>
+    <string name="undo_extracted">Распаковано: %1$d</string>
     <string name="undo_moved">Перемещено: %1$d</string>
     <string name="undo_skipped_suffix">, пропущено %1$d</string>
     <string name="undo_trashed">В корзину: %1$d</string>
@@ -344,14 +415,20 @@
     <string name="welcome_pick">Выбрать папку</string>
     <string name="welcome_text">Выберите начальную папку. Android запомнит доступ, и приложение сможет вернуться к ней после перезапуска.</string>
     <string name="welcome_title">Добро пожаловать в ARMA Files</string>
-    <string name="zip_create_title">Создать ZIP-архив</string>
+    <string name="zip_create_title">Создать архив</string>
     <string name="zip_default_name">archive.zip</string>
     <string name="zip_extract_here">Распаковать сюда</string>
     <string name="zip_name">Имя архива</string>
-    <string name="zip_pack">Упаковать в ZIP</string>
+    <string name="zip_pack">Упаковать</string>
     <string name="zoom_fit">По размеру</string>
     <string name="zoom_in">Увеличить</string>
     <string name="zoom_out">Уменьшить</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дня</item>
+        <item quantity="many">%1$d дней</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Удалить %1$d элемент?</item>
         <item quantity="few">Удалить %1$d элемента?</item>
@@ -387,5 +464,11 @@
         <item quantity="few">%1$d строки</item>
         <item quantity="many">%1$d строк</item>
         <item quantity="other">%1$d строки</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d расхождение — выберите версию</item>
+        <item quantity="few">%1$d расхождения — выберите версии</item>
+        <item quantity="many">%1$d расхождений — выберите версии</item>
+        <item quantity="other">%1$d расхождения — выберите версии</item>
     </plurals>
 </resources>

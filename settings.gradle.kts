@@ -16,3 +16,4 @@ rootProject.name = "ArmaFiles"
 include(":app")
 include(":viewer")
 include(":dwg")
+include(":libarchive")

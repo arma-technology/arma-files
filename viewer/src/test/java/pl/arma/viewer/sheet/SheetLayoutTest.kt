@@ -75,6 +75,20 @@ class SheetLayoutTest {
     }
 
     @Test
+    fun `pionowa strona w poziomie da sie oddalic do calej strony`() {
+        // Telefon w poziomie: 2000 x 900 px, strona A4 ma przy powiekszeniu 1 ok. 2800 px wysokosci.
+        val landscape = SheetLayout(listOf(a4, a4), viewWidth = 2000f, margin = 10f, gap = 20f)
+        val min = landscape.minZoom(viewHeight = 900f)
+        assertEquals(900f / (landscape.heights[0] + 20f), min, 0.0001f)
+        val view = SheetView().zoomedAround(0.01f, 1000f, 450f, max, min).clamped(landscape, 900f, max)
+        assertEquals(min, view.zoom, 0.0001f)
+        // Wezsza od ekranu strona stoi posrodku w poziomie.
+        assertEquals(-(2000f - 2000f * min) / 2f, view.x, 0.01f)
+        // W pionie pozwalamy zejsc ponizej 1 tylko tyle, ile trzeba.
+        assertEquals(1f, layout.minZoom(viewHeight = 1e5f), 0.0001f)
+    }
+
+    @Test
     fun `trafienie wyszukiwania laduje na srodku ekranu`() {
         val view = SheetView().centeredOn(px = 300f, py = 2_000f, zoom = 4f, viewWidth = 1000f, viewHeight = 1800f)
         // Punkt dokumentu na ekranie: p * zoom - przesuniecie.

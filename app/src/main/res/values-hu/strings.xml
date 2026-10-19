@@ -39,6 +39,22 @@
     <string name="apk_allow">Engedélyezd az ARMA Files számára az alkalmazások telepítését, majd próbáld újra.</string>
     <string name="apk_failed">Nem sikerült elindítani a telepítőt.</string>
     <string name="apk_unsupported">Ez az Android-verzió nem engedi APK-fájlok telepítését alkalmazásokból.</string>
+    <string name="archive_browse">Tartalom böngészése</string>
+    <string name="archive_extract_all">Összes kicsomagolása</string>
+    <string name="archive_extract_other_pane">Kicsomagolás a másik panelre</string>
+    <string name="archive_format">Formátum</string>
+    <string name="archive_no_password">Ez a formátum nem támogat jelszót.</string>
+    <string name="archive_password">Jelszó</string>
+    <string name="archive_password_aes">AES-256 titkosítás</string>
+    <string name="archive_password_optional">Jelszó (nem kötelező)</string>
+    <string name="archive_password_title">Jelszóval védett archívum</string>
+    <string name="archive_password_wrong">Hibás jelszó</string>
+    <string name="cache_clear">Ürítés most</string>
+    <string name="cache_limit_age">Törlés, ha ennél régebben nem használták:</string>
+    <string name="cache_limit_size">Legfeljebb</string>
+    <string name="cache_text">Szerverekről és archívumokból származó fájlok másolatai, valamint megtekintésre átalakított DWG-rajzok. A korlát túllépésekor először a legrégebben használtak törlődnek.</string>
+    <string name="cache_title">Gyorsítótár</string>
+    <string name="cache_used">Foglalt: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archívumok</string>
     <string name="category_audio">Hang</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Nem sikerült hozzáférést szerezni.</string>
     <string name="err_account_missing">A kapcsolat nem létezik vagy törölték.</string>
     <string name="err_apk_prepare">Nem sikerült előkészíteni az APK-fájlt.</string>
+    <string name="err_archive_format">Nem támogatott vagy sérült archívum.</string>
+    <string name="err_archive_gone">Az archívum már nem érhető el.</string>
+    <string name="err_archive_rar">A titkosított RAR-archívumok nem támogatottak.</string>
+    <string name="err_archive_read_only">Az archívum csak olvasható. A módosításhoz csomagolja ki a fájlokat.</string>
     <string name="err_attach_failed">Nem sikerült csatlakoztatni a forrást.</string>
     <string name="err_attach_in_settings">Csatlakoztasd ezt a forrást a Beállításokban.</string>
     <string name="err_cannot_read_folder">A mappa nem olvasható: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Nem sikerült létrehozni a célmappát.</string>
     <string name="err_zip_create">Nem sikerült létrehozni az archívumot.</string>
     <string name="err_zip_unsafe">Az archívum nem biztonságos útvonalat tartalmaz.</string>
+    <string name="extract_cancel_confirm">Leállítás és törlés</string>
+    <string name="extract_cancel_continue">Folytatás</string>
+    <string name="extract_cancel_text">A kicsomagolás szünetel. Az eddig kicsomagolt fájlok és mappák törlődnek.</string>
+    <string name="extract_cancel_title">Leállítja a kicsomagolást?</string>
     <string name="fab_new">Új</string>
     <string name="fav_add">Hozzáadás a kedvencekhez</string>
     <string name="fav_remove">Eltávolítás a kedvencek közül</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Másolás</string>
     <string name="history_delete">Törlés</string>
     <string name="history_empty">Itt jelennek meg a befejezett műveletek. A másolás, az áthelyezés és a lomtárba helyezés innen visszavonható.</string>
+    <string name="history_extract">Kicsomagolás</string>
     <string name="history_move">Áthelyezés</string>
     <string name="history_restore">Visszaállítás</string>
     <string name="history_title">Műveleti előzmények</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Rögzített mappák</string>
     <string name="home_this_computer">Ez a számítógép</string>
     <string name="home_title">Sajátgép</string>
+    <string name="identity_new">Új ujjlenyomat</string>
+    <string name="identity_old">Megjegyzett ujjlenyomat</string>
+    <string name="identity_reject">Ne csatlakozzon</string>
+    <string name="identity_text">%1$s másként azonosítja magát, mint az első csatlakozáskor. Ez a szerver újratelepítése vagy cseréje után fordul elő, de jelentheti azt is, hogy valaki megszemélyesíti. Csak akkor bízzon benne, ha tudja az okát.</string>
+    <string name="identity_title_ssh">A szerver kulcsa megváltozott</string>
+    <string name="identity_title_tls">A szerver tanúsítványa megváltozott</string>
+    <string name="identity_trust">Új megbízhatónak jelölése</string>
     <string name="image_position">%1$d / %2$d · húzd oldalra a fotó váltásához</string>
     <string name="index_build">Létrehozás</string>
     <string name="index_build_hint">Hozd létre az indexet a teljes tárhely kereséséhez</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP-archívum létrehozva</string>
     <string name="notif_channel">Fájlműveletek</string>
     <string name="notif_channel_desc">Másolás, áthelyezés és törlés folyamata</string>
+    <string name="offline_added">Offline elérhetővé téve — letöltés a háttérben</string>
+    <string name="offline_banner">A szerver nem érhető el — az offline másolat látható (%1$s)</string>
+    <string name="offline_busy">Egy korábbi szinkronizálás még fut — próbálja később.</string>
+    <string name="offline_conflict_channel">Offline fájlok ütközései</string>
+    <string name="offline_conflict_text">A fájl a szerveren és a telefonon is megváltozott. Melyik verzió maradjon?
+Szerver: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Verzióütközés: %1$s</string>
+    <string name="offline_conflicts_title">Verzióütközések</string>
+    <string name="offline_failed">A szinkronizálás sikertelen: %1$s</string>
+    <string name="offline_folder_unavailable">Nem lehet a mappába írni — „Hozzáférés minden fájlhoz” szükséges.</string>
+    <string name="offline_interval">Automatikus szinkronizálás</string>
+    <string name="offline_interval_manual">Kézzel</string>
+    <string name="offline_keep_both">Mindkettő</string>
+    <string name="offline_keep_local">A telefonról</string>
+    <string name="offline_keep_remote">A szerverről</string>
+    <string name="offline_location">Hol legyenek a másolatok</string>
+    <string name="offline_location_app">Alkalmazástárhely</string>
+    <string name="offline_location_app_hint">Más alkalmazások nem látják; az ARMA Files eltávolításakor törlődik.</string>
+    <string name="offline_location_folder">„ARMA Files offline” mappa</string>
+    <string name="offline_location_folder_hint">A telefon tárhelyén, más alkalmazások is látják; eltávolítás után is megmarad.</string>
+    <string name="offline_make">Offline elérhető</string>
+    <string name="offline_missing">Ez az elem már nincs a szerveren.</string>
+    <string name="offline_never">Szinkronizálásra vár</string>
+    <string name="offline_only_remote">Csak szerverekről származó fájlok és mappák tehetők offline elérhetővé.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Eltávolítás az offline elérhetőek közül</string>
+    <string name="offline_server_version">Szerver: %1$s</string>
+    <string name="offline_settings_title">Offline fájlok</string>
+    <string name="offline_sync">Szinkronizálás</string>
+    <string name="offline_synced">Szinkronizálva: %1$s · %2$s</string>
+    <string name="offline_syncing">Szinkronizálás… %1$s</string>
+    <string name="offline_title">Offline elérhető</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">törölve</string>
+    <string name="offline_wifi_only">Csak Wi-Fi-n</string>
     <string name="op_copy">Másolás</string>
     <string name="op_delete">Törlés</string>
+    <string name="op_extract">Kicsomagolás</string>
     <string name="op_move">Áthelyezés</string>
     <string name="op_restore">Visszaállítás</string>
     <string name="op_trash">Áthelyezés a lomtárba</string>
@@ -336,6 +406,7 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="trash_with_count">Lomtár (%1$d)</string>
     <string name="undo_copied">%1$d másolva</string>
     <string name="undo_done">%1$d kész</string>
+    <string name="undo_extracted">Kicsomagolva: %1$d</string>
     <string name="undo_moved">%1$d áthelyezve</string>
     <string name="undo_skipped_suffix">, %1$d kihagyva</string>
     <string name="undo_trashed">%1$d lomtárba helyezve</string>
@@ -344,14 +415,18 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="welcome_pick">Mappa kiválasztása</string>
     <string name="welcome_text">Válassz kezdőmappát. Az Android megjegyzi a hozzáférést, így az alkalmazás újraindítás után is visszatérhet hozzá.</string>
     <string name="welcome_title">Üdvözöl az ARMA Files</string>
-    <string name="zip_create_title">ZIP-archívum létrehozása</string>
+    <string name="zip_create_title">Archívum létrehozása</string>
     <string name="zip_default_name">archivum.zip</string>
     <string name="zip_extract_here">Kicsomagolás ide</string>
     <string name="zip_name">Archívum neve</string>
-    <string name="zip_pack">Tömörítés ZIP-be</string>
+    <string name="zip_pack">Tömörítés</string>
     <string name="zoom_fit">Igazítás</string>
     <string name="zoom_in">Nagyítás</string>
     <string name="zoom_out">Kicsinyítés</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d nap</item>
+        <item quantity="other">%1$d nap</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Törölsz %1$d elemet?</item>
         <item quantity="other">Törölsz %1$d elemet?</item>
@@ -375,5 +450,9 @@ a fenti sávon egy lap kiválasztásával.</string>
     <plurals name="n_lines">
         <item quantity="one">%1$d sor</item>
         <item quantity="other">%1$d sor</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d ütközés — válasszon verziót</item>
+        <item quantity="other">%1$d ütközés — válasszon verziókat</item>
     </plurals>
 </resources>

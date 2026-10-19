@@ -39,6 +39,22 @@
     <string name="apk_allow">Permite aplicației ARMA Files să instaleze aplicații, apoi încearcă din nou.</string>
     <string name="apk_failed">Programul de instalare nu a putut fi pornit.</string>
     <string name="apk_unsupported">Această versiune de Android nu permite instalarea fișierelor APK din aplicații.</string>
+    <string name="archive_browse">Răsfoiește conținutul</string>
+    <string name="archive_extract_all">Dezarhivează tot</string>
+    <string name="archive_extract_other_pane">Dezarhivează în celălalt panou</string>
+    <string name="archive_format">Format</string>
+    <string name="archive_no_password">Acest format nu acceptă parolă.</string>
+    <string name="archive_password">Parolă</string>
+    <string name="archive_password_aes">Criptare AES-256</string>
+    <string name="archive_password_optional">Parolă (opțional)</string>
+    <string name="archive_password_title">Arhivă protejată cu parolă</string>
+    <string name="archive_password_wrong">Parolă greșită</string>
+    <string name="cache_clear">Golește acum</string>
+    <string name="cache_limit_age">Șterge dacă nu au fost folosite mai mult de</string>
+    <string name="cache_limit_size">Cel mult</string>
+    <string name="cache_text">Copii ale fișierelor de pe servere și din arhive, precum și desene DWG convertite pentru vizualizare. La depășirea unei limite se șterg mai întâi cele folosite cel mai demult.</string>
+    <string name="cache_title">Memorie cache</string>
+    <string name="cache_used">Ocupat: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Arhive</string>
     <string name="category_audio">Audio</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Nu s-a putut obține accesul.</string>
     <string name="err_account_missing">Conexiunea nu există sau a fost ștearsă.</string>
     <string name="err_apk_prepare">Fișierul APK nu a putut fi pregătit.</string>
+    <string name="err_archive_format">Arhivă neacceptată sau deteriorată.</string>
+    <string name="err_archive_gone">Arhiva nu mai este disponibilă.</string>
+    <string name="err_archive_rar">Arhivele RAR criptate nu sunt acceptate.</string>
+    <string name="err_archive_read_only">Arhiva este doar pentru citire. Dezarhivați fișierele pentru a le modifica.</string>
     <string name="err_attach_failed">Sursa nu a putut fi conectată.</string>
     <string name="err_attach_in_settings">Conectează această sursă în Setări.</string>
     <string name="err_cannot_read_folder">Dosarul nu poate fi citit: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Dosarul de destinație nu a putut fi creat.</string>
     <string name="err_zip_create">Arhiva nu a putut fi creată.</string>
     <string name="err_zip_unsafe">Arhiva conține o cale nesigură.</string>
+    <string name="extract_cancel_confirm">Oprește și șterge</string>
+    <string name="extract_cancel_continue">Continuă</string>
+    <string name="extract_cancel_text">Dezarhivarea este întreruptă. Fișierele și dosarele dezarhivate până acum vor fi șterse.</string>
+    <string name="extract_cancel_title">Opriți dezarhivarea?</string>
     <string name="fab_new">Nou</string>
     <string name="fav_add">Adaugă la favorite</string>
     <string name="fav_remove">Elimină din favorite</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Copiere</string>
     <string name="history_delete">Ștergere</string>
     <string name="history_empty">Aici apar operațiunile finalizate. Copierea, mutarea și coșul pot fi anulate de aici.</string>
+    <string name="history_extract">Dezarhivare</string>
     <string name="history_move">Mutare</string>
     <string name="history_restore">Restaurare</string>
     <string name="history_title">Istoricul operațiunilor</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Dosare fixate</string>
     <string name="home_this_computer">Acest computer</string>
     <string name="home_title">Computerul meu</string>
+    <string name="identity_new">Amprentă nouă</string>
+    <string name="identity_old">Amprentă memorată</string>
+    <string name="identity_reject">Nu conecta</string>
+    <string name="identity_text">%1$s se identifică altfel decât la prima conectare. Se întâmplă după reinstalarea sau înlocuirea serverului, dar poate însemna și că cineva se dă drept el. Aveți încredere doar dacă știți motivul.</string>
+    <string name="identity_title_ssh">Cheia serverului s-a schimbat</string>
+    <string name="identity_title_tls">Certificatul serverului s-a schimbat</string>
+    <string name="identity_trust">Ai încredere în cel nou</string>
     <string name="image_position">%1$d din %2$d · glisează lateral pentru a schimba fotografia</string>
     <string name="index_build">Creează</string>
     <string name="index_build_hint">Creează indexul pentru a căuta în toată stocarea</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">Arhivă ZIP creată</string>
     <string name="notif_channel">Operațiuni cu fișiere</string>
     <string name="notif_channel_desc">Progresul copierii, mutării și ștergerii</string>
+    <string name="offline_added">Adăugat offline — se descarcă în fundal</string>
+    <string name="offline_banner">Server indisponibil — se afișează copia offline din %1$s</string>
+    <string name="offline_busy">O sincronizare anterioară încă rulează — încercați mai târziu.</string>
+    <string name="offline_conflict_channel">Conflicte fișiere offline</string>
+    <string name="offline_conflict_text">Fișierul s-a modificat atât pe server, cât și pe telefon. Ce versiune păstrăm?
+Server: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Conflict de versiuni: %1$s</string>
+    <string name="offline_conflicts_title">Conflicte de versiuni</string>
+    <string name="offline_failed">Sincronizarea a eșuat: %1$s</string>
+    <string name="offline_folder_unavailable">Nu se poate scrie în dosar — este necesar „Acces la toate fișierele”.</string>
+    <string name="offline_interval">Sincronizare automată</string>
+    <string name="offline_interval_manual">Manual</string>
+    <string name="offline_keep_both">Ambele</string>
+    <string name="offline_keep_local">De pe telefon</string>
+    <string name="offline_keep_remote">De pe server</string>
+    <string name="offline_location">Unde se păstrează copiile</string>
+    <string name="offline_location_app">Memoria aplicației</string>
+    <string name="offline_location_app_hint">Ascunsă altor aplicații; se șterge la dezinstalarea ARMA Files.</string>
+    <string name="offline_location_folder">Dosarul „ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">În memoria telefonului, vizibil altor aplicații; rămâne după dezinstalare.</string>
+    <string name="offline_make">Disponibil offline</string>
+    <string name="offline_missing">Acest element nu mai există pe server.</string>
+    <string name="offline_never">Așteaptă sincronizarea</string>
+    <string name="offline_only_remote">Doar fișierele și dosarele de pe servere pot fi păstrate offline.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Elimină din offline</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Fișiere offline</string>
+    <string name="offline_sync">Sincronizează</string>
+    <string name="offline_synced">Sincronizat %1$s · %2$s</string>
+    <string name="offline_syncing">Se sincronizează… %1$s</string>
+    <string name="offline_title">Disponibile offline</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">șters</string>
+    <string name="offline_wifi_only">Doar prin Wi-Fi</string>
     <string name="op_copy">Copiere</string>
     <string name="op_delete">Ștergere</string>
+    <string name="op_extract">Dezarhivare</string>
     <string name="op_move">Mutare</string>
     <string name="op_restore">Restaurare</string>
     <string name="op_trash">Mutare în coș</string>
@@ -336,6 +406,7 @@ alegând o filă din bara de sus.</string>
     <string name="trash_with_count">Coș de gunoi (%1$d)</string>
     <string name="undo_copied">Copiate: %1$d</string>
     <string name="undo_done">Gata: %1$d</string>
+    <string name="undo_extracted">Dezarhivate: %1$d</string>
     <string name="undo_moved">Mutate: %1$d</string>
     <string name="undo_skipped_suffix">, %1$d omise</string>
     <string name="undo_trashed">Mutate în coș: %1$d</string>
@@ -344,14 +415,19 @@ alegând o filă din bara de sus.</string>
     <string name="welcome_pick">Alege dosarul</string>
     <string name="welcome_text">Alege un dosar de pornire. Android va reține accesul, astfel încât aplicația să revină la el după repornire.</string>
     <string name="welcome_title">Bun venit în ARMA Files</string>
-    <string name="zip_create_title">Creează arhivă ZIP</string>
+    <string name="zip_create_title">Creează arhivă</string>
     <string name="zip_default_name">arhiva.zip</string>
     <string name="zip_extract_here">Dezarhivează aici</string>
     <string name="zip_name">Numele arhivei</string>
-    <string name="zip_pack">Arhivează în ZIP</string>
+    <string name="zip_pack">Arhivează</string>
     <string name="zoom_fit">Potrivește</string>
     <string name="zoom_in">Mărește</string>
     <string name="zoom_out">Micșorează</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d zi</item>
+        <item quantity="few">%1$d zile</item>
+        <item quantity="other">%1$d de zile</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Ștergi %1$d element?</item>
         <item quantity="few">Ștergi %1$d elemente?</item>
@@ -381,5 +457,10 @@ alegând o filă din bara de sus.</string>
         <item quantity="one">%1$d rând</item>
         <item quantity="few">%1$d rânduri</item>
         <item quantity="other">%1$d de rânduri</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d conflict — alegeți versiunea</item>
+        <item quantity="few">%1$d conflicte — alegeți versiunile</item>
+        <item quantity="other">%1$d de conflicte — alegeți versiunile</item>
     </plurals>
 </resources>

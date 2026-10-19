@@ -20,7 +20,9 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import pl.arma.files.net.RemoteAccount
 
 @Composable
@@ -105,8 +107,156 @@ fun SettingsScreen(
             }
         }
 
+        item { OfflineSettingsCard() }
+        item { CacheCard() }
         item { LanguageCard() }
         item { AboutCard() }
+    }
+}
+
+/** Kopie offline: miejsce, harmonogram synchronizacji i sieć. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun OfflineSettingsCard() {
+    val store = LocalContext.current.armaApp.offline
+    val scope = rememberCoroutineScope()
+    var location by remember { mutableStateOf(store.location) }
+    var interval by remember { mutableIntStateOf(store.intervalMinutes) }
+    var wifiOnly by remember { mutableStateOf(store.wifiOnly) }
+    var moving by remember { mutableStateOf(false) }
+    var problem by remember { mutableStateOf<String?>(null) }
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.OfflinePin, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.offline_settings_title), fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                if (moving) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            }
+            Text(stringResource(R.string.offline_location), style = MaterialTheme.typography.labelLarge)
+            listOf(
+                OfflineStore.Location.APP to (R.string.offline_location_app to R.string.offline_location_app_hint),
+                OfflineStore.Location.FOLDER to (R.string.offline_location_folder to R.string.offline_location_folder_hint)
+            ).forEach { (option, texts) ->
+                Row(
+                    Modifier.fillMaxWidth().clickable(enabled = !moving && option != location) {
+                        problem = null
+                        moving = true
+                        scope.launch {
+                            runCatching { store.moveTo(option) }
+                                .onSuccess { location = option }
+                                .onFailure { problem = it.message }
+                            moving = false
+                        }
+                    },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(selected = option == location, onClick = null)
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text(stringResource(texts.first))
+                        Text(
+                            stringResource(texts.second),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            problem?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            Text(stringResource(R.string.offline_interval), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(0, 15, 60, 360, 1440).forEach { minutes ->
+                    FilterChip(
+                        selected = minutes == interval,
+                        onClick = { interval = minutes; store.intervalMinutes = minutes },
+                        label = {
+                            Text(
+                                when {
+                                    minutes == 0 -> stringResource(R.string.offline_interval_manual)
+                                    minutes < 60 -> "$minutes min"
+                                    else -> "${minutes / 60} h"
+                                }
+                            )
+                        }
+                    )
+                }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.offline_wifi_only), modifier = Modifier.weight(1f))
+                Switch(checked = wifiOnly, onCheckedChange = { wifiOnly = it; store.wifiOnly = it })
+            }
+        }
+    }
+}
+
+/** Limit pamięci podręcznej: rozmiar, wiek i czyszczenie na żądanie. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CacheCard() {
+    val janitor = LocalContext.current.armaApp.cacheJanitor
+    val scope = rememberCoroutineScope()
+    var limitMb by remember { mutableIntStateOf(janitor.maxMegabytes) }
+    var ageDays by remember { mutableIntStateOf(janitor.maxAgeDays) }
+    var used by remember { mutableStateOf<Long?>(null) }
+    var refresh by remember { mutableIntStateOf(0) }
+    LaunchedEffect(refresh) {
+        used = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { janitor.usedBytes() }
+    }
+    Surface(
+        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Storage, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.cache_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        used?.let { stringResource(R.string.cache_used, formatSize(it)) } ?: "…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = {
+                    scope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { janitor.clear() }
+                        refresh++
+                    }
+                }) { Text(stringResource(R.string.cache_clear)) }
+            }
+            Text(
+                stringResource(R.string.cache_text),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(stringResource(R.string.cache_limit_size), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CacheJanitor.SIZE_OPTIONS_MB.forEach { mb ->
+                    FilterChip(
+                        selected = mb == limitMb,
+                        onClick = { limitMb = mb; janitor.maxMegabytes = mb; refresh++ },
+                        label = { Text(formatSize(mb * 1_048_576L)) }
+                    )
+                }
+            }
+            Text(stringResource(R.string.cache_limit_age), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CacheJanitor.AGE_OPTIONS_DAYS.forEach { days ->
+                    FilterChip(
+                        selected = days == ageDays,
+                        onClick = { ageDays = days; janitor.maxAgeDays = days; refresh++ },
+                        label = { Text(pluralStringResource(R.plurals.cache_days, days, days)) }
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -177,7 +327,13 @@ private val bundledLibraries = listOf(
     "Apache Commons Net" to "Apache 2.0",
     "SSHJ" to "Apache 2.0",
     "jcifs-ng" to "LGPL-2.1",
-    "SLF4J" to "MIT"
+    "SLF4J" to "MIT",
+    "libarchive" to "BSD-2-Clause",
+    "Apache Commons Compress" to "Apache 2.0",
+    "zip4j" to "Apache 2.0",
+    "XZ for Java" to "0BSD",
+    "zstd-jni" to "BSD-2-Clause",
+    "Brotli" to "MIT"
 )
 
 @Composable

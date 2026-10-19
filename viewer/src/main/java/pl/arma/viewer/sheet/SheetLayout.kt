@@ -49,6 +49,17 @@ class SheetLayout(
     /** Pikseli układu (przy powiększeniu 1) na jednostkę dokumentu strony [page]. */
     fun unitScale(page: Int, size: SheetSize): Float = pageWidth / size.width.coerceAtLeast(1e-6f)
 
+    /**
+     * Najmniejsze powiększenie: najwyższa strona mieści się w całości na
+     * ekranie o wysokości [viewHeight]. Przy powiększeniu 1 strona ma
+     * szerokość ekranu, więc pionowa strona na telefonie w poziomie
+     * wymaga oddalenia poniżej 1.
+     */
+    fun minZoom(viewHeight: Float): Float {
+        val tallest = heights.maxOrNull() ?: return 1f
+        return (viewHeight / (tallest + 2 * margin)).coerceIn(MIN_FIT_ZOOM, 1f)
+    }
+
     /** Strona, na której leży punkt [y] dokumentu przy powiększeniu 1. */
     fun pageAt(y: Float): Int {
         if (pageCount == 0) return 0
@@ -76,26 +87,32 @@ data class SheetView(val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f)
     fun panned(dx: Float, dy: Float): SheetView = copy(x = x - dx, y = y - dy)
 
     /** Zmiana powiększenia, przy której punkt ekranu ([fx], [fy]) zostaje w miejscu. */
-    fun zoomedAround(factor: Float, fx: Float, fy: Float, maxZoom: Float): SheetView {
-        val next = (zoom * factor).coerceIn(1f, maxZoom)
+    fun zoomedAround(factor: Float, fx: Float, fy: Float, maxZoom: Float, minZoom: Float = 1f): SheetView {
+        val next = (zoom * factor).coerceIn(minZoom, maxZoom)
         val applied = next / zoom
         return SheetView(next, (x + fx) * applied - fx, (y + fy) * applied - fy)
     }
 
     /**
      * Widok mieszczący się w dokumencie. Dokument niższy od ekranu (poziomy
-     * arkusz na telefonie) stoi pośrodku zamiast przyklejać się do góry.
+     * arkusz na telefonie) stoi pośrodku zamiast przyklejać się do góry,
+     * a węższy (oddalony poniżej szerokości ekranu) — pośrodku w poziomie.
      */
     fun clamped(layout: SheetLayout, viewHeight: Float, maxZoom: Float): SheetView {
-        val z = zoom.coerceIn(1f, maxZoom)
-        val maxX = (layout.viewWidth * z - layout.viewWidth).coerceAtLeast(0f)
+        val z = zoom.coerceIn(layout.minZoom(viewHeight), maxZoom)
+        val contentWidth = layout.viewWidth * z
+        val clampedX = if (contentWidth <= layout.viewWidth) {
+            -(layout.viewWidth - contentWidth) / 2f
+        } else {
+            x.coerceIn(0f, contentWidth - layout.viewWidth)
+        }
         val contentHeight = layout.height * z
         val clampedY = if (contentHeight <= viewHeight) {
             -(viewHeight - contentHeight) / 2f
         } else {
             y.coerceIn(0f, contentHeight - viewHeight)
         }
-        return SheetView(z, x.coerceIn(0f, maxX), clampedY)
+        return SheetView(z, clampedX, clampedY)
     }
 
     /** Widok z punktem dokumentu ([px], [py] przy powiększeniu 1) na środku ekranu. */
@@ -114,3 +131,6 @@ data class SheetView(val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f)
         return centeredOn(px, py, zoom, new.viewWidth, newHeight)
     }
 }
+
+/** Dolna granica oddalenia, żeby bardzo wysoka strona nie zmalała do kreski. */
+internal const val MIN_FIT_ZOOM = 0.05f

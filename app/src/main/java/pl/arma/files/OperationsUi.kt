@@ -393,6 +393,7 @@ private fun recordLabel(record: OperationRecord): String = when (record.kind) {
     pl.arma.files.ops.OperationKind.TRASH -> text(R.string.history_trash)
     pl.arma.files.ops.OperationKind.DELETE -> text(R.string.history_delete)
     pl.arma.files.ops.OperationKind.RESTORE -> text(R.string.history_restore)
+    pl.arma.files.ops.OperationKind.EXTRACT -> text(R.string.history_extract)
 }
 
 private fun recordDetails(record: OperationRecord): String {

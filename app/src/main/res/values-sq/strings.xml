@@ -39,6 +39,22 @@
     <string name="apk_allow">Lejo ARMA Files të instalojë aplikacione dhe provo përsëri.</string>
     <string name="apk_failed">Instaluesi nuk u nis dot.</string>
     <string name="apk_unsupported">Ky version i Android-it nuk lejon instalimin e skedarëve APK nga aplikacionet.</string>
+    <string name="archive_browse">Shfleto përmbajtjen</string>
+    <string name="archive_extract_all">Shpaketo të gjitha</string>
+    <string name="archive_extract_other_pane">Shpaketo në panelin tjetër</string>
+    <string name="archive_format">Formati</string>
+    <string name="archive_no_password">Ky format nuk mund të mbrohet me fjalëkalim.</string>
+    <string name="archive_password">Fjalëkalimi</string>
+    <string name="archive_password_aes">Enkriptim me AES-256</string>
+    <string name="archive_password_optional">Fjalëkalimi (opsional)</string>
+    <string name="archive_password_title">Arkiv i mbrojtur me fjalëkalim</string>
+    <string name="archive_password_wrong">Fjalëkalim i gabuar</string>
+    <string name="cache_clear">Pastro tani</string>
+    <string name="cache_limit_age">Fshi kur nuk përdoren më shumë se</string>
+    <string name="cache_limit_size">Më së shumti</string>
+    <string name="cache_text">Kopje skedarësh nga serverët dhe arkivat, si dhe vizatime DWG të konvertuara për shikim. Kur tejkalohet një kufi, fshihen së pari ato të përdorura më herët.</string>
+    <string name="cache_title">Memoria e përkohshme</string>
+    <string name="cache_used">Në përdorim: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Arkivat</string>
     <string name="category_audio">Audio</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Qasja nuk u mor dot.</string>
     <string name="err_account_missing">Lidhja nuk ekziston ose është fshirë.</string>
     <string name="err_apk_prepare">Skedari APK nuk u përgatit dot.</string>
+    <string name="err_archive_format">Arkiv i pambështetur ose i dëmtuar.</string>
+    <string name="err_archive_gone">Arkivi nuk është më i disponueshëm.</string>
+    <string name="err_archive_rar">Arkivat RAR të enkriptuara nuk mbështeten.</string>
+    <string name="err_archive_read_only">Arkivi është vetëm për lexim. Shpaketoni skedarët për t’i ndryshuar.</string>
     <string name="err_attach_failed">Burimi nuk u lidh dot.</string>
     <string name="err_attach_in_settings">Lidhe këtë burim te Cilësimet.</string>
     <string name="err_cannot_read_folder">Dosja nuk mund të lexohet: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Dosja e destinacionit nuk u krijua dot.</string>
     <string name="err_zip_create">Arkivi nuk u krijua dot.</string>
     <string name="err_zip_unsafe">Arkivi përmban një shteg të pasigurt.</string>
+    <string name="extract_cancel_confirm">Ndalo dhe fshi</string>
+    <string name="extract_cancel_continue">Vazhdo</string>
+    <string name="extract_cancel_text">Shpaketimi është në pauzë. Skedarët dhe dosjet e shpaketuara deri tani do të fshihen.</string>
+    <string name="extract_cancel_title">Të ndalet shpaketimi?</string>
     <string name="fab_new">I ri</string>
     <string name="fav_add">Shto te të preferuarat</string>
     <string name="fav_remove">Hiq nga të preferuarat</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopjim</string>
     <string name="history_delete">Fshirje</string>
     <string name="history_empty">Këtu shfaqen veprimet e përfunduara. Kopjimi, zhvendosja dhe koshi mund të zhbëhen nga këtu.</string>
+    <string name="history_extract">Shpaketim</string>
     <string name="history_move">Zhvendosje</string>
     <string name="history_restore">Rikthim</string>
     <string name="history_title">Historiku i veprimeve</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Dosje të fiksuara</string>
     <string name="home_this_computer">Ky kompjuter</string>
     <string name="home_title">Kompjuteri im</string>
+    <string name="identity_new">Gjurma e re</string>
+    <string name="identity_old">Gjurma e ruajtur</string>
+    <string name="identity_reject">Mos lidh</string>
+    <string name="identity_text">%1$s identifikohet ndryshe nga lidhja e parë. Kjo ndodh pas riinstalimit ose zëvendësimit të serverit, por mund të nënkuptojë edhe që dikush po e imiton. Besoje vetëm nëse e di pse ndryshoi.</string>
+    <string name="identity_title_ssh">Çelësi i serverit ka ndryshuar</string>
+    <string name="identity_title_tls">Certifikata e serverit ka ndryshuar</string>
+    <string name="identity_trust">Beso të renë</string>
     <string name="image_position">%1$d nga %2$d · rrëshqit anash për të ndërruar foton</string>
     <string name="index_build">Ndërto</string>
     <string name="index_build_hint">Ndërto indeksin për të kërkuar në gjithë hapësirën</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">Arkivi ZIP u krijua</string>
     <string name="notif_channel">Veprime me skedarë</string>
     <string name="notif_channel_desc">Ecuria e kopjimit, zhvendosjes dhe fshirjes</string>
+    <string name="offline_added">U shtua jashtë linje — po shkarkohet në sfond</string>
+    <string name="offline_banner">Serveri nuk është i disponueshëm — po shfaqet kopja jashtë linje nga %1$s</string>
+    <string name="offline_busy">Një sinkronizim i mëparshëm është ende në vazhdim — provoni më vonë.</string>
+    <string name="offline_conflict_channel">Mospërputhje skedarësh jashtë linje</string>
+    <string name="offline_conflict_text">Skedari ndryshoi si në server ashtu edhe në telefon. Cilin version të mbajmë?
+Serveri: %1$s
+Telefoni: %2$s</string>
+    <string name="offline_conflict_title">Mospërputhje versionesh: %1$s</string>
+    <string name="offline_conflicts_title">Mospërputhje versionesh</string>
+    <string name="offline_failed">Sinkronizimi dështoi: %1$s</string>
+    <string name="offline_folder_unavailable">Nuk mund të shkruhet në dosje — kërkohet „Qasja në të gjithë skedarët”.</string>
+    <string name="offline_interval">Sinkronizo automatikisht</string>
+    <string name="offline_interval_manual">Manualisht</string>
+    <string name="offline_keep_both">Të dyja</string>
+    <string name="offline_keep_local">Nga telefoni</string>
+    <string name="offline_keep_remote">Nga serveri</string>
+    <string name="offline_location">Ku të mbahen kopjet</string>
+    <string name="offline_location_app">Hapësira e aplikacionit</string>
+    <string name="offline_location_app_hint">E fshehur nga aplikacionet e tjera; fshihet kur çinstalohet ARMA Files.</string>
+    <string name="offline_location_folder">Dosja „ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">Në memorien e telefonit, i dukshëm për aplikacionet e tjera; mbetet pas çinstalimit.</string>
+    <string name="offline_make">I disponueshëm jashtë linje</string>
+    <string name="offline_missing">Ky element nuk ekziston më në server.</string>
+    <string name="offline_never">Në pritje të sinkronizimit</string>
+    <string name="offline_only_remote">Vetëm skedarët dhe dosjet nga serverët mund të mbahen jashtë linje.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefoni: %1$s</string>
+    <string name="offline_remove">Hiq nga jashtë linje</string>
+    <string name="offline_server_version">Serveri: %1$s</string>
+    <string name="offline_settings_title">Skedarë jashtë linje</string>
+    <string name="offline_sync">Sinkronizo</string>
+    <string name="offline_synced">Sinkronizuar %1$s · %2$s</string>
+    <string name="offline_syncing">Po sinkronizohet… %1$s</string>
+    <string name="offline_title">Të disponueshme jashtë linje</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">i fshirë</string>
+    <string name="offline_wifi_only">Vetëm përmes Wi-Fi</string>
     <string name="op_copy">Kopjim</string>
     <string name="op_delete">Fshirje</string>
+    <string name="op_extract">Duke shpaketuar</string>
     <string name="op_move">Zhvendosje</string>
     <string name="op_restore">Rikthim</string>
     <string name="op_trash">Zhvendosje në kosh</string>
@@ -336,6 +406,7 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="trash_with_count">Koshi (%1$d)</string>
     <string name="undo_copied">U kopjuan: %1$d</string>
     <string name="undo_done">Gati: %1$d</string>
+    <string name="undo_extracted">U shpaketuan %1$d</string>
     <string name="undo_moved">U zhvendosën: %1$d</string>
     <string name="undo_skipped_suffix">, %1$d të kapërcyera</string>
     <string name="undo_trashed">Në kosh: %1$d</string>
@@ -344,14 +415,18 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="welcome_pick">Zgjidh dosjen</string>
     <string name="welcome_text">Zgjidh një dosje fillestare. Android-i do ta mbajë mend qasjen, që aplikacioni të kthehet tek ajo edhe pas rinisjes.</string>
     <string name="welcome_title">Mirë se erdhe në ARMA Files</string>
-    <string name="zip_create_title">Krijo arkiv ZIP</string>
+    <string name="zip_create_title">Krijo arkiv</string>
     <string name="zip_default_name">arkiv.zip</string>
     <string name="zip_extract_here">Shpaketo këtu</string>
     <string name="zip_name">Emri i arkivit</string>
-    <string name="zip_pack">Ngjesh në ZIP</string>
+    <string name="zip_pack">Ngjesh</string>
     <string name="zoom_fit">Përshtat</string>
     <string name="zoom_in">Zmadho</string>
     <string name="zoom_out">Zvogëlo</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d ditë</item>
+        <item quantity="other">%1$d ditë</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Të fshihet %1$d element?</item>
         <item quantity="other">Të fshihen %1$d elemente?</item>
@@ -375,5 +450,9 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <plurals name="n_lines">
         <item quantity="one">%1$d rresht</item>
         <item quantity="other">%1$d rreshta</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d mospërputhje — zgjidhni versionin</item>
+        <item quantity="other">%1$d mospërputhje — zgjidhni versionet</item>
     </plurals>
 </resources>

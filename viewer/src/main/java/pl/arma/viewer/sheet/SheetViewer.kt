@@ -76,6 +76,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -193,6 +194,10 @@ private fun DocumentView(
     val pageCount = document.pageCount
     val revision by document.revision.collectAsState()
     val paper by document.paperColor.collectAsState()
+    // Rysunek CAD nie ma kartki: tło ma kolor arkusza, rysunek zajmuje cały
+    // ekran bez marginesów, a narzędzia leżą na nim.
+    val fillView = document.modelUnits
+    val backdrop = if (fillView) Color(paper) else MaterialTheme.colorScheme.surfaceContainerHigh
     // Uwagi dokumentu (np. pominięte bryły 3D) pokazujemy raz, po otwarciu.
     LaunchedEffect(document) {
         document.notes.firstOrNull()?.let { state.message = it }
@@ -216,12 +221,12 @@ private fun DocumentView(
                 SheetLayout(
                     document.pageSizes,
                     viewSize.width.toFloat(),
-                    margin = 8.dp.toPx(),
+                    margin = if (fillView) 0f else 8.dp.toPx(),
                     gap = 12.dp.toPx(),
                     // Narzędzia leżą na treści; pierwsza strona startuje pod nimi,
                     // a schowanie narzędzi odsłania ją bez przesuwania widoku.
-                    topPadding = if (immersive) 64.dp.toPx() else 0f,
-                    bottomPadding = if (immersive && showThumbnails) 100.dp.toPx() else 0f
+                    topPadding = if (immersive && !fillView) 64.dp.toPx() else 0f,
+                    bottomPadding = if (immersive && showThumbnails && !fillView) 100.dp.toPx() else 0f
                 )
             }
         }
@@ -239,7 +244,13 @@ private fun DocumentView(
         val current = layout ?: return@LaunchedEffect
         val previous = state.lastLayout
         if (previous != null && previous !== current) {
-            state.view = state.view.relaidOut(previous, state.lastHeight, current, viewSize.height.toFloat())
+            // Cały rysunek przed obrotem zostaje całym rysunkiem po nim.
+            val whole = fillView && state.view.zoom <= previous.minZoom(state.lastHeight) * 1.01f
+            state.view = if (whole) SheetView(current.minZoom(viewSize.height.toFloat()))
+            else state.view.relaidOut(previous, state.lastHeight, current, viewSize.height.toFloat())
+        } else if (previous == null && fillView) {
+            // Rysunek otwiera się w całości, jak „pokaż wszystko” w programach CAD.
+            state.view = SheetView(current.minZoom(viewSize.height.toFloat()))
         }
         state.lastLayout = current
         state.lastHeight = viewSize.height.toFloat()
@@ -263,8 +274,10 @@ private fun DocumentView(
         }
     }
 
+    fun minZoom(): Float = layout?.minZoom(viewSize.height.toFloat()) ?: 1f
+
     fun zoomBy(factor: Float, focus: Offset = Offset(viewSize.width / 2f, viewSize.height / 2f)) =
-        animateTo { state.view.zoomedAround(factor, focus.x, focus.y, MAX_ZOOM) }
+        animateTo { state.view.zoomedAround(factor, focus.x, focus.y, MAX_ZOOM, minZoom()) }
 
     fun showPage(index: Int) {
         val current = layout ?: return
@@ -272,10 +285,21 @@ private fun DocumentView(
         animateTo { state.view.copy(y = (current.tops[page] - current.margin - current.topPadding) * state.view.zoom) }
     }
 
+    /**
+     * Dopasowanie do szerokości, a gdy już jest — do całej strony, jeśli
+     * w tej szerokości nie mieści się na wysokość (pion na telefonie w poziomie).
+     */
     fun fit() {
         val current = layout ?: return
         val page = current.pageAt((state.view.y + viewSize.height / 3f) / state.view.zoom)
-        animateTo { SheetView(1f, 0f, current.tops[page] - current.margin - current.topPadding) }
+        val height = viewSize.height.toFloat()
+        val whole = (height / (current.heights[page] + 2 * current.margin)).coerceAtMost(1f)
+        if (whole < 1f && (fillView || abs(state.view.zoom - 1f) < 0.01f)) {
+            val center = current.tops[page] + current.heights[page] / 2f
+            animateTo { SheetView(whole, 0f, center * whole - height / 2f) }
+        } else {
+            animateTo { SheetView(1f, 0f, current.tops[page] - current.margin - current.topPadding) }
+        }
     }
 
     /** Pokazuje obszar strony na środku; [targetPixels] to jego docelowa wysokość na ekranie. */
@@ -461,6 +485,7 @@ private fun DocumentView(
             currentPage = currentPage,
             pageCount = pageCount,
             zoomPercent = zoomPercent,
+            minZoomPercent = (minZoom() * 100).roundToInt(),
             commentCount = comments.size,
             hasLayers = layers.isNotEmpty(),
             dirty = dirty && save != null,
@@ -561,7 +586,7 @@ private fun DocumentView(
                                         Offset(size.width / 2f, size.height / 2f)
                                     } else centroid
                                     state.view = settled(
-                                        state.view.zoomedAround(zoom, focus.x, focus.y, MAX_ZOOM)
+                                        state.view.zoomedAround(zoom, focus.x, focus.y, MAX_ZOOM, minZoom())
                                             .panned(pan.x, pan.y)
                                     )
                                     event.changes.forEach { it.consume() }
@@ -732,7 +757,7 @@ private fun DocumentView(
     }
 
     if (immersive) {
-        Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+        Box(modifier.fillMaxSize().background(backdrop)) {
             canvas(Modifier.fillMaxSize())
             AnimatedVisibility(
                 visible = toolsVisible || state.searchOpen || state.placement != Placement.NONE,
@@ -763,7 +788,7 @@ private fun DocumentView(
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         shape = RoundedCornerShape(22.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                        color = backdrop
                     ) {
                         canvas(Modifier.fillMaxSize())
                     }

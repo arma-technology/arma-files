@@ -67,3 +67,15 @@
 
 # Nazwa klasy jest częścią symbolu JNI (Java_pl_arma_dwg_DwgNative_toDxf).
 -keep class pl.arma.dwg.DwgNative { native <methods>; }
+
+# --- Archiwa -----------------------------------------------------------------
+# zstd-jni woła metody Javy z kodu natywnego (JNI), więc ich nazwy muszą zostać.
+-keep class com.github.luben.zstd.** { *; }
+-dontwarn com.github.luben.zstd.**
+# Commons Compress sprawdza obecność opcjonalnych bibliotek (xz, zstd, brotli)
+# przez Class.forName, a części ich API na Androidzie nie ma.
+-keep class org.tukaani.xz.** { *; }
+-keep class org.brotli.dec.** { *; }
+-dontwarn org.apache.commons.compress.**
+-dontwarn org.objectweb.asm.**
+-dontwarn org.osgi.**

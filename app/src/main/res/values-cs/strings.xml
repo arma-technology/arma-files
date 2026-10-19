@@ -39,6 +39,22 @@
     <string name="apk_allow">Povolte ARMA Files instalovat aplikace a zkuste to znovu.</string>
     <string name="apk_failed">Instalátor se nepodařilo spustit.</string>
     <string name="apk_unsupported">Tato verze Androidu nedovoluje instalovat soubory APK z aplikací.</string>
+    <string name="archive_browse">Procházet obsah</string>
+    <string name="archive_extract_all">Rozbalit vše</string>
+    <string name="archive_extract_other_pane">Rozbalit do druhého panelu</string>
+    <string name="archive_format">Formát</string>
+    <string name="archive_no_password">Tento formát nepodporuje heslo.</string>
+    <string name="archive_password">Heslo</string>
+    <string name="archive_password_aes">Šifrování AES-256</string>
+    <string name="archive_password_optional">Heslo (volitelné)</string>
+    <string name="archive_password_title">Archiv chráněný heslem</string>
+    <string name="archive_password_wrong">Nesprávné heslo</string>
+    <string name="cache_clear">Vymazat nyní</string>
+    <string name="cache_limit_age">Mazat, pokud se nepoužily déle než</string>
+    <string name="cache_limit_size">Nejvýše</string>
+    <string name="cache_text">Kopie souborů ze serverů a archivů a výkresy DWG převedené pro náhled. Po překročení limitu se nejdřív mažou nejdéle nepoužité.</string>
+    <string name="cache_title">Mezipaměť</string>
+    <string name="cache_used">Obsazeno: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archivy</string>
     <string name="category_audio">Zvuk</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Nepodařilo se získat přístup.</string>
     <string name="err_account_missing">Připojení neexistuje nebo bylo smazáno.</string>
     <string name="err_apk_prepare">Soubor APK se nepodařilo připravit.</string>
+    <string name="err_archive_format">Nepodporovaný nebo poškozený archiv.</string>
+    <string name="err_archive_gone">Archiv již není dostupný.</string>
+    <string name="err_archive_rar">Šifrované archivy RAR nejsou podporovány.</string>
+    <string name="err_archive_read_only">Archiv je jen pro čtení. Soubory rozbalte, abyste je mohli měnit.</string>
     <string name="err_attach_failed">Zdroj se nepodařilo připojit.</string>
     <string name="err_attach_in_settings">Připojte tento zdroj v Nastavení.</string>
     <string name="err_cannot_read_folder">Složku nelze přečíst: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Cílovou složku se nepodařilo vytvořit.</string>
     <string name="err_zip_create">Archiv se nepodařilo vytvořit.</string>
     <string name="err_zip_unsafe">Archiv obsahuje nebezpečnou cestu.</string>
+    <string name="extract_cancel_confirm">Přerušit a smazat</string>
+    <string name="extract_cancel_continue">Pokračovat</string>
+    <string name="extract_cancel_text">Rozbalování je pozastaveno. Dosud rozbalené soubory a složky budou smazány.</string>
+    <string name="extract_cancel_title">Přerušit rozbalování?</string>
     <string name="fab_new">Nový</string>
     <string name="fav_add">Přidat do oblíbených</string>
     <string name="fav_remove">Odebrat z oblíbených</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopírování</string>
     <string name="history_delete">Smazání</string>
     <string name="history_empty">Zde se objeví dokončené operace. Kopírování, přesun a koš lze odsud vrátit.</string>
+    <string name="history_extract">Rozbalení</string>
     <string name="history_move">Přesun</string>
     <string name="history_restore">Obnovení</string>
     <string name="history_title">Historie operací</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Připnuté složky</string>
     <string name="home_this_computer">Tento počítač</string>
     <string name="home_title">Můj počítač</string>
+    <string name="identity_new">Nový otisk</string>
+    <string name="identity_old">Uložený otisk</string>
+    <string name="identity_reject">Nepřipojovat</string>
+    <string name="identity_text">%1$s se představuje jinak než při prvním připojení. Stává se to po přeinstalaci nebo výměně serveru, ale může to znamenat i podvržení. Důvěřujte jen tehdy, pokud víte, proč se to změnilo.</string>
+    <string name="identity_title_ssh">Klíč serveru se změnil</string>
+    <string name="identity_title_tls">Certifikát serveru se změnil</string>
+    <string name="identity_trust">Důvěřovat novému</string>
     <string name="image_position">%1$d z %2$d · přejeďte do strany pro změnu fotky</string>
     <string name="index_build">Vytvořit</string>
     <string name="index_build_hint">Vytvořte index pro hledání v celém úložišti</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">Archiv ZIP vytvořen</string>
     <string name="notif_channel">Operace se soubory</string>
     <string name="notif_channel_desc">Průběh kopírování, přesouvání a mazání</string>
+    <string name="offline_added">Přidáno do offline — stahuje se na pozadí</string>
+    <string name="offline_banner">Server je nedostupný — zobrazuje se offline kopie z %1$s</string>
+    <string name="offline_busy">Předchozí synchronizace ještě běží — zkuste to později.</string>
+    <string name="offline_conflict_channel">Rozpory offline souborů</string>
+    <string name="offline_conflict_text">Soubor se změnil na serveru i v telefonu. Kterou verzi zachovat?
+Server: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Rozpor verzí: %1$s</string>
+    <string name="offline_conflicts_title">Rozpory verzí</string>
+    <string name="offline_failed">Synchronizace selhala: %1$s</string>
+    <string name="offline_folder_unavailable">Do složky nelze zapisovat — je potřeba „Přístup ke všem souborům“.</string>
+    <string name="offline_interval">Synchronizovat automaticky</string>
+    <string name="offline_interval_manual">Ručně</string>
+    <string name="offline_keep_both">Obě</string>
+    <string name="offline_keep_local">Z telefonu</string>
+    <string name="offline_keep_remote">Ze serveru</string>
+    <string name="offline_location">Kde uchovávat kopie</string>
+    <string name="offline_location_app">Úložiště aplikace</string>
+    <string name="offline_location_app_hint">Skryté před jinými aplikacemi; zmizí po odinstalování ARMA Files.</string>
+    <string name="offline_location_folder">Složka „ARMA Files offline“</string>
+    <string name="offline_location_folder_hint">V úložišti telefonu, viditelné pro jiné aplikace; zůstane i po odinstalování.</string>
+    <string name="offline_make">Dostupné offline</string>
+    <string name="offline_missing">Tato položka už na serveru není.</string>
+    <string name="offline_never">Čeká na synchronizaci</string>
+    <string name="offline_only_remote">Offline lze uložit jen soubory a složky ze serverů.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Odebrat z offline</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Offline soubory</string>
+    <string name="offline_sync">Synchronizovat</string>
+    <string name="offline_synced">Synchronizováno %1$s · %2$s</string>
+    <string name="offline_syncing">Synchronizace… %1$s</string>
+    <string name="offline_title">Dostupné offline</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">smazáno</string>
+    <string name="offline_wifi_only">Pouze přes Wi-Fi</string>
     <string name="op_copy">Kopírování</string>
     <string name="op_delete">Mazání</string>
+    <string name="op_extract">Rozbalování</string>
     <string name="op_move">Přesouvání</string>
     <string name="op_restore">Obnovování</string>
     <string name="op_trash">Přesun do koše</string>
@@ -336,6 +406,7 @@ výběrem karty v liště nahoře.</string>
     <string name="trash_with_count">Koš (%1$d)</string>
     <string name="undo_copied">Zkopírováno %1$d</string>
     <string name="undo_done">Hotovo %1$d</string>
+    <string name="undo_extracted">Rozbaleno: %1$d</string>
     <string name="undo_moved">Přesunuto %1$d</string>
     <string name="undo_skipped_suffix">, přeskočeno %1$d</string>
     <string name="undo_trashed">Přesunuto do koše %1$d</string>
@@ -344,14 +415,20 @@ výběrem karty v liště nahoře.</string>
     <string name="welcome_pick">Vybrat složku</string>
     <string name="welcome_text">Vyberte počáteční složku. Android si přístup zapamatuje, takže se k ní aplikace může vrátit i po restartu.</string>
     <string name="welcome_title">Vítejte v ARMA Files</string>
-    <string name="zip_create_title">Vytvořit archiv ZIP</string>
+    <string name="zip_create_title">Vytvořit archiv</string>
     <string name="zip_default_name">archiv.zip</string>
     <string name="zip_extract_here">Rozbalit sem</string>
     <string name="zip_name">Název archivu</string>
-    <string name="zip_pack">Zabalit do ZIP</string>
+    <string name="zip_pack">Zabalit</string>
     <string name="zoom_fit">Přizpůsobit</string>
     <string name="zoom_in">Přiblížit</string>
     <string name="zoom_out">Oddálit</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d den</item>
+        <item quantity="few">%1$d dny</item>
+        <item quantity="many">%1$d dne</item>
+        <item quantity="other">%1$d dní</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Smazat %1$d položku?</item>
         <item quantity="few">Smazat %1$d položky?</item>
@@ -387,5 +464,11 @@ výběrem karty v liště nahoře.</string>
         <item quantity="few">%1$d řádky</item>
         <item quantity="many">%1$d řádku</item>
         <item quantity="other">%1$d řádků</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d rozpor — vyberte verzi</item>
+        <item quantity="few">%1$d rozpory — vyberte verze</item>
+        <item quantity="many">%1$d rozporu — vyberte verze</item>
+        <item quantity="other">%1$d rozporů — vyberte verze</item>
     </plurals>
 </resources>

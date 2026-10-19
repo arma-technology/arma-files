@@ -39,6 +39,22 @@
     <string name="apk_allow">Sta ARMA Files toe apps te installeren en probeer het opnieuw.</string>
     <string name="apk_failed">Het installatieprogramma kon niet worden gestart.</string>
     <string name="apk_unsupported">Deze Android-versie staat het installeren van APK-bestanden vanuit apps niet toe.</string>
+    <string name="archive_browse">Inhoud bekijken</string>
+    <string name="archive_extract_all">Alles uitpakken</string>
+    <string name="archive_extract_other_pane">Uitpakken naar ander paneel</string>
+    <string name="archive_format">Indeling</string>
+    <string name="archive_no_password">Deze indeling ondersteunt geen wachtwoord.</string>
+    <string name="archive_password">Wachtwoord</string>
+    <string name="archive_password_aes">Versleuteld met AES-256</string>
+    <string name="archive_password_optional">Wachtwoord (optioneel)</string>
+    <string name="archive_password_title">Met wachtwoord beveiligd archief</string>
+    <string name="archive_password_wrong">Onjuist wachtwoord</string>
+    <string name="cache_clear">Nu wissen</string>
+    <string name="cache_limit_age">Verwijderen indien langer niet gebruikt dan</string>
+    <string name="cache_limit_size">Hooguit</string>
+    <string name="cache_text">Kopieën van bestanden van servers en uit archieven, en DWG-tekeningen die voor weergave zijn omgezet. Bij overschrijding van een limiet worden eerst de langst niet gebruikte verwijderd.</string>
+    <string name="cache_title">Cache</string>
+    <string name="cache_used">Gebruikt: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archieven</string>
     <string name="category_audio">Audio</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Kon geen toegang krijgen.</string>
     <string name="err_account_missing">De verbinding bestaat niet of is verwijderd.</string>
     <string name="err_apk_prepare">Het APK-bestand kon niet worden voorbereid.</string>
+    <string name="err_archive_format">Niet-ondersteund of beschadigd archief.</string>
+    <string name="err_archive_gone">Het archief is niet meer beschikbaar.</string>
+    <string name="err_archive_rar">Versleutelde RAR-archieven worden niet ondersteund.</string>
+    <string name="err_archive_read_only">Archieven zijn alleen-lezen. Pak de bestanden uit om ze te wijzigen.</string>
     <string name="err_attach_failed">De bron kon niet worden gekoppeld.</string>
     <string name="err_attach_in_settings">Koppel deze bron in Instellingen.</string>
     <string name="err_cannot_read_folder">Kan de map niet lezen: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">De doelmap kon niet worden gemaakt.</string>
     <string name="err_zip_create">Het archief kon niet worden gemaakt.</string>
     <string name="err_zip_unsafe">Het archief bevat een onveilig pad.</string>
+    <string name="extract_cancel_confirm">Stoppen en verwijderen</string>
+    <string name="extract_cancel_continue">Doorgaan</string>
+    <string name="extract_cancel_text">Uitpakken is gepauzeerd. Tot nu toe uitgepakte bestanden en mappen worden verwijderd.</string>
+    <string name="extract_cancel_title">Uitpakken stoppen?</string>
     <string name="fab_new">Nieuw</string>
     <string name="fav_add">Aan favorieten toevoegen</string>
     <string name="fav_remove">Uit favorieten verwijderen</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopiëren</string>
     <string name="history_delete">Verwijderen</string>
     <string name="history_empty">Hier verschijnen voltooide bewerkingen. Kopiëren, verplaatsen en de prullenbak kunnen hiervandaan ongedaan worden gemaakt.</string>
+    <string name="history_extract">Uitpakken</string>
     <string name="history_move">Verplaatsen</string>
     <string name="history_restore">Terugzetten</string>
     <string name="history_title">Bewerkingsgeschiedenis</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Vastgezette mappen</string>
     <string name="home_this_computer">Deze computer</string>
     <string name="home_title">Mijn computer</string>
+    <string name="identity_new">Nieuwe vingerafdruk</string>
+    <string name="identity_old">Opgeslagen vingerafdruk</string>
+    <string name="identity_reject">Niet verbinden</string>
+    <string name="identity_text">%1$s identificeert zich anders dan bij de eerste verbinding. Dat gebeurt na herinstallatie of vervanging van de server, maar kan ook betekenen dat iemand zich als de server voordoet. Vertrouw alleen als u weet waarom.</string>
+    <string name="identity_title_ssh">De serversleutel is gewijzigd</string>
+    <string name="identity_title_tls">Het servercertificaat is gewijzigd</string>
+    <string name="identity_trust">Nieuwe vertrouwen</string>
     <string name="image_position">%1$d van %2$d · veeg opzij om van foto te wisselen</string>
     <string name="index_build">Opbouwen</string>
     <string name="index_build_hint">Bouw de index op om in alle opslag te zoeken</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">ZIP-archief gemaakt</string>
     <string name="notif_channel">Bestandsbewerkingen</string>
     <string name="notif_channel_desc">Voortgang van kopiëren, verplaatsen en verwijderen</string>
+    <string name="offline_added">Toegevoegd aan offline — downloaden op de achtergrond</string>
+    <string name="offline_banner">Server niet bereikbaar — offline kopie van %1$s wordt getoond</string>
+    <string name="offline_busy">Een eerdere synchronisatie loopt nog — probeer het later.</string>
+    <string name="offline_conflict_channel">Conflicten in offline bestanden</string>
+    <string name="offline_conflict_text">Het bestand is zowel op de server als op de telefoon gewijzigd. Welke versie bewaren?
+Server: %1$s
+Telefoon: %2$s</string>
+    <string name="offline_conflict_title">Versieconflict: %1$s</string>
+    <string name="offline_conflicts_title">Versieconflicten</string>
+    <string name="offline_failed">Synchronisatie mislukt: %1$s</string>
+    <string name="offline_folder_unavailable">Kan niet naar de map schrijven — „Toegang tot alle bestanden” is nodig.</string>
+    <string name="offline_interval">Automatisch synchroniseren</string>
+    <string name="offline_interval_manual">Handmatig</string>
+    <string name="offline_keep_both">Beide</string>
+    <string name="offline_keep_local">Van telefoon</string>
+    <string name="offline_keep_remote">Van server</string>
+    <string name="offline_location">Waar kopieën bewaren</string>
+    <string name="offline_location_app">App-opslag</string>
+    <string name="offline_location_app_hint">Verborgen voor andere apps; verdwijnt bij het verwijderen van ARMA Files.</string>
+    <string name="offline_location_folder">Map „ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">In de telefoonopslag, zichtbaar voor andere apps; blijft na verwijderen bestaan.</string>
+    <string name="offline_make">Offline beschikbaar</string>
+    <string name="offline_missing">Dit item bestaat niet meer op de server.</string>
+    <string name="offline_never">Wacht op synchronisatie</string>
+    <string name="offline_only_remote">Alleen bestanden en mappen van servers kunnen offline worden bewaard.</string>
+    <string name="offline_phone_suffix">telefoon</string>
+    <string name="offline_phone_version">Telefoon: %1$s</string>
+    <string name="offline_remove">Verwijderen uit offline</string>
+    <string name="offline_server_version">Server: %1$s</string>
+    <string name="offline_settings_title">Offline bestanden</string>
+    <string name="offline_sync">Synchroniseren</string>
+    <string name="offline_synced">Gesynchroniseerd %1$s · %2$s</string>
+    <string name="offline_syncing">Synchroniseren… %1$s</string>
+    <string name="offline_title">Offline beschikbaar</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">verwijderd</string>
+    <string name="offline_wifi_only">Alleen via wifi</string>
     <string name="op_copy">Kopiëren</string>
     <string name="op_delete">Verwijderen</string>
+    <string name="op_extract">Uitpakken</string>
     <string name="op_move">Verplaatsen</string>
     <string name="op_restore">Terugzetten</string>
     <string name="op_trash">Naar prullenbak verplaatsen</string>
@@ -336,6 +406,7 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="trash_with_count">Prullenbak (%1$d)</string>
     <string name="undo_copied">%1$d gekopieerd</string>
     <string name="undo_done">%1$d klaar</string>
+    <string name="undo_extracted">Uitgepakt: %1$d</string>
     <string name="undo_moved">%1$d verplaatst</string>
     <string name="undo_skipped_suffix">, %1$d overgeslagen</string>
     <string name="undo_trashed">%1$d naar prullenbak</string>
@@ -344,14 +415,18 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="welcome_pick">Map kiezen</string>
     <string name="welcome_text">Kies een startmap. Android onthoudt de toegang, zodat de app er ook na een herstart naar kan terugkeren.</string>
     <string name="welcome_title">Welkom bij ARMA Files</string>
-    <string name="zip_create_title">ZIP-archief maken</string>
+    <string name="zip_create_title">Archief maken</string>
     <string name="zip_default_name">archief.zip</string>
     <string name="zip_extract_here">Hier uitpakken</string>
     <string name="zip_name">Archiefnaam</string>
-    <string name="zip_pack">Inpakken als ZIP</string>
+    <string name="zip_pack">Inpakken</string>
     <string name="zoom_fit">Passend maken</string>
     <string name="zoom_in">Inzoomen</string>
     <string name="zoom_out">Uitzoomen</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d dag</item>
+        <item quantity="other">%1$d dagen</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">%1$d item verwijderen?</item>
         <item quantity="other">%1$d items verwijderen?</item>
@@ -375,5 +450,9 @@ door bovenaan een tabblad te kiezen.</string>
     <plurals name="n_lines">
         <item quantity="one">%1$d regel</item>
         <item quantity="other">%1$d regels</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d conflict — kies een versie</item>
+        <item quantity="other">%1$d conflicten — kies versies</item>
     </plurals>
 </resources>

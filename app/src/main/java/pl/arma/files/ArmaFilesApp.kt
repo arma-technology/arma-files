@@ -42,6 +42,10 @@ class ArmaFilesApp : Application() {
 
     val indexer: Indexer by lazy { Indexer(index, scope) }
 
+    val cacheJanitor: CacheJanitor by lazy { CacheJanitor(this, scope) }
+
+    val offline: OfflineStore by lazy { OfflineStore(this, repository, scope).also { repository.offline = it } }
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(AppLanguage.wrap(base))
     }
@@ -52,6 +56,11 @@ class ArmaFilesApp : Application() {
         AppLanguage.applyToProcess(this)
         // DWG otwiera przeglądarka arkuszy przez LibreDWG (moduł :dwg, GPL).
         pl.arma.dwg.LibreDwgConverter.install()
+        cacheJanitor.applyDwgLimit()
+        cacheJanitor.trimAsync()
+        // Kopie offline doganiają serwer przy każdym starcie — tylko przez Wi-Fi.
+        offline.syncAll(automatic = true)
+        OfflineSyncWorker.schedule(this, offline.intervalMinutes, offline.wifiOnly)
     }
 }
 

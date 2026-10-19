@@ -270,4 +270,31 @@ class OperationEngineTest {
         assertEquals("aaa", ops.content("file:///cel/a.txt"))
         assertEquals("bbb", ops.content("file:///cel/b.txt"))
     }
+
+    @Test
+    fun `przerwane rozpakowanie usuwa to, co zdazylo powstac`() = runTest {
+        val ops = FakeOps().also { it.addDir("file:///cel") }
+        ops.addFile("file:///cel/b.txt", "stary")
+        val first = file(ops, "armaarc://a1/a.txt", "aaa")
+        val folder = dir(ops, "armaarc://a1/pod")
+        ops.addFile("armaarc://a1/pod/c.txt", "ccc")
+        val second = file(ops, "armaarc://a1/b.txt", "nowy")
+        val engine = OperationEngine(ops, CoroutineScope(StandardTestDispatcher(testScheduler) + Job()))
+
+        val id = engine.enqueue(OperationKind.EXTRACT, listOf(first, folder, second), target)
+        advanceUntilIdle()
+        // Konflikt na b.txt zatrzymuje operację po wypakowaniu a.txt i pod/.
+        assertNotNull(engine.pendingConflict.value)
+        assertTrue(ops.exists("file:///cel/a.txt"))
+        assertTrue(ops.exists("file:///cel/pod/c.txt"))
+
+        engine.cancel(id)
+        advanceUntilIdle()
+
+        assertEquals(OperationStatus.CANCELLED, engine.operations.value.single().status)
+        assertFalse(ops.exists("file:///cel/a.txt"))
+        assertFalse(ops.exists("file:///cel/pod"))
+        assertFalse(ops.exists("file:///cel/pod/c.txt"))
+        assertEquals("plik sprzed rozpakowania zostaje", "stary", ops.content("file:///cel/b.txt"))
+    }
 }

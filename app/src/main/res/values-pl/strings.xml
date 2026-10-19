@@ -39,6 +39,22 @@
     <string name="apk_allow">Zezwól ARMA Files na instalowanie aplikacji, potem spróbuj ponownie.</string>
     <string name="apk_failed">Nie udało się uruchomić instalatora.</string>
     <string name="apk_unsupported">Ta wersja Androida nie pozwala instalować plików APK z aplikacji.</string>
+    <string name="archive_browse">Przeglądaj zawartość</string>
+    <string name="archive_extract_all">Rozpakuj wszystko</string>
+    <string name="archive_extract_other_pane">Rozpakuj do drugiego panelu</string>
+    <string name="archive_format">Format</string>
+    <string name="archive_no_password">Ten format nie obsługuje hasła.</string>
+    <string name="archive_password">Hasło</string>
+    <string name="archive_password_aes">Szyfrowanie AES-256</string>
+    <string name="archive_password_optional">Hasło (opcjonalnie)</string>
+    <string name="archive_password_title">Archiwum chronione hasłem</string>
+    <string name="archive_password_wrong">Nieprawidłowe hasło</string>
+    <string name="cache_clear">Wyczyść teraz</string>
+    <string name="cache_limit_age">Usuwaj nieużywane dłużej niż</string>
+    <string name="cache_limit_size">Najwyżej</string>
+    <string name="cache_text">Kopie plików z serwerów i archiwów oraz rysunki DWG przekonwertowane do podglądu. Po przekroczeniu limitu najpierw usuwane są najdawniej używane.</string>
+    <string name="cache_title">Pamięć podręczna</string>
+    <string name="cache_used">Zajęte: %1$s</string>
     <string name="category_apk">APK</string>
     <string name="category_archives">Archiwa</string>
     <string name="category_audio">Audio</string>
@@ -112,6 +128,10 @@
     <string name="err_access_failed">Nie udało się uzyskać dostępu.</string>
     <string name="err_account_missing">Połączenie nie istnieje lub zostało usunięte.</string>
     <string name="err_apk_prepare">Nie udało się przygotować pliku APK.</string>
+    <string name="err_archive_format">Nieobsługiwany format albo uszkodzone archiwum.</string>
+    <string name="err_archive_gone">Archiwum nie jest już dostępne.</string>
+    <string name="err_archive_rar">Zaszyfrowane archiwa RAR nie są obsługiwane.</string>
+    <string name="err_archive_read_only">Archiwum jest tylko do odczytu. Rozpakuj pliki, żeby je zmieniać.</string>
     <string name="err_attach_failed">Nie udało się podłączyć źródła.</string>
     <string name="err_attach_in_settings">Podłącz to źródło w Ustawieniach.</string>
     <string name="err_cannot_read_folder">Nie można odczytać katalogu: %1$s</string>
@@ -154,6 +174,10 @@
     <string name="err_target_folder">Nie udało się utworzyć katalogu docelowego.</string>
     <string name="err_zip_create">Nie udało się utworzyć archiwum.</string>
     <string name="err_zip_unsafe">Archiwum zawiera niebezpieczną ścieżkę.</string>
+    <string name="extract_cancel_confirm">Przerwij i usuń</string>
+    <string name="extract_cancel_continue">Kontynuuj</string>
+    <string name="extract_cancel_text">Rozpakowywanie jest wstrzymane. Pliki i foldery wypakowane do tej pory zostaną usunięte.</string>
+    <string name="extract_cancel_title">Przerwać rozpakowywanie?</string>
     <string name="fab_new">Nowy</string>
     <string name="fav_add">Dodaj do ulubionych</string>
     <string name="fav_remove">Usuń z ulubionych</string>
@@ -180,6 +204,7 @@
     <string name="history_copy">Kopiowanie</string>
     <string name="history_delete">Usunięcie</string>
     <string name="history_empty">Tu pojawią się zakończone operacje. Kopiowanie, przeniesienie i kosz można stąd cofnąć.</string>
+    <string name="history_extract">Rozpakowanie</string>
     <string name="history_move">Przenoszenie</string>
     <string name="history_restore">Przywrócenie</string>
     <string name="history_title">Historia operacji</string>
@@ -188,6 +213,13 @@
     <string name="home_pinned">Przypięte foldery</string>
     <string name="home_this_computer">Ten komputer</string>
     <string name="home_title">Mój komputer</string>
+    <string name="identity_new">Nowy odcisk</string>
+    <string name="identity_old">Zapamiętany odcisk</string>
+    <string name="identity_reject">Nie łącz</string>
+    <string name="identity_text">%1$s przedstawia się inaczej niż przy pierwszym połączeniu. Tak bywa po reinstalacji albo wymianie serwera, ale może też oznaczać, że ktoś się pod niego podszywa. Zaufaj tylko, jeśli wiesz, skąd ta zmiana.</string>
+    <string name="identity_title_ssh">Klucz serwera się zmienił</string>
+    <string name="identity_title_tls">Certyfikat serwera się zmienił</string>
+    <string name="identity_trust">Zaufaj nowemu</string>
     <string name="image_position">%1$d z %2$d · przesuń w bok, aby zmienić zdjęcie</string>
     <string name="index_build">Zbuduj</string>
     <string name="index_build_hint">Zbuduj indeks, aby szukać w całej pamięci</string>
@@ -215,8 +247,46 @@
     <string name="notice_zip_created">Utworzono archiwum ZIP</string>
     <string name="notif_channel">Operacje na plikach</string>
     <string name="notif_channel_desc">Postęp kopiowania, przenoszenia i usuwania</string>
+    <string name="offline_added">Dodano do offline — pobieranie w tle</string>
+    <string name="offline_banner">Serwer niedostępny — pokazuję kopię offline z %1$s</string>
+    <string name="offline_busy">Poprzednia synchronizacja jeszcze trwa — spróbuj później.</string>
+    <string name="offline_conflict_channel">Rozbieżności plików offline</string>
+    <string name="offline_conflict_text">Plik zmienił się na serwerze i w telefonie. Którą wersję zachować?
+Serwer: %1$s
+Telefon: %2$s</string>
+    <string name="offline_conflict_title">Rozbieżność wersji: %1$s</string>
+    <string name="offline_conflicts_title">Rozbieżności wersji</string>
+    <string name="offline_failed">Błąd synchronizacji: %1$s</string>
+    <string name="offline_folder_unavailable">Nie można zapisać w folderze — potrzebny „Dostęp do wszystkich plików”.</string>
+    <string name="offline_interval">Synchronizuj automatycznie</string>
+    <string name="offline_interval_manual">Ręcznie</string>
+    <string name="offline_keep_both">Obie</string>
+    <string name="offline_keep_local">Z telefonu</string>
+    <string name="offline_keep_remote">Z serwera</string>
+    <string name="offline_location">Gdzie trzymać kopie</string>
+    <string name="offline_location_app">Pamięć aplikacji</string>
+    <string name="offline_location_app_hint">Niewidoczna dla innych aplikacji; znika po odinstalowaniu ARMA Files.</string>
+    <string name="offline_location_folder">Folder „ARMA Files offline”</string>
+    <string name="offline_location_folder_hint">W pamięci telefonu, widoczny dla innych aplikacji; zostaje po odinstalowaniu.</string>
+    <string name="offline_make">Dostępne offline</string>
+    <string name="offline_missing">Tego elementu nie ma już na serwerze.</string>
+    <string name="offline_never">Czeka na synchronizację</string>
+    <string name="offline_only_remote">Offline można zapisać tylko pliki i foldery z serwerów.</string>
+    <string name="offline_phone_suffix">telefon</string>
+    <string name="offline_phone_version">Telefon: %1$s</string>
+    <string name="offline_remove">Usuń z offline</string>
+    <string name="offline_server_version">Serwer: %1$s</string>
+    <string name="offline_settings_title">Pliki offline</string>
+    <string name="offline_sync">Synchronizuj</string>
+    <string name="offline_synced">Zsynchronizowano %1$s · %2$s</string>
+    <string name="offline_syncing">Synchronizacja… %1$s</string>
+    <string name="offline_title">Dostępne offline</string>
+    <string name="offline_version">%1$s, %2$s</string>
+    <string name="offline_version_deleted">usunięty</string>
+    <string name="offline_wifi_only">Tylko przez Wi-Fi</string>
     <string name="op_copy">Kopiowanie</string>
     <string name="op_delete">Usuwanie</string>
+    <string name="op_extract">Rozpakowywanie</string>
     <string name="op_move">Przenoszenie</string>
     <string name="op_restore">Przywracanie</string>
     <string name="op_trash">Przenoszenie do kosza</string>
@@ -336,6 +406,7 @@ wybierając kartę z paska powyżej.</string>
     <string name="trash_with_count">Kosz (%1$d)</string>
     <string name="undo_copied">Skopiowano %1$d</string>
     <string name="undo_done">Gotowe %1$d</string>
+    <string name="undo_extracted">Rozpakowano %1$d</string>
     <string name="undo_moved">Przeniesiono %1$d</string>
     <string name="undo_skipped_suffix">, pominięto %1$d</string>
     <string name="undo_trashed">Przeniesiono do kosza %1$d</string>
@@ -344,14 +415,20 @@ wybierając kartę z paska powyżej.</string>
     <string name="welcome_pick">Wybierz katalog</string>
     <string name="welcome_text">Wybierz katalog startowy. Android zapamięta dostęp, więc aplikacja będzie mogła wrócić do niego po ponownym uruchomieniu.</string>
     <string name="welcome_title">Witaj w ARMA Files</string>
-    <string name="zip_create_title">Utwórz archiwum ZIP</string>
+    <string name="zip_create_title">Utwórz archiwum</string>
     <string name="zip_default_name">archiwum.zip</string>
     <string name="zip_extract_here">Rozpakuj tutaj</string>
     <string name="zip_name">Nazwa archiwum</string>
-    <string name="zip_pack">Spakuj do ZIP</string>
+    <string name="zip_pack">Spakuj</string>
     <string name="zoom_fit">Dopasuj</string>
     <string name="zoom_in">Powiększ</string>
     <string name="zoom_out">Pomniejsz</string>
+    <plurals name="cache_days">
+        <item quantity="one">%1$d dzień</item>
+        <item quantity="few">%1$d dni</item>
+        <item quantity="many">%1$d dni</item>
+        <item quantity="other">%1$d dnia</item>
+    </plurals>
     <plurals name="delete_n_title">
         <item quantity="one">Usunąć %1$d element?</item>
         <item quantity="few">Usunąć %1$d elementy?</item>
@@ -387,5 +464,11 @@ wybierając kartę z paska powyżej.</string>
         <item quantity="few">%1$d linie</item>
         <item quantity="many">%1$d linii</item>
         <item quantity="other">%1$d linii</item>
+    </plurals>
+    <plurals name="offline_conflicts">
+        <item quantity="one">%1$d rozbieżność — wybierz wersję</item>
+        <item quantity="few">%1$d rozbieżności — wybierz wersje</item>
+        <item quantity="many">%1$d rozbieżności — wybierz wersje</item>
+        <item quantity="other">%1$d rozbieżności — wybierz wersje</item>
     </plurals>
 </resources>
