@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Náhľad strany %1$d</string>
     <string name="viewer_pdf_layer">Vrstva %1$d</string>
     <string name="viewer_points_same_page">Oba body merania musia ležať na rovnakej strane.</string>
+    <string name="viewer_preparing_measure">Pripravujem meranie…</string>
     <string name="viewer_previous_match">Predchádzajúci výskyt</string>
     <string name="viewer_previous_page">Predchádzajúca strana</string>
     <string name="viewer_save_comments">Uložiť komentáre do súboru</string>

@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Мініатюра сторінки %1$d</string>
     <string name="viewer_pdf_layer">Шар %1$d</string>
     <string name="viewer_points_same_page">Обидві точки вимірювання мають бути на одній сторінці.</string>
+    <string name="viewer_preparing_measure">Підготовка вимірювання…</string>
     <string name="viewer_previous_match">Попередній збіг</string>
     <string name="viewer_previous_page">Попередня сторінка</string>
     <string name="viewer_save_comments">Зберегти коментарі у файл</string>

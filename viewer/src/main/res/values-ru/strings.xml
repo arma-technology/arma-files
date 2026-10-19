@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Миниатюра страницы %1$d</string>
     <string name="viewer_pdf_layer">Слой %1$d</string>
     <string name="viewer_points_same_page">Обе точки измерения должны быть на одной странице.</string>
+    <string name="viewer_preparing_measure">Подготовка измерения…</string>
     <string name="viewer_previous_match">Предыдущее совпадение</string>
     <string name="viewer_previous_page">Предыдущая страница</string>
     <string name="viewer_save_comments">Сохранить комментарии в файл</string>

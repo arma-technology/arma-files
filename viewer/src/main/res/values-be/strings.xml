@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Мініяцюра старонкі %1$d</string>
     <string name="viewer_pdf_layer">Слой %1$d</string>
     <string name="viewer_points_same_page">Абедзве кропкі вымярэння павінны быць на адной старонцы.</string>
+    <string name="viewer_preparing_measure">Падрыхтоўка вымярэння…</string>
     <string name="viewer_previous_match">Папярэдняе супадзенне</string>
     <string name="viewer_previous_page">Папярэдняя старонка</string>
     <string name="viewer_save_comments">Захаваць каментарыі ў файл</string>

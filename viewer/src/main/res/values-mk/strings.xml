@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Сликичка на страница %1$d</string>
     <string name="viewer_pdf_layer">Слој %1$d</string>
     <string name="viewer_points_same_page">Двете точки на мерење мора да бидат на истата страница.</string>
+    <string name="viewer_preparing_measure">Се подготвува мерењето…</string>
     <string name="viewer_previous_match">Претходен резултат</string>
     <string name="viewer_previous_page">Претходна страница</string>
     <string name="viewer_save_comments">Зачувај ги коментарите во датотеката</string>

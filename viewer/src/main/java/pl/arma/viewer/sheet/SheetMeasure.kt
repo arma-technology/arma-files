@@ -43,6 +43,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.material3.Switch
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -257,6 +259,13 @@ internal fun MeasurePanel(
     onSaveToFile: (() -> Unit)?,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
+    // Ustawienie przełączników przechodzi między dokumentami i uruchomieniami.
+    if (!state.measurePrefsLoaded) {
+        state.measurePrefsLoaded = true
+        state.snapping = ViewerPreferences.snapping(context)
+        state.axisLock = ViewerPreferences.axisLock(context)
+    }
     val page = cursor?.page ?: 0
     val scale = state.scaleFor(page)
     val first = state.firstPoint
@@ -295,16 +304,6 @@ internal fun MeasurePanel(
                 onClick = { state.scaleDialog = true },
                 label = { Text(if (scale != null) stringResource(R.string.viewer_scale_chip, scale.label) else stringResource(R.string.viewer_set_scale)) }
             )
-            FilterChip(
-                selected = state.snapping,
-                onClick = { state.snapping = !state.snapping },
-                label = { Text(stringResource(R.string.viewer_snapping)) }
-            )
-            FilterChip(
-                selected = state.axisLock,
-                onClick = { state.axisLock = !state.axisLock },
-                label = { Text(stringResource(R.string.viewer_axis_lock)) }
-            )
             IconButton(
                 onClick = {
                     if (state.firstPoint != null) state.firstPoint = null
@@ -323,6 +322,27 @@ internal fun MeasurePanel(
             IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_finish_measuring)) }
         }
     }
+    // Przełączniki zawsze na widoku — w przewijanym rzędzie nikt ich nie znajdował.
+    val switches: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(
+                    checked = state.snapping,
+                    onCheckedChange = { state.snapping = it; ViewerPreferences.setSnapping(context, it) },
+                    modifier = Modifier.scale(.8f)
+                )
+                Text(stringResource(R.string.viewer_snapping), style = MaterialTheme.typography.labelLarge)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(
+                    checked = state.axisLock,
+                    onCheckedChange = { state.axisLock = it; ViewerPreferences.setAxisLock(context, it) },
+                    modifier = Modifier.scale(.8f)
+                )
+                Text(stringResource(R.string.viewer_axis_lock), style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
     val pointButton: @Composable (Modifier) -> Unit = { modifier ->
         Button(onClick = onPoint, modifier = modifier, enabled = cursor != null) {
             Icon(Icons.Default.GpsFixed, null, Modifier.size(18.dp))
@@ -335,7 +355,10 @@ internal fun MeasurePanel(
             // W poziomie panel ma jeden rząd: ekran jest niski, a każdy
             // centymetr wysokości to widoczny rysunek.
             Column(Modifier.widthIn(max = 980.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                readoutRow(Modifier)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { readoutRow(Modifier) }
+                    switches()
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { controls() }
                     Spacer(Modifier.width(8.dp))
@@ -345,6 +368,7 @@ internal fun MeasurePanel(
         } else {
             Column(Modifier.widthIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 readoutRow(Modifier)
+                switches()
                 controls()
                 pointButton(Modifier.fillMaxWidth())
             }
@@ -555,4 +579,14 @@ object ViewerPreferences {
     fun setAuthor(context: Context, author: String) {
         if (author.isNotBlank()) prefs(context).edit().putString("author", author.trim()).apply()
     }
+
+    /** Przyciąganie celownika do linii, końców i przecięć rysunku. */
+    fun snapping(context: Context): Boolean = prefs(context).getBoolean("snapping", true)
+
+    fun setSnapping(context: Context, on: Boolean) = prefs(context).edit().putBoolean("snapping", on).apply()
+
+    /** Prowadzenie po osi: drugi punkt tylko poziomo albo pionowo od pierwszego. */
+    fun axisLock(context: Context): Boolean = prefs(context).getBoolean("axis_lock", false)
+
+    fun setAxisLock(context: Context, on: Boolean) = prefs(context).edit().putBoolean("axis_lock", on).apply()
 }

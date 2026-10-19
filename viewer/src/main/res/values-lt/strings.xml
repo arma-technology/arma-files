@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">%1$d puslapio miniatiūra</string>
     <string name="viewer_pdf_layer">Sluoksnis %1$d</string>
     <string name="viewer_points_same_page">Abu matavimo taškai turi būti tame pačiame puslapyje.</string>
+    <string name="viewer_preparing_measure">Ruošiamas matavimas…</string>
     <string name="viewer_previous_match">Ankstesnis atitikmuo</string>
     <string name="viewer_previous_page">Ankstesnis puslapis</string>
     <string name="viewer_save_comments">Išsaugoti komentarus faile</string>

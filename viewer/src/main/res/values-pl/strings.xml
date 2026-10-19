@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Miniatura strony %1$d</string>
     <string name="viewer_pdf_layer">Warstwa %1$d</string>
     <string name="viewer_points_same_page">Oba punkty pomiaru muszą leżeć na tej samej stronie.</string>
+    <string name="viewer_preparing_measure">Przygotowuję pomiar…</string>
     <string name="viewer_previous_match">Poprzednie trafienie</string>
     <string name="viewer_previous_page">Poprzednia strona</string>
     <string name="viewer_save_comments">Zapisz komentarze w pliku</string>

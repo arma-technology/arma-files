@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Sličica strani %1$d</string>
     <string name="viewer_pdf_layer">Plast %1$d</string>
     <string name="viewer_points_same_page">Obe merilni točki morata biti na isti strani.</string>
+    <string name="viewer_preparing_measure">Pripravljam merjenje…</string>
     <string name="viewer_previous_match">Prejšnji zadetek</string>
     <string name="viewer_previous_page">Prejšnja stran</string>
     <string name="viewer_save_comments">Shrani komentarje v datoteko</string>

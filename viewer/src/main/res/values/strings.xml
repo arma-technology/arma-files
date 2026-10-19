@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Page %1$d thumbnail</string>
     <string name="viewer_pdf_layer">Layer %1$d</string>
     <string name="viewer_points_same_page">Both measurement points must be on the same page.</string>
+    <string name="viewer_preparing_measure">Preparing measurement…</string>
     <string name="viewer_previous_match">Previous match</string>
     <string name="viewer_previous_page">Previous page</string>
     <string name="viewer_save_comments">Save comments to file</string>

@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Miniatuur van pagina %1$d</string>
     <string name="viewer_pdf_layer">Laag %1$d</string>
     <string name="viewer_points_same_page">Beide meetpunten moeten op dezelfde pagina liggen.</string>
+    <string name="viewer_preparing_measure">Meting voorbereiden…</string>
     <string name="viewer_previous_match">Vorige treffer</string>
     <string name="viewer_previous_page">Vorige pagina</string>
     <string name="viewer_save_comments">Opmerkingen in bestand opslaan</string>

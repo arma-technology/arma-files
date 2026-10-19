@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Miniatura e faqes %1$d</string>
     <string name="viewer_pdf_layer">Shtresa %1$d</string>
     <string name="viewer_points_same_page">Të dyja pikat e matjes duhet të jenë në të njëjtën faqe.</string>
+    <string name="viewer_preparing_measure">Po përgatitet matja…</string>
     <string name="viewer_previous_match">Përputhja e mëparshme</string>
     <string name="viewer_previous_page">Faqja e mëparshme</string>
     <string name="viewer_save_comments">Ruaj komentet në skedar</string>

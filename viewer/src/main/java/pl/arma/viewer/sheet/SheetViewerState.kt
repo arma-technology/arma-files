@@ -69,6 +69,8 @@ class SheetViewerState internal constructor() {
     internal var firstPoint by mutableStateOf<PagePoint?>(null)
     internal var axisLock by mutableStateOf(false)
     internal var snapping by mutableStateOf(true)
+    /** Przełączniki pomiaru wczytane z ustawień (raz na przeglądarkę). */
+    internal var measurePrefsLoaded = false
     internal val geometries = mutableStateMapOf<Int, SnapGeometry>()
     internal val loadingGeometry = mutableStateMapOf<Int, Boolean>()
     /** Skala wybrana przez użytkownika dla strony; null w mapie = brak wyboru. */

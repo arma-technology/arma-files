@@ -18,6 +18,9 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -716,6 +719,24 @@ private fun DocumentView(
             }
             if (state.bases[currentPage - 1] == null) {
                 CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+            }
+            // Wczytywanie linii do przyciągania trwa przy dużych rysunkach kilka
+            // sekund — dokument zostaje widoczny, a nad nim widać, że narzędzie
+            // się przygotowuje.
+            val preparing = state.placement == Placement.MEASURE && cursor?.page?.let { state.loadingGeometry[it] } == true
+            androidx.compose.animation.AnimatedVisibility(
+                visible = preparing,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                OverlaySurface {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.viewer_preparing_measure), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
         }
     }

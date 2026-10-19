@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">%1$d. lapas sīktēls</string>
     <string name="viewer_pdf_layer">Slānis %1$d</string>
     <string name="viewer_points_same_page">Abiem mērīšanas punktiem jābūt vienā lapā.</string>
+    <string name="viewer_preparing_measure">Sagatavo mērīšanu…</string>
     <string name="viewer_previous_match">Iepriekšējā atbilstība</string>
     <string name="viewer_previous_page">Iepriekšējā lapa</string>
     <string name="viewer_save_comments">Saglabāt komentārus failā</string>

@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">%1$d. oldal bélyegképe</string>
     <string name="viewer_pdf_layer">Réteg %1$d</string>
     <string name="viewer_points_same_page">Mindkét mérési pontnak ugyanazon az oldalon kell lennie.</string>
+    <string name="viewer_preparing_measure">Mérés előkészítése…</string>
     <string name="viewer_previous_match">Előző találat</string>
     <string name="viewer_previous_page">Előző oldal</string>
     <string name="viewer_save_comments">Megjegyzések mentése a fájlba</string>

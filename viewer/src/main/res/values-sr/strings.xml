@@ -97,6 +97,7 @@
     <string name="viewer_page_thumbnail">Сличица странице %1$d</string>
     <string name="viewer_pdf_layer">Слој %1$d</string>
     <string name="viewer_points_same_page">Обе тачке мерења морају бити на истој страници.</string>
+    <string name="viewer_preparing_measure">Припрема мерења…</string>
     <string name="viewer_previous_match">Претходни резултат</string>
     <string name="viewer_previous_page">Претходна страница</string>
     <string name="viewer_save_comments">Сачувај коментаре у датотеку</string>
