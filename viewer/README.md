@@ -1,4 +1,4 @@
-# :viewer — przeglądarka PDF i rysunków CAD
+# :viewer — przeglądarka PDF, rysunków CAD, obrazów i tekstu
 
 Moduł niezależny od ARMA Files: dostaje plik lokalny i go wyświetla. Nie zna
 niczego z `:app`, więc przenosi się go do innej aplikacji razem z katalogiem.
@@ -50,16 +50,27 @@ SheetViewer(state, Modifier.fillMaxSize(), onSave = { gotowy -> /* nadpisz orygi
 SheetViewerDialog(state, onDismiss = { … }, title = nazwa, actions = listOf(…), onSave = …)
 ```
 
+## Obrazy (`image/`)
+
+`ImageViewer` — powiększanie (szczypanie, przyciski do 800%), przesuwanie,
+przewijanie do sąsiednich zdjęć gestem w bok, przycisk pełnego ekranu;
+`FullscreenImageViewer` — obraz na całym ekranie z narzędziami na nim;
+`SvgImageViewer` / `FullscreenSvgViewer` — SVG przez Coil;
+`ImageDecoding.decode` — dekodowanie z ograniczeniem rozdzielczości.
+
+## Tekst (`text/`)
+
+`TextViewer` — czytnik z numerami linii, zawijaniem, wyszukiwaniem i spisem
+treści (Markdown, kod); `TextReader` rozpoznaje kodowanie (UTF-8/16,
+Windows-1250, ISO-8859-2…) i odrzuca pliki binarne; `TextProfile` mówi,
+czy plik jest tekstowy i jakiego rodzaju.
+
 ## Przeniesienie do innej aplikacji
 
-1. skopiuj `viewer/` (i `dwg/`, jeśli DWG ma działać)
-2. `settings.gradle.kts`: `include(":viewer")`, `include(":dwg")`
-3. główny `build.gradle.kts`: `id("com.android.library") version "…" apply false`
-4. aplikacja: `implementation(project(":viewer"))` (+ `:dwg`)
-5. `LibreDwgConverter.install()` w `Application.onCreate`
-6. reguły R8 z `app/proguard-rules.pro` (sekcja PdfBox i DwgNative)
-
-Wymaga Compose z Material 3 (BOM 2025.05+), minSdk 26, JDK 17, NDK 28 dla `:dwg`.
+`scripts/export-viewer-core.sh` tworzy eksport (moduły, AAR, instrukcja)
+w `../arma-viewer-core`. Instrukcja integracji z pułapkami:
+[docs/viewer-core/INTEGRACJA.md](../docs/viewer-core/INTEGRACJA.md).
+Reguły R8 jadą z modułami (`consumer-rules.pro`).
 
 ## Testy na prawdziwych rysunkach
 
