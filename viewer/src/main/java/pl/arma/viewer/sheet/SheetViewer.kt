@@ -777,6 +777,50 @@ private fun DocumentView(
         }
     }
 
+    // Komunikat leży w tym samym Boxie co dokument: jako osobny element
+    // obok niego zajmował w układzie rodzica miejsce przeglądarki i rysunek
+    // znikał na czas wyświetlania (np. „Skala … z tabelki” po wejściu w pomiar).
+    val messageOverlay: @Composable () -> Unit = {
+        state.message?.let { text ->
+            LaunchedEffect(text) {
+                delay(3500)
+                if (state.message == text) state.message = null
+            }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.inverseSurface,
+                    modifier = Modifier.padding(bottom = 140.dp, start = 24.dp, end = 24.dp)
+                ) {
+                    Text(
+                        text,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    // Wybrany komentarz: dymek z treścią nad dolną krawędzią — też w Boxie
+    // dokumentu, z tego samego powodu co komunikat.
+    val commentOverlay: @Composable () -> Unit = {
+        state.selectedComment?.let { id ->
+            comments.firstOrNull { it.id == id }?.let { comment ->
+                CommentBubble(
+                    comment = comment,
+                    canDelete = document.canAnnotate && save != null,
+                    onDelete = {
+                        scope.launch { document.deleteComment(comment.id) }
+                        state.selectedComment = null
+                    },
+                    onDismiss = { state.selectedComment = null }
+                )
+            }
+        }
+    }
+
     if (immersive) {
         Box(modifier.fillMaxSize().background(backdrop)) {
             canvas(Modifier.fillMaxSize())
@@ -798,6 +842,8 @@ private fun DocumentView(
                 }
             }
             SheetPanels(state, document, comments, layers, Modifier.align(Alignment.CenterEnd), ::showComment)
+            commentOverlay()
+            messageOverlay()
         }
     } else {
         Box(modifier) {
@@ -826,21 +872,8 @@ private fun DocumentView(
                     }
                 }
             }
-        }
-    }
-
-    // Wybrany komentarz: dymek z treścią nad dolną krawędzią.
-    state.selectedComment?.let { id ->
-        comments.firstOrNull { it.id == id }?.let { comment ->
-            CommentBubble(
-                comment = comment,
-                canDelete = document.canAnnotate && save != null,
-                onDelete = {
-                    scope.launch { document.deleteComment(comment.id) }
-                    state.selectedComment = null
-                },
-                onDismiss = { state.selectedComment = null }
-            )
+            commentOverlay()
+            messageOverlay()
         }
     }
 
@@ -860,26 +893,6 @@ private fun DocumentView(
         )
     }
 
-    state.message?.let { text ->
-        LaunchedEffect(text) {
-            delay(3500)
-            if (state.message == text) state.message = null
-        }
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.inverseSurface,
-                modifier = Modifier.padding(bottom = 140.dp, start = 24.dp, end = 24.dp)
-            ) {
-                Text(
-                    text,
-                    color = MaterialTheme.colorScheme.inverseOnSurface,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                )
-            }
-        }
-    }
 }
 
 /** Półprzezroczyste tło narzędzi leżących na treści. */
