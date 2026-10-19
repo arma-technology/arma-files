@@ -161,7 +161,6 @@
     <string name="err_needs_config">To povezavo je treba še nastaviti.</string>
     <string name="err_no_path">Datoteka nima poti.</string>
     <string name="err_no_target">Ni ciljne mape.</string>
-    <string name="err_not_text">To ni besedilna datoteka.</string>
     <string name="err_open_read">Datoteke ni mogoče odpreti za branje.</string>
     <string name="err_open_write">Datoteke ni mogoče odpreti za pisanje.</string>
     <string name="err_operation_failed">Operacija ni uspela.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: prenos ni bil dokončan.</string>
     <string name="ftp_write_incomplete">FTP: nalaganje ni bilo dokončano.</string>
     <string name="ftps_reuse">FTPS: strežnik zahteva nadaljevanje seje TLS v podatkovnem kanalu, česar aplikacija ne podpira. Uporabite SFTP ali to zahtevo izklopite na strežniku (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Celozaslonski način</string>
-    <string name="fullscreen_close">Zapri celozaslonski način</string>
-    <string name="fullscreen_exit">Izhod iz celozaslonskega načina</string>
     <string name="history_clear">Počisti</string>
     <string name="history_copy">Kopiranje</string>
     <string name="history_delete">Brisanje</string>
@@ -437,13 +433,6 @@ z izbiro zavihka v vrstici zgoraj.</string>
     <string name="tabs_new">Nov zavihek</string>
     <string name="tabs_pin_folder">Pripni mapo</string>
     <string name="tabs_single_pane">Ena plošča</string>
-    <string name="text_first_match">Na prvi zadetek</string>
-    <string name="text_outline">Vsebina</string>
-    <string name="text_profile_plain">BESEDILO</string>
-    <string name="text_read_failed">Datoteke ni bilo mogoče prebrati.</string>
-    <string name="text_search">Išči v datoteki</string>
-    <string name="text_shows_beginning"> · prikazan je začetek</string>
-    <string name="text_wrap">Prelom vrstic</string>
     <string name="trash_empty_action">Izprazni</string>
     <string name="trash_empty_text">Koš je prazen. Izbrisane datoteke pridejo sem in ostanejo na istem pomnilniku, zato ne zasedajo dodatnega prostora.</string>
     <string name="trash_restore">Obnovi</string>
@@ -465,9 +454,6 @@ z izbiro zavihka v vrstici zgoraj.</string>
     <string name="zip_extract_here">Razširi sem</string>
     <string name="zip_name">Ime arhiva</string>
     <string name="zip_pack">Stisni</string>
-    <string name="zoom_fit">Prilagodi</string>
-    <string name="zoom_in">Povečaj</string>
-    <string name="zoom_out">Pomanjšaj</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d dan</item>
         <item quantity="two">%1$d dneva</item>
@@ -503,12 +489,6 @@ z izbiro zavihka v vrstici zgoraj.</string>
         <item quantity="two">%1$d elementa</item>
         <item quantity="few">%1$d elementi</item>
         <item quantity="other">%1$d elementov</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d vrstica</item>
-        <item quantity="two">%1$d vrstici</item>
-        <item quantity="few">%1$d vrstice</item>
-        <item quantity="other">%1$d vrstic</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d neskladje — izberite različico</item>

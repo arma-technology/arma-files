@@ -161,7 +161,6 @@
     <string name="err_needs_config">Toto pripojenie ešte treba nastaviť.</string>
     <string name="err_no_path">Súbor nemá cestu.</string>
     <string name="err_no_target">Chýba cieľový priečinok.</string>
-    <string name="err_not_text">Toto nie je textový súbor.</string>
     <string name="err_open_read">Súbor nemožno otvoriť na čítanie.</string>
     <string name="err_open_write">Súbor nemožno otvoriť na zápis.</string>
     <string name="err_operation_failed">Operácia zlyhala.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: prenos sa nedokončil.</string>
     <string name="ftp_write_incomplete">FTP: nahrávanie sa nedokončilo.</string>
     <string name="ftps_reuse">FTPS: server vyžaduje obnovenie relácie TLS na dátovom kanáli, čo aplikácia nepodporuje. Použite SFTP alebo túto požiadavku na serveri vypnite (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Celá obrazovka</string>
-    <string name="fullscreen_close">Zavrieť celú obrazovku</string>
-    <string name="fullscreen_exit">Ukončiť celú obrazovku</string>
     <string name="history_clear">Vymazať</string>
     <string name="history_copy">Kopírovanie</string>
     <string name="history_delete">Odstránenie</string>
@@ -437,13 +433,6 @@ výberom karty v lište hore.</string>
     <string name="tabs_new">Nová karta</string>
     <string name="tabs_pin_folder">Pripnúť priečinok</string>
     <string name="tabs_single_pane">Jeden panel</string>
-    <string name="text_first_match">Prejsť na prvý výskyt</string>
-    <string name="text_outline">Obsah</string>
-    <string name="text_profile_plain">TEXT</string>
-    <string name="text_read_failed">Súbor sa nepodarilo prečítať.</string>
-    <string name="text_search">Hľadať v súbore</string>
-    <string name="text_shows_beginning"> · zobrazený začiatok</string>
-    <string name="text_wrap">Zalamovanie riadkov</string>
     <string name="trash_empty_action">Vyprázdniť</string>
     <string name="trash_empty_text">Kôš je prázdny. Odstránené súbory sa presunú sem a zostanú na rovnakom úložisku, takže nezaberajú miesto navyše.</string>
     <string name="trash_restore">Obnoviť</string>
@@ -465,9 +454,6 @@ výberom karty v lište hore.</string>
     <string name="zip_extract_here">Rozbaliť sem</string>
     <string name="zip_name">Názov archívu</string>
     <string name="zip_pack">Zbaliť</string>
-    <string name="zoom_fit">Prispôsobiť</string>
-    <string name="zoom_in">Priblížiť</string>
-    <string name="zoom_out">Oddialiť</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d deň</item>
         <item quantity="few">%1$d dni</item>
@@ -503,12 +489,6 @@ výberom karty v lište hore.</string>
         <item quantity="few">%1$d položky</item>
         <item quantity="many">%1$d položky</item>
         <item quantity="other">%1$d položiek</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d riadok</item>
-        <item quantity="few">%1$d riadky</item>
-        <item quantity="many">%1$d riadku</item>
-        <item quantity="other">%1$d riadkov</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d rozpor — vyberte verziu</item>

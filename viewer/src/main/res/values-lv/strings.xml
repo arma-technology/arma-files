@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Ietilpināt ekrānā</string>
     <string name="viewer_go">Iet</string>
     <string name="viewer_go_to_page">Iet uz lapu</string>
+    <string name="viewer_image_fullscreen">Pilnekrāns</string>
+    <string name="viewer_image_fullscreen_close">Aizvērt pilnekrānu</string>
+    <string name="viewer_image_fullscreen_exit">Iziet no pilnekrāna</string>
+    <string name="viewer_image_open_failed">Neizdevās atvērt attēlu.</string>
+    <string name="viewer_image_zoom_fit">Ietilpināt</string>
+    <string name="viewer_image_zoom_in">Tuvināt</string>
+    <string name="viewer_image_zoom_out">Tālināt</string>
     <string name="viewer_layers">Slāņi</string>
     <string name="viewer_layers_all">Visi</string>
     <string name="viewer_layers_count">Slāņi (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">uz līnijas</string>
     <string name="viewer_snap_perpendicular">perpendikulāri</string>
     <string name="viewer_snapping">Piesaiste</string>
+    <string name="viewer_text_binary">Tas nav teksta fails.</string>
+    <string name="viewer_text_close_search">Aizvērt meklēšanu</string>
+    <string name="viewer_text_first_match">Uz pirmo atbilstību</string>
+    <string name="viewer_text_outline">Saturs</string>
+    <string name="viewer_text_plain">TEKSTS</string>
+    <string name="viewer_text_read_failed">Neizdevās nolasīt failu.</string>
+    <string name="viewer_text_search">Meklēt failā</string>
+    <string name="viewer_text_shows_beginning"> · rādīts sākums</string>
+    <string name="viewer_text_wrap">Rindu aplaušana</string>
     <string name="viewer_too_large">Fails ir pārāk liels, lai to atvērtu šajā ierīcē.</string>
     <string name="viewer_undo">Atsaukt</string>
     <string name="viewer_unit_foot">pēda</string>
@@ -129,4 +145,9 @@
     <string name="viewer_use">Izmantot</string>
     <string name="viewer_zoom_in">Tuvināt</string>
     <string name="viewer_zoom_out">Tālināt</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="zero">%1$d rindu</item>
+        <item quantity="one">%1$d rinda</item>
+        <item quantity="other">%1$d rindas</item>
+    </plurals>
 </resources>

@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Prilagodi zaslonu</string>
     <string name="viewer_go">Pojdi</string>
     <string name="viewer_go_to_page">Pojdi na stran</string>
+    <string name="viewer_image_fullscreen">Celozaslonski način</string>
+    <string name="viewer_image_fullscreen_close">Zapri celozaslonski način</string>
+    <string name="viewer_image_fullscreen_exit">Izhod iz celozaslonskega načina</string>
+    <string name="viewer_image_open_failed">Slike ni bilo mogoče odpreti.</string>
+    <string name="viewer_image_zoom_fit">Prilagodi</string>
+    <string name="viewer_image_zoom_in">Povečaj</string>
+    <string name="viewer_image_zoom_out">Pomanjšaj</string>
     <string name="viewer_layers">Plasti</string>
     <string name="viewer_layers_all">Vse</string>
     <string name="viewer_layers_count">Plasti (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">na črti</string>
     <string name="viewer_snap_perpendicular">pravokotno</string>
     <string name="viewer_snapping">Pripenjanje</string>
+    <string name="viewer_text_binary">To ni besedilna datoteka.</string>
+    <string name="viewer_text_close_search">Zapri iskanje</string>
+    <string name="viewer_text_first_match">Na prvi zadetek</string>
+    <string name="viewer_text_outline">Vsebina</string>
+    <string name="viewer_text_plain">BESEDILO</string>
+    <string name="viewer_text_read_failed">Datoteke ni bilo mogoče prebrati.</string>
+    <string name="viewer_text_search">Išči v datoteki</string>
+    <string name="viewer_text_shows_beginning"> · prikazan je začetek</string>
+    <string name="viewer_text_wrap">Prelom vrstic</string>
     <string name="viewer_too_large">Datoteka je prevelika, da bi jo odprli v tej napravi.</string>
     <string name="viewer_undo">Razveljavi</string>
     <string name="viewer_unit_foot">čevelj</string>
@@ -129,4 +145,10 @@
     <string name="viewer_use">Uporabi</string>
     <string name="viewer_zoom_in">Povečaj</string>
     <string name="viewer_zoom_out">Pomanjšaj</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d vrstica</item>
+        <item quantity="two">%1$d vrstici</item>
+        <item quantity="few">%1$d vrstice</item>
+        <item quantity="other">%1$d vrstic</item>
+    </plurals>
 </resources>

@@ -1,4 +1,4 @@
-package pl.arma.files.text
+package pl.arma.viewer.text
 
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
@@ -86,6 +86,25 @@ object TextReader {
      * na granicy porcji rozpadłby się na dwa znaki zastępcze, co przy polskich
      * tekstach psuło co któryś wyraz.
      */
+    /**
+     * Czyta początek pliku lokalnego (do [limit]) jako tekst. Plik binarny
+     * (obraz, archiwum…) daje [NotTextException] zamiast sieczki znaków.
+     */
+    fun readFile(file: java.io.File, limit: Int = DEFAULT_LIMIT): TextDocument {
+        val bytes = file.inputStream().use { input ->
+            val buffer = java.io.ByteArrayOutputStream()
+            val chunk = ByteArray(64 * 1024)
+            while (buffer.size() < limit) {
+                val count = input.read(chunk, 0, minOf(chunk.size, limit - buffer.size()))
+                if (count <= 0) break
+                buffer.write(chunk, 0, count)
+            }
+            buffer.toByteArray()
+        }
+        if (looksBinary(bytes)) throw NotTextException()
+        return read(bytes, totalBytes = file.length(), limit = limit)
+    }
+
     fun read(bytes: ByteArray, totalBytes: Long, limit: Int = DEFAULT_LIMIT): TextDocument {
         val truncated = totalBytes > limit
         val (text, charset) = decode(bytes)
@@ -98,3 +117,6 @@ object TextReader {
         )
     }
 }
+
+/** Plik nie jest tekstem — czytnik pokazuje wtedy komunikat zamiast znaków. */
+class NotTextException : IllegalArgumentException("not a text file")

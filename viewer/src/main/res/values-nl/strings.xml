@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Aan scherm aanpassen</string>
     <string name="viewer_go">Ga</string>
     <string name="viewer_go_to_page">Ga naar pagina</string>
+    <string name="viewer_image_fullscreen">Volledig scherm</string>
+    <string name="viewer_image_fullscreen_close">Volledig scherm sluiten</string>
+    <string name="viewer_image_fullscreen_exit">Volledig scherm verlaten</string>
+    <string name="viewer_image_open_failed">De afbeelding kon niet worden geopend.</string>
+    <string name="viewer_image_zoom_fit">Passend maken</string>
+    <string name="viewer_image_zoom_in">Inzoomen</string>
+    <string name="viewer_image_zoom_out">Uitzoomen</string>
     <string name="viewer_layers">Lagen</string>
     <string name="viewer_layers_all">Alle</string>
     <string name="viewer_layers_count">Lagen (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">op lijn</string>
     <string name="viewer_snap_perpendicular">loodrecht</string>
     <string name="viewer_snapping">Snappen</string>
+    <string name="viewer_text_binary">Dit is geen tekstbestand.</string>
+    <string name="viewer_text_close_search">Zoeken sluiten</string>
+    <string name="viewer_text_first_match">Naar eerste treffer</string>
+    <string name="viewer_text_outline">Inhoud</string>
+    <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_text_read_failed">Het bestand kon niet worden gelezen.</string>
+    <string name="viewer_text_search">Zoeken in bestand</string>
+    <string name="viewer_text_shows_beginning"> · begin wordt getoond</string>
+    <string name="viewer_text_wrap">Regels omloop</string>
     <string name="viewer_too_large">Het bestand is te groot om op dit apparaat te openen.</string>
     <string name="viewer_undo">Ongedaan maken</string>
     <string name="viewer_unit_foot">voet</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Gebruiken</string>
     <string name="viewer_zoom_in">Inzoomen</string>
     <string name="viewer_zoom_out">Uitzoomen</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d regel</item>
+        <item quantity="other">%1$d regels</item>
+    </plurals>
 </resources>

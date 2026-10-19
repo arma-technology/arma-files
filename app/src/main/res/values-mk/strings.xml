@@ -161,7 +161,6 @@
     <string name="err_needs_config">Оваа врска сѐ уште треба да се постави.</string>
     <string name="err_no_path">Датотеката нема патека.</string>
     <string name="err_no_target">Нема одредишна папка.</string>
-    <string name="err_not_text">Ова не е текстуална датотека.</string>
     <string name="err_open_read">Датотеката не може да се отвори за читање.</string>
     <string name="err_open_write">Датотеката не може да се отвори за запишување.</string>
     <string name="err_operation_failed">Операцијата не успеа.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: преносот не заврши.</string>
     <string name="ftp_write_incomplete">FTP: прикачувањето не заврши.</string>
     <string name="ftps_reuse">FTPS: серверот бара продолжување на TLS-сесијата на каналот за податоци, што апликацијата не го поддржува. Користете SFTP или исклучете го ова барање на серверот (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Цел екран</string>
-    <string name="fullscreen_close">Затвори цел екран</string>
-    <string name="fullscreen_exit">Излези од цел екран</string>
     <string name="history_clear">Исчисти</string>
     <string name="history_copy">Копирање</string>
     <string name="history_delete">Бришење</string>
@@ -437,13 +433,6 @@
     <string name="tabs_new">Ново јазиче</string>
     <string name="tabs_pin_folder">Закачи ја папката</string>
     <string name="tabs_single_pane">Еден панел</string>
-    <string name="text_first_match">Оди на првиот резултат</string>
-    <string name="text_outline">Содржина</string>
-    <string name="text_profile_plain">ТЕКСТ</string>
-    <string name="text_read_failed">Датотеката не можеше да се прочита.</string>
-    <string name="text_search">Пребарај во датотеката</string>
-    <string name="text_shows_beginning"> · прикажан е почетокот</string>
-    <string name="text_wrap">Прекршување на редовите</string>
     <string name="trash_empty_action">Испразни</string>
     <string name="trash_empty_text">Корпата е празна. Избришаните датотеки одат тука и остануваат на истата меморија, па не зафаќаат дополнителен простор.</string>
     <string name="trash_restore">Врати</string>
@@ -465,9 +454,6 @@
     <string name="zip_extract_here">Распакувај тука</string>
     <string name="zip_name">Име на архивата</string>
     <string name="zip_pack">Компримирај</string>
-    <string name="zoom_fit">Прилагоди</string>
-    <string name="zoom_in">Зголеми</string>
-    <string name="zoom_out">Намали</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d ден</item>
         <item quantity="other">%1$d дена</item>
@@ -491,10 +477,6 @@
     <plurals name="n_items">
         <item quantity="one">%1$d ставка</item>
         <item quantity="other">%1$d ставки</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d ред</item>
-        <item quantity="other">%1$d редови</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d несогласување — изберете верзија</item>

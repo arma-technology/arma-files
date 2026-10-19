@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">За розміром екрана</string>
     <string name="viewer_go">Перейти</string>
     <string name="viewer_go_to_page">Перейти на сторінку</string>
+    <string name="viewer_image_fullscreen">Повний екран</string>
+    <string name="viewer_image_fullscreen_close">Закрити повний екран</string>
+    <string name="viewer_image_fullscreen_exit">Вийти з повноекранного режиму</string>
+    <string name="viewer_image_open_failed">Не вдалося відкрити зображення.</string>
+    <string name="viewer_image_zoom_fit">За розміром</string>
+    <string name="viewer_image_zoom_in">Збільшити</string>
+    <string name="viewer_image_zoom_out">Зменшити</string>
     <string name="viewer_layers">Шари</string>
     <string name="viewer_layers_all">Усі</string>
     <string name="viewer_layers_count">Шари (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">на лінії</string>
     <string name="viewer_snap_perpendicular">перпендикуляр</string>
     <string name="viewer_snapping">Прив’язка</string>
+    <string name="viewer_text_binary">Це не текстовий файл.</string>
+    <string name="viewer_text_close_search">Закрити пошук</string>
+    <string name="viewer_text_first_match">До першого збігу</string>
+    <string name="viewer_text_outline">Зміст</string>
+    <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_text_read_failed">Не вдалося прочитати файл.</string>
+    <string name="viewer_text_search">Пошук у файлі</string>
+    <string name="viewer_text_shows_beginning"> · показано початок</string>
+    <string name="viewer_text_wrap">Перенесення рядків</string>
     <string name="viewer_too_large">Файл завеликий, щоб відкрити його на цьому пристрої.</string>
     <string name="viewer_undo">Скасувати</string>
     <string name="viewer_unit_foot">фут</string>
@@ -129,4 +145,10 @@
     <string name="viewer_use">Використати</string>
     <string name="viewer_zoom_in">Збільшити</string>
     <string name="viewer_zoom_out">Зменшити</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d рядок</item>
+        <item quantity="few">%1$d рядки</item>
+        <item quantity="many">%1$d рядків</item>
+        <item quantity="other">%1$d рядка</item>
+    </plurals>
 </resources>

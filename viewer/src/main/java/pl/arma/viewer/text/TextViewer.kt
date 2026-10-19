@@ -1,4 +1,4 @@
-package pl.arma.files
+package pl.arma.viewer.text
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,10 +57,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import pl.arma.files.text.OutlineEntry
-import pl.arma.files.text.TextDocument
-import pl.arma.files.text.TextOutline
-import pl.arma.files.text.TextProfile
+import pl.arma.viewer.R
+import java.io.File
 
 /**
  * Czytnik plików tekstowych.
@@ -71,22 +69,32 @@ import pl.arma.files.text.TextProfile
  * o szybkie zajrzenie do pliku, nie o pracę nad nim.
  */
 @Composable
-fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Modifier) {
-    var document by remember(item.uri, item.lastModified) { mutableStateOf<TextDocument?>(null) }
-    var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
-    var wrap by remember { mutableStateOf(true) }
-    var query by remember(item.uri) { mutableStateOf("") }
-    var searching by remember(item.uri) { mutableStateOf(false) }
-    var showOutline by remember(item.uri) { mutableStateOf(false) }
+fun TextViewer(file: File, modifier: Modifier = Modifier, name: String = file.name) =
+    TextViewer(name = name, key = file.path to file.lastModified(), load = { TextReader.readFile(file) }, modifier = modifier)
 
-    val profile = remember(item.name) { TextProfile.of(item.name) }
+/**
+ * Wersja dla plików spoza dysku (z sieci, z archiwum): gospodarz dostarcza
+ * [load], a [key] mówi, kiedy wczytać ponownie.
+ */
+@Composable
+fun TextViewer(name: String, key: Any?, load: suspend () -> TextDocument, modifier: Modifier = Modifier) {
+    var document by remember(key) { mutableStateOf<TextDocument?>(null) }
+    var error by remember(key) { mutableStateOf<String?>(null) }
+    var wrap by remember { mutableStateOf(true) }
+    var query by remember(key) { mutableStateOf("") }
+    var searching by remember(key) { mutableStateOf(false) }
+    var showOutline by remember(key) { mutableStateOf(false) }
+
+    val profile = remember(name) { TextProfile.of(name) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val readFailed = stringResource(R.string.viewer_text_read_failed)
+    val notText = stringResource(R.string.viewer_text_binary)
 
-    LaunchedEffect(item.uri, item.lastModified) {
+    LaunchedEffect(key) {
         error = null
-        document = runCatching { vm.readDocument(item) }
-            .onFailure { error = it.message ?: text(R.string.text_read_failed) }
+        document = runCatching { load() }
+            .onFailure { error = if (it is NotTextException) notText else it.message ?: readFailed }
             .getOrNull()
     }
 
@@ -101,11 +109,11 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AssistChip(onClick = { }, label = { Text(profile.label) })
+            AssistChip(onClick = { }, label = { Text(profile.label.ifEmpty { stringResource(R.string.viewer_text_plain) }) })
             Spacer(Modifier.width(6.dp))
             document?.let { doc ->
                 Text(
-                    pluralStringResource(R.plurals.n_lines, doc.lineCount, doc.lineCount) + " · " + doc.charset.name() + (if (doc.truncated) stringResource(R.string.text_shows_beginning) else ""),
+                    pluralStringResource(R.plurals.viewer_text_lines, doc.lineCount, doc.lineCount) + " · " + doc.charset.name() + (if (doc.truncated) stringResource(R.string.viewer_text_shows_beginning) else ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -117,7 +125,7 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
             if (outline.isNotEmpty()) {
                 Box {
                     IconButton(onClick = { showOutline = true }) {
-                        Icon(Icons.Default.FormatListBulleted, stringResource(R.string.text_outline))
+                        Icon(Icons.Default.FormatListBulleted, stringResource(R.string.viewer_text_outline))
                     }
                     OutlineMenu(
                         entries = outline,
@@ -133,14 +141,14 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
             IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
                 Icon(
                     Icons.Default.Search,
-                    stringResource(R.string.text_search),
+                    stringResource(R.string.viewer_text_search),
                     tint = if (searching) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             IconButton(onClick = { wrap = !wrap }) {
                 Icon(
                     Icons.Default.WrapText,
-                    stringResource(R.string.text_wrap),
+                    stringResource(R.string.viewer_text_wrap),
                     tint = if (wrap) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -154,7 +162,7 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
                         onValueChange = { query = it },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        placeholder = { Text(stringResource(R.string.text_search)) },
+                        placeholder = { Text(stringResource(R.string.viewer_text_search)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -172,10 +180,10 @@ fun TextViewer(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Mo
                             matches.firstOrNull()?.let { line ->
                                 scope.launch { listState.animateScrollToItem(line) }
                             }
-                        }) { Icon(Icons.Default.Search, stringResource(R.string.text_first_match)) }
+                        }) { Icon(Icons.Default.Search, stringResource(R.string.viewer_text_first_match)) }
                     }
                     IconButton(onClick = { searching = false; query = "" }) {
-                        Icon(Icons.Default.Close, stringResource(R.string.common_close_search))
+                        Icon(Icons.Default.Close, stringResource(R.string.viewer_text_close_search))
                     }
                 }
             }

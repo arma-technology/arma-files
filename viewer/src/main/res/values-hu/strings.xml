@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Képernyőhöz igazítás</string>
     <string name="viewer_go">Ugrás</string>
     <string name="viewer_go_to_page">Ugrás oldalra</string>
+    <string name="viewer_image_fullscreen">Teljes képernyő</string>
+    <string name="viewer_image_fullscreen_close">Teljes képernyő bezárása</string>
+    <string name="viewer_image_fullscreen_exit">Kilépés a teljes képernyőből</string>
+    <string name="viewer_image_open_failed">Nem sikerült megnyitni a képet.</string>
+    <string name="viewer_image_zoom_fit">Igazítás</string>
+    <string name="viewer_image_zoom_in">Nagyítás</string>
+    <string name="viewer_image_zoom_out">Kicsinyítés</string>
     <string name="viewer_layers">Rétegek</string>
     <string name="viewer_layers_all">Mind</string>
     <string name="viewer_layers_count">Rétegek (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">vonalon</string>
     <string name="viewer_snap_perpendicular">merőleges</string>
     <string name="viewer_snapping">Illesztés</string>
+    <string name="viewer_text_binary">Ez nem szöveges fájl.</string>
+    <string name="viewer_text_close_search">Keresés bezárása</string>
+    <string name="viewer_text_first_match">Ugrás az első találatra</string>
+    <string name="viewer_text_outline">Tartalom</string>
+    <string name="viewer_text_plain">SZÖVEG</string>
+    <string name="viewer_text_read_failed">Nem sikerült beolvasni a fájlt.</string>
+    <string name="viewer_text_search">Keresés a fájlban</string>
+    <string name="viewer_text_shows_beginning"> · az eleje látható</string>
+    <string name="viewer_text_wrap">Sortörés</string>
     <string name="viewer_too_large">A fájl túl nagy ahhoz, hogy ezen az eszközön megnyíljon.</string>
     <string name="viewer_undo">Visszavonás</string>
     <string name="viewer_unit_foot">láb</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Használat</string>
     <string name="viewer_zoom_in">Nagyítás</string>
     <string name="viewer_zoom_out">Kicsinyítés</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d sor</item>
+        <item quantity="other">%1$d sor</item>
+    </plurals>
 </resources>

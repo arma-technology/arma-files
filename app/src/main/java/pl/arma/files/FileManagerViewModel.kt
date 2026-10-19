@@ -54,8 +54,8 @@ import pl.arma.files.ops.OperationStatus
 import pl.arma.files.ops.PendingConflict
 import pl.arma.files.ops.Reorder
 import pl.arma.files.ops.TrashEntry
-import pl.arma.files.text.TextDocument
-import pl.arma.files.text.TextReader
+import pl.arma.viewer.text.TextDocument
+import pl.arma.viewer.text.TextReader
 
 /** Nazwy domyślnych kafelków zapisane w ustawieniach od pierwszych wersji. */
 private const val DOWNLOADS_KEY = "Pobrane"
@@ -1225,9 +1225,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     /** Wczytuje plik do czytnika: kodowanie, obcięcie i spis treści. */
     suspend fun readDocument(item: FileItem): TextDocument = withContext(Dispatchers.IO) {
         val bytes = repo.readBytes(item.uri, TextReader.DEFAULT_LIMIT)
-        if (TextReader.looksBinary(bytes)) {
-            throw IllegalArgumentException(text(R.string.err_not_text))
-        }
+        if (TextReader.looksBinary(bytes)) throw pl.arma.viewer.text.NotTextException()
         TextReader.read(bytes, totalBytes = item.size, limit = TextReader.DEFAULT_LIMIT)
     }
     suspend fun writeText(uri: Uri, text: String) = repo.writeText(uri, text)

@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Побиране в екрана</string>
     <string name="viewer_go">Отиване</string>
     <string name="viewer_go_to_page">Отиване на страница</string>
+    <string name="viewer_image_fullscreen">Цял екран</string>
+    <string name="viewer_image_fullscreen_close">Затваряне на цял екран</string>
+    <string name="viewer_image_fullscreen_exit">Изход от цял екран</string>
+    <string name="viewer_image_open_failed">Изображението не можа да се отвори.</string>
+    <string name="viewer_image_zoom_fit">Побиране</string>
+    <string name="viewer_image_zoom_in">Увеличаване</string>
+    <string name="viewer_image_zoom_out">Намаляване</string>
     <string name="viewer_layers">Слоеве</string>
     <string name="viewer_layers_all">Всички</string>
     <string name="viewer_layers_count">Слоеве (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">върху линията</string>
     <string name="viewer_snap_perpendicular">перпендикулярно</string>
     <string name="viewer_snapping">Прихващане</string>
+    <string name="viewer_text_binary">Това не е текстов файл.</string>
+    <string name="viewer_text_close_search">Затваряне на търсенето</string>
+    <string name="viewer_text_first_match">Към първото съвпадение</string>
+    <string name="viewer_text_outline">Съдържание</string>
+    <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_text_read_failed">Файлът не можа да се прочете.</string>
+    <string name="viewer_text_search">Търсене във файла</string>
+    <string name="viewer_text_shows_beginning"> · показано е началото</string>
+    <string name="viewer_text_wrap">Пренасяне на редове</string>
     <string name="viewer_too_large">Файлът е твърде голям, за да се отвори на това устройство.</string>
     <string name="viewer_undo">Отмяна</string>
     <string name="viewer_unit_foot">фут</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Използване</string>
     <string name="viewer_zoom_in">Увеличаване</string>
     <string name="viewer_zoom_out">Намаляване</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d ред</item>
+        <item quantity="other">%1$d реда</item>
+    </plurals>
 </resources>

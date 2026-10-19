@@ -161,7 +161,6 @@
     <string name="err_needs_config">Ову везу још треба подесити.</string>
     <string name="err_no_path">Датотека нема путању.</string>
     <string name="err_no_target">Нема одредишне фасцикле.</string>
-    <string name="err_not_text">Ово није текстуална датотека.</string>
     <string name="err_open_read">Датотека не може да се отвори за читање.</string>
     <string name="err_open_write">Датотека не може да се отвори за упис.</string>
     <string name="err_operation_failed">Операција није успела.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: пренос није завршен.</string>
     <string name="ftp_write_incomplete">FTP: отпремање није завршено.</string>
     <string name="ftps_reuse">FTPS: сервер захтева наставак TLS сесије на каналу за податке, што апликација не подржава. Користите SFTP или искључите тај захтев на серверу (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Цео екран</string>
-    <string name="fullscreen_close">Затвори цео екран</string>
-    <string name="fullscreen_exit">Изађи из целог екрана</string>
     <string name="history_clear">Обриши</string>
     <string name="history_copy">Копирање</string>
     <string name="history_delete">Брисање</string>
@@ -437,13 +433,6 @@
     <string name="tabs_new">Нова картица</string>
     <string name="tabs_pin_folder">Закачи фасциклу</string>
     <string name="tabs_single_pane">Један панел</string>
-    <string name="text_first_match">Иди на први резултат</string>
-    <string name="text_outline">Садржај</string>
-    <string name="text_profile_plain">ТЕКСТ</string>
-    <string name="text_read_failed">Датотека није могла да се прочита.</string>
-    <string name="text_search">Претражи датотеку</string>
-    <string name="text_shows_beginning"> · приказан је почетак</string>
-    <string name="text_wrap">Прелом редова</string>
     <string name="trash_empty_action">Испразни</string>
     <string name="trash_empty_text">Отпад је празан. Избрисане датотеке долазе овде и остају на истој меморији, па не заузимају додатни простор.</string>
     <string name="trash_restore">Врати</string>
@@ -465,9 +454,6 @@
     <string name="zip_extract_here">Распакуј овде</string>
     <string name="zip_name">Назив архиве</string>
     <string name="zip_pack">Компримуј</string>
-    <string name="zoom_fit">Прилагоди</string>
-    <string name="zoom_in">Увећај</string>
-    <string name="zoom_out">Умањи</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d дан</item>
         <item quantity="few">%1$d дана</item>
@@ -497,11 +483,6 @@
         <item quantity="one">%1$d ставка</item>
         <item quantity="few">%1$d ставке</item>
         <item quantity="other">%1$d ставки</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d ред</item>
-        <item quantity="few">%1$d реда</item>
-        <item quantity="other">%1$d редова</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d неусклађеност — изаберите верзију</item>

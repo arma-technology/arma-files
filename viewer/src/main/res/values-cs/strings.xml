@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Přizpůsobit obrazovce</string>
     <string name="viewer_go">Přejít</string>
     <string name="viewer_go_to_page">Přejít na stránku</string>
+    <string name="viewer_image_fullscreen">Celá obrazovka</string>
+    <string name="viewer_image_fullscreen_close">Zavřít celou obrazovku</string>
+    <string name="viewer_image_fullscreen_exit">Ukončit celou obrazovku</string>
+    <string name="viewer_image_open_failed">Obrázek se nepodařilo otevřít.</string>
+    <string name="viewer_image_zoom_fit">Přizpůsobit</string>
+    <string name="viewer_image_zoom_in">Přiblížit</string>
+    <string name="viewer_image_zoom_out">Oddálit</string>
     <string name="viewer_layers">Hladiny</string>
     <string name="viewer_layers_all">Všechny</string>
     <string name="viewer_layers_count">Hladiny (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">na čáře</string>
     <string name="viewer_snap_perpendicular">kolmo</string>
     <string name="viewer_snapping">Přichytávání</string>
+    <string name="viewer_text_binary">Toto není textový soubor.</string>
+    <string name="viewer_text_close_search">Zavřít vyhledávání</string>
+    <string name="viewer_text_first_match">Přejít na první výskyt</string>
+    <string name="viewer_text_outline">Obsah</string>
+    <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_text_read_failed">Soubor se nepodařilo přečíst.</string>
+    <string name="viewer_text_search">Hledat v souboru</string>
+    <string name="viewer_text_shows_beginning"> · zobrazen začátek</string>
+    <string name="viewer_text_wrap">Zalamování řádků</string>
     <string name="viewer_too_large">Soubor je příliš velký na to, aby se dal na tomto zařízení otevřít.</string>
     <string name="viewer_undo">Zpět</string>
     <string name="viewer_unit_foot">stopa</string>
@@ -129,4 +145,10 @@
     <string name="viewer_use">Použít</string>
     <string name="viewer_zoom_in">Přiblížit</string>
     <string name="viewer_zoom_out">Oddálit</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d řádek</item>
+        <item quantity="few">%1$d řádky</item>
+        <item quantity="many">%1$d řádku</item>
+        <item quantity="other">%1$d řádků</item>
+    </plurals>
 </resources>

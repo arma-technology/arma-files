@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Prilagodi zaslonu</string>
     <string name="viewer_go">Idi</string>
     <string name="viewer_go_to_page">Idi na stranicu</string>
+    <string name="viewer_image_fullscreen">Cijeli zaslon</string>
+    <string name="viewer_image_fullscreen_close">Zatvori cijeli zaslon</string>
+    <string name="viewer_image_fullscreen_exit">Izađi iz cijelog zaslona</string>
+    <string name="viewer_image_open_failed">Slika se nije mogla otvoriti.</string>
+    <string name="viewer_image_zoom_fit">Prilagodi</string>
+    <string name="viewer_image_zoom_in">Povećaj</string>
+    <string name="viewer_image_zoom_out">Smanji</string>
     <string name="viewer_layers">Slojevi</string>
     <string name="viewer_layers_all">Svi</string>
     <string name="viewer_layers_count">Slojevi (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">na liniji</string>
     <string name="viewer_snap_perpendicular">okomito</string>
     <string name="viewer_snapping">Hvatanje</string>
+    <string name="viewer_text_binary">Ovo nije tekstna datoteka.</string>
+    <string name="viewer_text_close_search">Zatvori pretraživanje</string>
+    <string name="viewer_text_first_match">Idi na prvi rezultat</string>
+    <string name="viewer_text_outline">Sadržaj</string>
+    <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_text_read_failed">Datoteka se nije mogla pročitati.</string>
+    <string name="viewer_text_search">Pretraži datoteku</string>
+    <string name="viewer_text_shows_beginning"> · prikazan je početak</string>
+    <string name="viewer_text_wrap">Prelamanje redaka</string>
     <string name="viewer_too_large">Datoteka je prevelika da bi se otvorila na ovom uređaju.</string>
     <string name="viewer_undo">Poništi</string>
     <string name="viewer_unit_foot">stopa</string>
@@ -129,4 +145,9 @@
     <string name="viewer_use">Koristi</string>
     <string name="viewer_zoom_in">Povećaj</string>
     <string name="viewer_zoom_out">Smanji</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d redak</item>
+        <item quantity="few">%1$d retka</item>
+        <item quantity="other">%1$d redaka</item>
+    </plurals>
 </resources>

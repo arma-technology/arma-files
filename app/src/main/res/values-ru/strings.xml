@@ -161,7 +161,6 @@
     <string name="err_needs_config">Это подключение ещё нужно настроить.</string>
     <string name="err_no_path">У файла нет пути.</string>
     <string name="err_no_target">Нет папки назначения.</string>
-    <string name="err_not_text">Это не текстовый файл.</string>
     <string name="err_open_read">Не удаётся открыть файл для чтения.</string>
     <string name="err_open_write">Не удаётся открыть файл для записи.</string>
     <string name="err_operation_failed">Операция не удалась.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: передача не завершена.</string>
     <string name="ftp_write_incomplete">FTP: загрузка не завершена.</string>
     <string name="ftps_reuse">FTPS: сервер требует возобновления TLS-сессии в канале данных, а приложение это не поддерживает. Используйте SFTP или отключите это требование на сервере (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Полный экран</string>
-    <string name="fullscreen_close">Закрыть полный экран</string>
-    <string name="fullscreen_exit">Выйти из полноэкранного режима</string>
     <string name="history_clear">Очистить</string>
     <string name="history_copy">Копирование</string>
     <string name="history_delete">Удаление</string>
@@ -437,13 +433,6 @@
     <string name="tabs_new">Новая вкладка</string>
     <string name="tabs_pin_folder">Закрепить папку</string>
     <string name="tabs_single_pane">Одна панель</string>
-    <string name="text_first_match">К первому совпадению</string>
-    <string name="text_outline">Содержание</string>
-    <string name="text_profile_plain">ТЕКСТ</string>
-    <string name="text_read_failed">Не удалось прочитать файл.</string>
-    <string name="text_search">Поиск в файле</string>
-    <string name="text_shows_beginning"> · показано начало</string>
-    <string name="text_wrap">Перенос строк</string>
     <string name="trash_empty_action">Очистить</string>
     <string name="trash_empty_text">Корзина пуста. Удалённые файлы попадают сюда и остаются на том же носителе, поэтому не занимают дополнительного места.</string>
     <string name="trash_restore">Восстановить</string>
@@ -465,9 +454,6 @@
     <string name="zip_extract_here">Распаковать сюда</string>
     <string name="zip_name">Имя архива</string>
     <string name="zip_pack">Упаковать</string>
-    <string name="zoom_fit">По размеру</string>
-    <string name="zoom_in">Увеличить</string>
-    <string name="zoom_out">Уменьшить</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d день</item>
         <item quantity="few">%1$d дня</item>
@@ -503,12 +489,6 @@
         <item quantity="few">%1$d элемента</item>
         <item quantity="many">%1$d элементов</item>
         <item quantity="other">%1$d элемента</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d строка</item>
-        <item quantity="few">%1$d строки</item>
-        <item quantity="many">%1$d строк</item>
-        <item quantity="other">%1$d строки</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d расхождение — выберите версию</item>

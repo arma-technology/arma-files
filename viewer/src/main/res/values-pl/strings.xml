@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Dopasuj do ekranu</string>
     <string name="viewer_go">Przejdź</string>
     <string name="viewer_go_to_page">Przejdź do strony</string>
+    <string name="viewer_image_fullscreen">Pełny ekran</string>
+    <string name="viewer_image_fullscreen_close">Zamknij pełny ekran</string>
+    <string name="viewer_image_fullscreen_exit">Wyjdź z pełnego ekranu</string>
+    <string name="viewer_image_open_failed">Nie udało się otworzyć obrazu.</string>
+    <string name="viewer_image_zoom_fit">Dopasuj</string>
+    <string name="viewer_image_zoom_in">Powiększ</string>
+    <string name="viewer_image_zoom_out">Pomniejsz</string>
     <string name="viewer_layers">Warstwy</string>
     <string name="viewer_layers_all">Wszystkie</string>
     <string name="viewer_layers_count">Warstwy (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">na linii</string>
     <string name="viewer_snap_perpendicular">prostopadle</string>
     <string name="viewer_snapping">Przyciąganie</string>
+    <string name="viewer_text_binary">To nie jest plik tekstowy.</string>
+    <string name="viewer_text_close_search">Zamknij wyszukiwanie</string>
+    <string name="viewer_text_first_match">Przejdź do pierwszego trafienia</string>
+    <string name="viewer_text_outline">Spis treści</string>
+    <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_text_read_failed">Nie udało się odczytać pliku.</string>
+    <string name="viewer_text_search">Szukaj w pliku</string>
+    <string name="viewer_text_shows_beginning"> · pokazano początek</string>
+    <string name="viewer_text_wrap">Zawijanie wierszy</string>
     <string name="viewer_too_large">Plik jest za duży, żeby go otworzyć na tym urządzeniu.</string>
     <string name="viewer_undo">Cofnij</string>
     <string name="viewer_unit_foot">stopa</string>
@@ -129,4 +145,10 @@
     <string name="viewer_use">Użyj</string>
     <string name="viewer_zoom_in">Powiększ</string>
     <string name="viewer_zoom_out">Pomniejsz</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d linia</item>
+        <item quantity="few">%1$d linie</item>
+        <item quantity="many">%1$d linii</item>
+        <item quantity="other">%1$d linii</item>
+    </plurals>
 </resources>

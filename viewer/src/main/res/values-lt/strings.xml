@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Pritaikyti prie ekrano</string>
     <string name="viewer_go">Eiti</string>
     <string name="viewer_go_to_page">Eiti į puslapį</string>
+    <string name="viewer_image_fullscreen">Visas ekranas</string>
+    <string name="viewer_image_fullscreen_close">Uždaryti visą ekraną</string>
+    <string name="viewer_image_fullscreen_exit">Išeiti iš viso ekrano</string>
+    <string name="viewer_image_open_failed">Nepavyko atidaryti vaizdo.</string>
+    <string name="viewer_image_zoom_fit">Pritaikyti</string>
+    <string name="viewer_image_zoom_in">Didinti</string>
+    <string name="viewer_image_zoom_out">Mažinti</string>
     <string name="viewer_layers">Sluoksniai</string>
     <string name="viewer_layers_all">Visi</string>
     <string name="viewer_layers_count">Sluoksniai (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">ant linijos</string>
     <string name="viewer_snap_perpendicular">statmenai</string>
     <string name="viewer_snapping">Pritraukimas</string>
+    <string name="viewer_text_binary">Tai ne tekstinis failas.</string>
+    <string name="viewer_text_close_search">Uždaryti paiešką</string>
+    <string name="viewer_text_first_match">Eiti į pirmą atitikmenį</string>
+    <string name="viewer_text_outline">Turinys</string>
+    <string name="viewer_text_plain">TEKSTAS</string>
+    <string name="viewer_text_read_failed">Nepavyko perskaityti failo.</string>
+    <string name="viewer_text_search">Ieškoti faile</string>
+    <string name="viewer_text_shows_beginning"> · rodoma pradžia</string>
+    <string name="viewer_text_wrap">Eilučių laužymas</string>
     <string name="viewer_too_large">Failas per didelis, kad būtų atidarytas šiame įrenginyje.</string>
     <string name="viewer_undo">Anuliuoti</string>
     <string name="viewer_unit_foot">pėda</string>
@@ -129,4 +145,10 @@
     <string name="viewer_use">Naudoti</string>
     <string name="viewer_zoom_in">Didinti</string>
     <string name="viewer_zoom_out">Mažinti</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d eilutė</item>
+        <item quantity="few">%1$d eilutės</item>
+        <item quantity="many">%1$d eilutės</item>
+        <item quantity="other">%1$d eilučių</item>
+    </plurals>
 </resources>

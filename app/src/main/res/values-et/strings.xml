@@ -161,7 +161,6 @@
     <string name="err_needs_config">See ühendus tuleb veel seadistada.</string>
     <string name="err_no_path">Failil pole teed.</string>
     <string name="err_no_target">Sihtkaust puudub.</string>
-    <string name="err_not_text">See pole tekstifail.</string>
     <string name="err_open_read">Faili ei saa lugemiseks avada.</string>
     <string name="err_open_write">Faili ei saa kirjutamiseks avada.</string>
     <string name="err_operation_failed">Toiming ebaõnnestus.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: edastus jäi lõpetamata.</string>
     <string name="ftp_write_incomplete">FTP: üleslaadimine jäi lõpetamata.</string>
     <string name="ftps_reuse">FTPS: server nõuab TLS-seansi jätkamist andmekanalis, mida rakendus ei toeta. Kasutage SFTP-d või lülitage see nõue serveris välja (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Täisekraan</string>
-    <string name="fullscreen_close">Sulge täisekraan</string>
-    <string name="fullscreen_exit">Välju täisekraanist</string>
     <string name="history_clear">Tühjenda</string>
     <string name="history_copy">Kopeerimine</string>
     <string name="history_delete">Kustutamine</string>
@@ -437,13 +433,6 @@ valides ülal ribal vahelehe.</string>
     <string name="tabs_new">Uus vaheleht</string>
     <string name="tabs_pin_folder">Kinnita kaust</string>
     <string name="tabs_single_pane">Üks paneel</string>
-    <string name="text_first_match">Mine esimese vasteni</string>
-    <string name="text_outline">Sisukord</string>
-    <string name="text_profile_plain">TEKST</string>
-    <string name="text_read_failed">Faili ei õnnestunud lugeda.</string>
-    <string name="text_search">Otsi failist</string>
-    <string name="text_shows_beginning"> · kuvatud on algus</string>
-    <string name="text_wrap">Ridade murdmine</string>
     <string name="trash_empty_action">Tühjenda</string>
     <string name="trash_empty_text">Prügikast on tühi. Kustutatud failid tulevad siia ja jäävad samale mälule, seega ei võta need lisaruumi.</string>
     <string name="trash_restore">Taasta</string>
@@ -465,9 +454,6 @@ valides ülal ribal vahelehe.</string>
     <string name="zip_extract_here">Paki siia lahti</string>
     <string name="zip_name">Arhiivi nimi</string>
     <string name="zip_pack">Paki</string>
-    <string name="zoom_fit">Sobita</string>
-    <string name="zoom_in">Suurenda</string>
-    <string name="zoom_out">Vähenda</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d päev</item>
         <item quantity="other">%1$d päeva</item>
@@ -491,10 +477,6 @@ valides ülal ribal vahelehe.</string>
     <plurals name="n_items">
         <item quantity="one">%1$d üksus</item>
         <item quantity="other">%1$d üksust</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d rida</item>
-        <item quantity="other">%1$d rida</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d vastuolu — vali versioon</item>

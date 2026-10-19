@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Përshtat me ekranin</string>
     <string name="viewer_go">Shko</string>
     <string name="viewer_go_to_page">Shko te faqja</string>
+    <string name="viewer_image_fullscreen">Ekran i plotë</string>
+    <string name="viewer_image_fullscreen_close">Mbyll ekranin e plotë</string>
+    <string name="viewer_image_fullscreen_exit">Dil nga ekrani i plotë</string>
+    <string name="viewer_image_open_failed">Imazhi nuk u hap dot.</string>
+    <string name="viewer_image_zoom_fit">Përshtat</string>
+    <string name="viewer_image_zoom_in">Zmadho</string>
+    <string name="viewer_image_zoom_out">Zvogëlo</string>
     <string name="viewer_layers">Shtresat</string>
     <string name="viewer_layers_all">Të gjitha</string>
     <string name="viewer_layers_count">Shtresat (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">në vijë</string>
     <string name="viewer_snap_perpendicular">pingul</string>
     <string name="viewer_snapping">Kapja</string>
+    <string name="viewer_text_binary">Ky nuk është skedar teksti.</string>
+    <string name="viewer_text_close_search">Mbyll kërkimin</string>
+    <string name="viewer_text_first_match">Shko te përputhja e parë</string>
+    <string name="viewer_text_outline">Përmbajtja</string>
+    <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_text_read_failed">Skedari nuk u lexua dot.</string>
+    <string name="viewer_text_search">Kërko në skedar</string>
+    <string name="viewer_text_shows_beginning"> · shfaqet fillimi</string>
+    <string name="viewer_text_wrap">Mbështjellja e rreshtave</string>
     <string name="viewer_too_large">Skedari është shumë i madh për t’u hapur në këtë pajisje.</string>
     <string name="viewer_undo">Zhbëj</string>
     <string name="viewer_unit_foot">këmbë</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Përdor</string>
     <string name="viewer_zoom_in">Zmadho</string>
     <string name="viewer_zoom_out">Zvogëlo</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d rresht</item>
+        <item quantity="other">%1$d rreshta</item>
+    </plurals>
 </resources>

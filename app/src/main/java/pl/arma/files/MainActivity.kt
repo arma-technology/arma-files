@@ -115,6 +115,10 @@ import pl.arma.files.net.RemoteType
 import pl.arma.files.ui.theme.ArmaFilesTheme
 import pl.arma.files.ui.theme.LocalFileTypeColors
 import pl.arma.viewer.SheetDocuments
+import pl.arma.viewer.image.FullscreenImageViewer
+import pl.arma.viewer.image.FullscreenSvgViewer
+import pl.arma.viewer.image.ImageViewer
+import pl.arma.viewer.image.SvgImageViewer
 import pl.arma.viewer.sheet.SheetViewer
 import pl.arma.viewer.sheet.SheetViewerDialog
 import pl.arma.viewer.sheet.SheetViewerState
@@ -2245,11 +2249,14 @@ private fun PreviewSheet(
                         )
                     }
                     if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
-                        SvgImagePreview(item = item, vm = vm, modifier = Modifier.fillMaxWidth().weight(1f))
+                        var svg by remember(item.uri, item.lastModified) { mutableStateOf<Uri?>(null) }
+                        LaunchedEffect(item.uri, item.lastModified) { svg = runCatching { vm.prepareImageUri(item) }.getOrNull() }
+                        SvgImageViewer(model = svg, name = item.name, modifier = Modifier.fillMaxWidth().weight(1f))
                     } else {
-                        NativeImagePreview(
-                            item = item,
-                            vm = vm,
+                        ImageViewer(
+                            key = item.uri to item.lastModified,
+                            name = item.name,
+                            load = { vm.decodeImage(item, targetMaxSide = 4096) },
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             onNavigate = step,
                             canNavigate = siblings.size > 1,
@@ -2281,9 +2288,10 @@ private fun PreviewSheet(
                             Text(stringResource(R.string.save_changes))
                         }
                     } else {
-                        TextViewer(
-                            item = item,
-                            vm = vm,
+                        pl.arma.viewer.text.TextViewer(
+                            name = item.name,
+                            key = item.uri to item.lastModified,
+                            load = { vm.readDocument(item) },
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         )
                         // Plik w archiwum można tylko czytać.
@@ -2314,192 +2322,6 @@ private fun PreviewSheet(
 }
 
 @Composable
-private fun NativeImagePreview(
-    item: FileItem,
-    vm: FileManagerViewModel,
-    modifier: Modifier = Modifier,
-    onNavigate: (Int) -> Unit = {},
-    canNavigate: Boolean = false,
-    positionLabel: String = ""
-) {
-    var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
-    var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
-    var scale by remember(item.uri) { mutableFloatStateOf(1f) }
-    var offsetX by remember(item.uri) { mutableFloatStateOf(0f) }
-    var offsetY by remember(item.uri) { mutableFloatStateOf(0f) }
-    var fullscreen by remember(item.uri) { mutableStateOf(false) }
-
-    LaunchedEffect(item.uri, item.lastModified) {
-        error = null
-        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096) }
-            .onFailure { error = it.message ?: text(R.string.err_image_open) }
-            .getOrNull()
-    }
-
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            shape = RoundedCornerShape(22.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
-        ) {
-            // W podglądzie arkuszowym obraz jest kotwiczony do górnej krawędzi.
-            // Dzięki temu pionowe obrazy/dokumenty nie zaczynają się w połowie popupu.
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                bitmap?.let { image ->
-                    Image(
-                        bitmap = image.asImageBitmap(),
-                        contentDescription = item.name,
-                        contentScale = ContentScale.Fit,
-                        alignment = Alignment.TopCenter,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp)
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                translationX = offsetX
-                                translationY = offsetY
-                            }
-                            .imageGestures(
-                                key = item.uri,
-                                canNavigate = canNavigate,
-                                scale = { scale },
-                                onTransform = { pan, zoom ->
-                                    val next = (scale * zoom).coerceIn(1f, 8f)
-                                    scale = next
-                                    if (next > 1.01f) {
-                                        val shift = 2200f * (next - 1f)
-                                        offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
-                                        offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
-                                    } else {
-                                        offsetX = 0f
-                                        offsetY = 0f
-                                    }
-                                },
-                                onNavigate = onNavigate
-                            )
-                    )
-                }
-                if (bitmap == null && error == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                error?.let {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Icon(Icons.Default.BrokenImage, null, Modifier.size(54.dp), tint = MaterialTheme.colorScheme.error)
-                            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-        }
-        Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                IconButton(onClick = {
-                    scale = (scale - .25f).coerceAtLeast(1f)
-                    if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.zoom_out)) }
-                Text("${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
-                IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) { Icon(Icons.Default.ZoomIn, stringResource(R.string.zoom_in)) }
-                IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) { Icon(Icons.Default.FitScreen, stringResource(R.string.zoom_fit)) }
-                IconButton(onClick = { fullscreen = true }, enabled = bitmap != null) {
-                    Icon(Icons.Default.Fullscreen, stringResource(R.string.fullscreen))
-                }
-            }
-        }
-    }
-
-    if (fullscreen) {
-        bitmap?.let { image ->
-            FullscreenBitmapViewer(
-                image = image,
-                name = item.name,
-                onDismiss = { fullscreen = false },
-                onNavigate = onNavigate,
-                canNavigate = canNavigate,
-                position = positionLabel
-            )
-        }
-    }
-}
-
-@Composable
-private fun SvgImagePreview(item: FileItem, vm: FileManagerViewModel, modifier: Modifier = Modifier) {
-    var uri by remember(item.uri, item.lastModified) { mutableStateOf<Uri?>(null) }
-    var fullscreen by remember(item.uri) { mutableStateOf(false) }
-    LaunchedEffect(item.uri, item.lastModified) {
-        uri = runCatching { vm.prepareImageUri(item) }.getOrNull()
-    }
-
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            shape = RoundedCornerShape(22.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
-        ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                AsyncImage(
-                    model = uri,
-                    contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize().padding(8.dp),
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.TopCenter
-                )
-            }
-        }
-        Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceContainer) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                IconButton(onClick = { fullscreen = true }, enabled = uri != null) {
-                    Icon(Icons.Default.Fullscreen, stringResource(R.string.fullscreen))
-                }
-            }
-        }
-    }
-
-    if (fullscreen) {
-        uri?.let { imageUri ->
-            FullscreenSvgViewer(uri = imageUri, name = item.name, onDismiss = { fullscreen = false })
-        }
-    }
-}
-
-/**
- * Powiększanie, przesuwanie i przewijanie zdjęć w jednym geście. Dwa osobne
- * detektory się wykluczały: szczypanie zjadało ruch palca, zanim przewijanie
- * go zobaczyło, i zdjęcia nie dało się zmienić.
- */
-private fun Modifier.imageGestures(
-    key: Any,
-    canNavigate: Boolean,
-    scale: () -> Float,
-    onTransform: (pan: Offset, zoom: Float) -> Unit,
-    onNavigate: (Int) -> Unit
-): Modifier = pointerInput(key, canNavigate) {
-    awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
-        var dragged = 0f
-        var pinched = false
-        do {
-            val event = awaitPointerEvent()
-            if (event.changes.count { it.pressed } >= 2) pinched = true
-            val zoom = event.calculateZoom()
-            val pan = event.calculatePan()
-            if (pinched || scale() > 1.01f) onTransform(pan, zoom) else dragged += pan.x
-            event.changes.forEach { if (it.positionChanged()) it.consume() }
-        } while (event.changes.any { it.pressed })
-        if (canNavigate && !pinched && scale() <= 1.01f && kotlin.math.abs(dragged) > 120f) {
-            onNavigate(if (dragged < 0) 1 else -1)
-        }
-    }
-}
-
-@Composable
 private fun LandscapeImageViewer(
     item: FileItem,
     vm: FileManagerViewModel,
@@ -2513,7 +2335,7 @@ private fun LandscapeImageViewer(
     if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
         var uri by remember(item.uri) { mutableStateOf<Uri?>(null) }
         LaunchedEffect(item.uri) { uri = runCatching { vm.prepareImageUri(item) }.getOrNull() }
-        uri?.let { FullscreenSvgViewer(uri = it, name = item.name, onDismiss = onDismiss) }
+        uri?.let { FullscreenSvgViewer(model = it, name = item.name, onDismiss = onDismiss) }
         return
     }
     var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
@@ -2524,7 +2346,7 @@ private fun LandscapeImageViewer(
             .onFailure { error = it.message ?: text(R.string.err_image_open) }
             .getOrNull()
     }
-    FullscreenBitmapViewer(
+    FullscreenImageViewer(
         image = bitmap,
         error = error,
         name = item.name,
@@ -2533,219 +2355,6 @@ private fun LandscapeImageViewer(
         canNavigate = siblings.size > 1 && position >= 0,
         position = label
     )
-}
-
-@Composable
-private fun ImmersiveDialogSystemBars() {
-    val view = LocalView.current
-    DisposableEffect(view) {
-        val window = ((view.parent as? DialogWindowProvider) ?: (view as? DialogWindowProvider))?.window
-        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
-        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        controller?.hide(WindowInsetsCompat.Type.systemBars())
-        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
-    }
-}
-
-@Composable
-private fun FullscreenBitmapViewer(
-    image: Bitmap?,
-    name: String,
-    onDismiss: () -> Unit,
-    onNavigate: (Int) -> Unit = {},
-    canNavigate: Boolean = false,
-    position: String = "",
-    error: String? = null
-) {
-    var scale by remember(name) { mutableFloatStateOf(1f) }
-    var offsetX by remember(name) { mutableFloatStateOf(0f) }
-    var offsetY by remember(name) { mutableFloatStateOf(0f) }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
-    ) {
-        ImmersiveDialogSystemBars()
-        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-            Box(Modifier.fillMaxSize().background(Color.Black)) {
-                if (image == null) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        if (error == null) CircularProgressIndicator() else Text(error, color = Color.White)
-                    }
-                } else Image(
-                    bitmap = image.asImageBitmap(),
-                    contentDescription = name,
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationX = offsetX
-                            translationY = offsetY
-                        }
-                        .imageGestures(
-                            key = name,
-                            canNavigate = canNavigate,
-                            scale = { scale },
-                            onTransform = { pan, zoom ->
-                                val next = (scale * zoom).coerceIn(1f, 8f)
-                                scale = next
-                                if (next > 1.01f) {
-                                    val shift = 3200f * (next - 1f)
-                                    offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
-                                    offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
-                                } else {
-                                    offsetX = 0f
-                                    offsetY = 0f
-                                }
-                            },
-                            onNavigate = onNavigate
-                        )
-                )
-
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color.Black.copy(alpha = .58f)
-                ) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, stringResource(R.string.fullscreen_close), tint = Color.White)
-                    }
-                }
-
-                if (position.isNotBlank()) {
-                    Surface(
-                        modifier = Modifier.align(Alignment.TopStart)
-                            .windowInsetsPadding(WindowInsets.safeDrawing)
-                            .padding(12.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        color = Color.Black.copy(alpha = .58f)
-                    ) {
-                        Text(
-                            position,
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 420.dp).padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.Black.copy(alpha = .62f)
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        IconButton(onClick = {
-                            scale = (scale - .25f).coerceAtLeast(1f)
-                            if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                        }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.zoom_out), tint = Color.White) }
-                        Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
-                        IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
-                            Icon(Icons.Default.ZoomIn, stringResource(R.string.zoom_in), tint = Color.White)
-                        }
-                        IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
-                            Icon(Icons.Default.FitScreen, stringResource(R.string.zoom_fit), tint = Color.White)
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.FullscreenExit, stringResource(R.string.fullscreen_exit), tint = Color.White)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FullscreenSvgViewer(uri: Uri, name: String, onDismiss: () -> Unit) {
-    var scale by remember(name) { mutableFloatStateOf(1f) }
-    var offsetX by remember(name) { mutableFloatStateOf(0f) }
-    var offsetY by remember(name) { mutableFloatStateOf(0f) }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
-    ) {
-        ImmersiveDialogSystemBars()
-        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-            Box(Modifier.fillMaxSize().background(Color.Black)) {
-                AsyncImage(
-                    model = uri,
-                    contentDescription = name,
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationX = offsetX
-                            translationY = offsetY
-                        }
-                        .pointerInput(name) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                val next = (scale * zoom).coerceIn(1f, 8f)
-                                scale = next
-                                if (next > 1.01f) {
-                                    val shift = 3200f * (next - 1f)
-                                    offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
-                                    offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
-                                } else {
-                                    offsetX = 0f
-                                    offsetY = 0f
-                                }
-                            }
-                        }
-                )
-
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color.Black.copy(alpha = .58f)
-                ) {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, stringResource(R.string.fullscreen_close), tint = Color.White)
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.Black.copy(alpha = .62f)
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        IconButton(onClick = {
-                            scale = (scale - .25f).coerceAtLeast(1f)
-                            if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                        }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.zoom_out), tint = Color.White) }
-                        Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
-                        IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
-                            Icon(Icons.Default.ZoomIn, stringResource(R.string.zoom_in), tint = Color.White)
-                        }
-                        IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
-                            Icon(Icons.Default.FitScreen, stringResource(R.string.zoom_fit), tint = Color.White)
-                        }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.FullscreenExit, stringResource(R.string.fullscreen_exit), tint = Color.White)
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -3135,7 +2744,7 @@ private fun isPdf(item: FileItem): Boolean = item.mimeType == "application/pdf" 
 private fun isZip(item: FileItem): Boolean = item.mimeType == "application/zip" || item.name.endsWith(".zip", true)
 
 private fun isText(item: FileItem): Boolean =
-    !item.isDirectory && pl.arma.files.text.TextProfile.isTextFile(item.name, item.mimeType)
+    !item.isDirectory && pl.arma.viewer.text.TextProfile.isTextFile(item.name, item.mimeType)
 
 private suspend fun shareItems(context: Context, items: List<FileItem>, vm: FileManagerViewModel) {
     val files = items.filterNot { it.isDirectory }

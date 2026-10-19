@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Prispôsobiť obrazovke</string>
     <string name="viewer_go">Prejsť</string>
     <string name="viewer_go_to_page">Prejsť na stranu</string>
+    <string name="viewer_image_fullscreen">Celá obrazovka</string>
+    <string name="viewer_image_fullscreen_close">Zavrieť celú obrazovku</string>
+    <string name="viewer_image_fullscreen_exit">Ukončiť celú obrazovku</string>
+    <string name="viewer_image_open_failed">Obrázok sa nepodarilo otvoriť.</string>
+    <string name="viewer_image_zoom_fit">Prispôsobiť</string>
+    <string name="viewer_image_zoom_in">Priblížiť</string>
+    <string name="viewer_image_zoom_out">Oddialiť</string>
     <string name="viewer_layers">Vrstvy</string>
     <string name="viewer_layers_all">Všetky</string>
     <string name="viewer_layers_count">Vrstvy (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">na čiare</string>
     <string name="viewer_snap_perpendicular">kolmo</string>
     <string name="viewer_snapping">Prichytávanie</string>
+    <string name="viewer_text_binary">Toto nie je textový súbor.</string>
+    <string name="viewer_text_close_search">Zavrieť vyhľadávanie</string>
+    <string name="viewer_text_first_match">Prejsť na prvý výskyt</string>
+    <string name="viewer_text_outline">Obsah</string>
+    <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_text_read_failed">Súbor sa nepodarilo prečítať.</string>
+    <string name="viewer_text_search">Hľadať v súbore</string>
+    <string name="viewer_text_shows_beginning"> · zobrazený začiatok</string>
+    <string name="viewer_text_wrap">Zalamovanie riadkov</string>
     <string name="viewer_too_large">Súbor je príliš veľký na otvorenie v tomto zariadení.</string>
     <string name="viewer_undo">Späť</string>
     <string name="viewer_unit_foot">stopa</string>
@@ -129,4 +145,10 @@
     <string name="viewer_use">Použiť</string>
     <string name="viewer_zoom_in">Priblížiť</string>
     <string name="viewer_zoom_out">Oddialiť</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d riadok</item>
+        <item quantity="few">%1$d riadky</item>
+        <item quantity="many">%1$d riadku</item>
+        <item quantity="other">%1$d riadkov</item>
+    </plurals>
 </resources>

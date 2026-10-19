@@ -1,4 +1,4 @@
-package pl.arma.files.text
+package pl.arma.viewer.text
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

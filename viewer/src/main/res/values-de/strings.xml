@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">An Bildschirm anpassen</string>
     <string name="viewer_go">Los</string>
     <string name="viewer_go_to_page">Zu Seite springen</string>
+    <string name="viewer_image_fullscreen">Vollbild</string>
+    <string name="viewer_image_fullscreen_close">Vollbild schließen</string>
+    <string name="viewer_image_fullscreen_exit">Vollbild beenden</string>
+    <string name="viewer_image_open_failed">Das Bild konnte nicht geöffnet werden.</string>
+    <string name="viewer_image_zoom_fit">Einpassen</string>
+    <string name="viewer_image_zoom_in">Vergrößern</string>
+    <string name="viewer_image_zoom_out">Verkleinern</string>
     <string name="viewer_layers">Ebenen</string>
     <string name="viewer_layers_all">Alle</string>
     <string name="viewer_layers_count">Ebenen (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">auf Linie</string>
     <string name="viewer_snap_perpendicular">lotrecht</string>
     <string name="viewer_snapping">Fang</string>
+    <string name="viewer_text_binary">Das ist keine Textdatei.</string>
+    <string name="viewer_text_close_search">Suche schließen</string>
+    <string name="viewer_text_first_match">Zum ersten Treffer</string>
+    <string name="viewer_text_outline">Inhalt</string>
+    <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_text_read_failed">Die Datei konnte nicht gelesen werden.</string>
+    <string name="viewer_text_search">In Datei suchen</string>
+    <string name="viewer_text_shows_beginning"> · Anfang wird angezeigt</string>
+    <string name="viewer_text_wrap">Zeilenumbruch</string>
     <string name="viewer_too_large">Die Datei ist zu groß, um sie auf diesem Gerät zu öffnen.</string>
     <string name="viewer_undo">Rückgängig</string>
     <string name="viewer_unit_foot">Fuß</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Verwenden</string>
     <string name="viewer_zoom_in">Vergrößern</string>
     <string name="viewer_zoom_out">Verkleinern</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d Zeile</item>
+        <item quantity="other">%1$d Zeilen</item>
+    </plurals>
 </resources>

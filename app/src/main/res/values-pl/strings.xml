@@ -161,7 +161,6 @@
     <string name="err_needs_config">To połączenie wymaga jeszcze konfiguracji.</string>
     <string name="err_no_path">Brak ścieżki pliku.</string>
     <string name="err_no_target">Brak katalogu docelowego.</string>
-    <string name="err_not_text">To nie jest plik tekstowy.</string>
     <string name="err_open_read">Nie można otworzyć pliku do odczytu.</string>
     <string name="err_open_write">Nie można otworzyć pliku do zapisu.</string>
     <string name="err_operation_failed">Operacja nie powiodła się.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: transfer nie został zakończony.</string>
     <string name="ftp_write_incomplete">FTP: zapis nie został zakończony.</string>
     <string name="ftps_reuse">FTPS: serwer wymaga wznawiania sesji TLS na kanale danych, którego aplikacja nie obsługuje. Użyj SFTP albo wyłącz to wymaganie na serwerze (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Pełny ekran</string>
-    <string name="fullscreen_close">Zamknij pełny ekran</string>
-    <string name="fullscreen_exit">Wyjdź z pełnego ekranu</string>
     <string name="history_clear">Wyczyść</string>
     <string name="history_copy">Kopiowanie</string>
     <string name="history_delete">Usunięcie</string>
@@ -437,13 +433,6 @@ wybierając kartę z paska powyżej.</string>
     <string name="tabs_new">Nowa karta</string>
     <string name="tabs_pin_folder">Przypnij folder</string>
     <string name="tabs_single_pane">Jeden panel</string>
-    <string name="text_first_match">Przejdź do pierwszego trafienia</string>
-    <string name="text_outline">Spis treści</string>
-    <string name="text_profile_plain">TEKST</string>
-    <string name="text_read_failed">Nie udało się odczytać pliku.</string>
-    <string name="text_search">Szukaj w pliku</string>
-    <string name="text_shows_beginning"> · pokazano początek</string>
-    <string name="text_wrap">Zawijanie wierszy</string>
     <string name="trash_empty_action">Opróżnij</string>
     <string name="trash_empty_text">Kosz jest pusty. Usunięte pliki trafiają tutaj i zostają na tym samym nośniku, więc nie zajmują dodatkowego miejsca.</string>
     <string name="trash_restore">Przywróć</string>
@@ -465,9 +454,6 @@ wybierając kartę z paska powyżej.</string>
     <string name="zip_extract_here">Rozpakuj tutaj</string>
     <string name="zip_name">Nazwa archiwum</string>
     <string name="zip_pack">Spakuj</string>
-    <string name="zoom_fit">Dopasuj</string>
-    <string name="zoom_in">Powiększ</string>
-    <string name="zoom_out">Pomniejsz</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d dzień</item>
         <item quantity="few">%1$d dni</item>
@@ -503,12 +489,6 @@ wybierając kartę z paska powyżej.</string>
         <item quantity="few">%1$d elementy</item>
         <item quantity="many">%1$d elementów</item>
         <item quantity="other">%1$d elementu</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d linia</item>
-        <item quantity="few">%1$d linie</item>
-        <item quantity="many">%1$d linii</item>
-        <item quantity="other">%1$d linii</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d rozbieżność — wybierz wersję</item>

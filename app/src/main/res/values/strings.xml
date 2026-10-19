@@ -162,7 +162,6 @@
     <string name="err_needs_config">This connection still needs configuring.</string>
     <string name="err_no_path">The file has no path.</string>
     <string name="err_no_target">No target folder.</string>
-    <string name="err_not_text">This is not a text file.</string>
     <string name="err_open_read">Cannot open the file for reading.</string>
     <string name="err_open_write">Cannot open the file for writing.</string>
     <string name="err_operation_failed">The operation failed.</string>
@@ -199,9 +198,6 @@
     <string name="ftp_transfer_incomplete">FTP: the transfer did not complete.</string>
     <string name="ftp_write_incomplete">FTP: the upload did not complete.</string>
     <string name="ftps_reuse">FTPS: the server requires TLS session resumption on the data channel, which the app does not support. Use SFTP or turn this requirement off on the server (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Full screen</string>
-    <string name="fullscreen_close">Close full screen</string>
-    <string name="fullscreen_exit">Exit full screen</string>
     <string name="history_clear">Clear</string>
     <string name="history_copy">Copy</string>
     <string name="history_delete">Deletion</string>
@@ -438,13 +434,6 @@ by picking a tab in the bar above.</string>
     <string name="tabs_new">New tab</string>
     <string name="tabs_pin_folder">Pin folder</string>
     <string name="tabs_single_pane">Single pane</string>
-    <string name="text_first_match">Go to first match</string>
-    <string name="text_outline">Contents</string>
-    <string name="text_profile_plain">TEXT</string>
-    <string name="text_read_failed">Could not read the file.</string>
-    <string name="text_search">Search in file</string>
-    <string name="text_shows_beginning"> · beginning shown</string>
-    <string name="text_wrap">Wrap lines</string>
     <string name="trash_empty_action">Empty</string>
     <string name="trash_empty_text">The trash is empty. Deleted files go here and stay on the same storage, so they take no extra space.</string>
     <string name="trash_restore">Restore</string>
@@ -466,9 +455,6 @@ by picking a tab in the bar above.</string>
     <string name="zip_extract_here">Extract here</string>
     <string name="zip_name">Archive name</string>
     <string name="zip_pack">Compress</string>
-    <string name="zoom_fit">Fit</string>
-    <string name="zoom_in">Zoom in</string>
-    <string name="zoom_out">Zoom out</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
@@ -492,10 +478,6 @@ by picking a tab in the bar above.</string>
     <plurals name="n_items">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d line</item>
-        <item quantity="other">%1$d lines</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d conflict — choose a version</item>

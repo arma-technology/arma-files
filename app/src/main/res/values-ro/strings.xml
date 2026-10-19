@@ -161,7 +161,6 @@
     <string name="err_needs_config">Această conexiune trebuie încă configurată.</string>
     <string name="err_no_path">Fișierul nu are cale.</string>
     <string name="err_no_target">Lipsește dosarul de destinație.</string>
-    <string name="err_not_text">Acesta nu este un fișier text.</string>
     <string name="err_open_read">Fișierul nu poate fi deschis pentru citire.</string>
     <string name="err_open_write">Fișierul nu poate fi deschis pentru scriere.</string>
     <string name="err_operation_failed">Operațiunea a eșuat.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: transferul nu s-a finalizat.</string>
     <string name="ftp_write_incomplete">FTP: încărcarea nu s-a finalizat.</string>
     <string name="ftps_reuse">FTPS: serverul cere reluarea sesiunii TLS pe canalul de date, lucru pe care aplicația nu îl acceptă. Folosește SFTP sau dezactivează această cerință pe server (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Ecran complet</string>
-    <string name="fullscreen_close">Închide ecranul complet</string>
-    <string name="fullscreen_exit">Ieși din ecranul complet</string>
     <string name="history_clear">Golește</string>
     <string name="history_copy">Copiere</string>
     <string name="history_delete">Ștergere</string>
@@ -437,13 +433,6 @@ alegând o filă din bara de sus.</string>
     <string name="tabs_new">Filă nouă</string>
     <string name="tabs_pin_folder">Fixează dosarul</string>
     <string name="tabs_single_pane">Un panou</string>
-    <string name="text_first_match">Mergi la prima potrivire</string>
-    <string name="text_outline">Cuprins</string>
-    <string name="text_profile_plain">TEXT</string>
-    <string name="text_read_failed">Fișierul nu a putut fi citit.</string>
-    <string name="text_search">Caută în fișier</string>
-    <string name="text_shows_beginning"> · se afișează începutul</string>
-    <string name="text_wrap">Încadrare rânduri</string>
     <string name="trash_empty_action">Golește</string>
     <string name="trash_empty_text">Coșul este gol. Fișierele șterse ajung aici și rămân pe aceeași stocare, deci nu ocupă spațiu suplimentar.</string>
     <string name="trash_restore">Restaurează</string>
@@ -465,9 +454,6 @@ alegând o filă din bara de sus.</string>
     <string name="zip_extract_here">Dezarhivează aici</string>
     <string name="zip_name">Numele arhivei</string>
     <string name="zip_pack">Arhivează</string>
-    <string name="zoom_fit">Potrivește</string>
-    <string name="zoom_in">Mărește</string>
-    <string name="zoom_out">Micșorează</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d zi</item>
         <item quantity="few">%1$d zile</item>
@@ -497,11 +483,6 @@ alegând o filă din bara de sus.</string>
         <item quantity="one">%1$d element</item>
         <item quantity="few">%1$d elemente</item>
         <item quantity="other">%1$d de elemente</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d rând</item>
-        <item quantity="few">%1$d rânduri</item>
-        <item quantity="other">%1$d de rânduri</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d conflict — alegeți versiunea</item>

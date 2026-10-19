@@ -46,6 +46,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.core:core-ktx:1.16.0")
+    // Obrazy SVG w przeglądarce obrazów.
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+    implementation("io.coil-kt.coil3:coil-svg:3.2.0")
     // Geometria do przyciągania, komentarze, warstwy i skala z PDF. Sam obraz
     // strony rysuje systemowy PdfRenderer — jest szybszy i ostrzejszy.
     // BouncyCastle z PdfBox (jdk15to18) dubluje klasy z jdk18on, którego

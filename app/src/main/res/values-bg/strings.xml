@@ -161,7 +161,6 @@
     <string name="err_needs_config">Тази връзка все още трябва да се настрои.</string>
     <string name="err_no_path">Файлът няма път.</string>
     <string name="err_no_target">Няма целева папка.</string>
-    <string name="err_not_text">Това не е текстов файл.</string>
     <string name="err_open_read">Файлът не може да се отвори за четене.</string>
     <string name="err_open_write">Файлът не може да се отвори за запис.</string>
     <string name="err_operation_failed">Операцията е неуспешна.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: прехвърлянето не завърши.</string>
     <string name="ftp_write_incomplete">FTP: качването не завърши.</string>
     <string name="ftps_reuse">FTPS: сървърът изисква възобновяване на TLS сесията в канала за данни, което приложението не поддържа. Използвайте SFTP или изключете това изискване на сървъра (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Цял екран</string>
-    <string name="fullscreen_close">Затваряне на цял екран</string>
-    <string name="fullscreen_exit">Изход от цял екран</string>
     <string name="history_clear">Изчистване</string>
     <string name="history_copy">Копиране</string>
     <string name="history_delete">Изтриване</string>
@@ -437,13 +433,6 @@
     <string name="tabs_new">Нов раздел</string>
     <string name="tabs_pin_folder">Закачане на папката</string>
     <string name="tabs_single_pane">Един панел</string>
-    <string name="text_first_match">Към първото съвпадение</string>
-    <string name="text_outline">Съдържание</string>
-    <string name="text_profile_plain">ТЕКСТ</string>
-    <string name="text_read_failed">Файлът не можа да се прочете.</string>
-    <string name="text_search">Търсене във файла</string>
-    <string name="text_shows_beginning"> · показано е началото</string>
-    <string name="text_wrap">Пренасяне на редове</string>
     <string name="trash_empty_action">Изпразване</string>
     <string name="trash_empty_text">Кошчето е празно. Изтритите файлове отиват тук и остават на същия носител, така че не заемат допълнително място.</string>
     <string name="trash_restore">Възстановяване</string>
@@ -465,9 +454,6 @@
     <string name="zip_extract_here">Разархивиране тук</string>
     <string name="zip_name">Име на архива</string>
     <string name="zip_pack">Архивиране</string>
-    <string name="zoom_fit">Побиране</string>
-    <string name="zoom_in">Увеличаване</string>
-    <string name="zoom_out">Намаляване</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d ден</item>
         <item quantity="other">%1$d дни</item>
@@ -491,10 +477,6 @@
     <plurals name="n_items">
         <item quantity="one">%1$d елемент</item>
         <item quantity="other">%1$d елемента</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d ред</item>
-        <item quantity="other">%1$d реда</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d несъответствие — изберете версия</item>

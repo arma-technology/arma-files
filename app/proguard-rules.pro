@@ -59,14 +59,8 @@
 -dontwarn javax.xml.**
 -dontwarn org.w3c.dom.**
 
-# PdfBox-Android: czcionki, mapy znaków i filtry ładowane po nazwie z zasobów.
--keep class com.tom_roush.** { *; }
--dontwarn com.tom_roush.**
--dontwarn com.gemalto.jp2.**
--dontwarn org.bouncycastle.**
-
-# Nazwa klasy jest częścią symbolu JNI (Java_pl_arma_dwg_DwgNative_toDxf).
--keep class pl.arma.dwg.DwgNative { native <methods>; }
+# PdfBox i JNI rysunków DWG: reguły jadą z modułami :viewer i :dwg
+# (consumer-rules.pro), więc działają też w innych aplikacjach.
 
 # --- Archiwa -----------------------------------------------------------------
 # zstd-jni woła metody Javy z kodu natywnego (JNI), więc ich nazwy muszą zostać.

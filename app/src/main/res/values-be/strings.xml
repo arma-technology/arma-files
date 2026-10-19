@@ -161,7 +161,6 @@
     <string name="err_needs_config">Гэтае злучэнне яшчэ трэба наладзіць.</string>
     <string name="err_no_path">У файла няма шляху.</string>
     <string name="err_no_target">Няма папкі прызначэння.</string>
-    <string name="err_not_text">Гэта не тэкставы файл.</string>
     <string name="err_open_read">Не ўдаецца адкрыць файл для чытання.</string>
     <string name="err_open_write">Не ўдаецца адкрыць файл для запісу.</string>
     <string name="err_operation_failed">Аперацыя не ўдалася.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: перадача не завершана.</string>
     <string name="ftp_write_incomplete">FTP: запампоўка не завершана.</string>
     <string name="ftps_reuse">FTPS: сервер патрабуе аднаўлення TLS-сеансу ў канале даных, а праграма гэтага не падтрымлівае. Выкарыстайце SFTP або адключыце гэтае патрабаванне на серверы (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Поўны экран</string>
-    <string name="fullscreen_close">Закрыць поўны экран</string>
-    <string name="fullscreen_exit">Выйсці з поўнаэкраннага рэжыму</string>
     <string name="history_clear">Ачысціць</string>
     <string name="history_copy">Капіраванне</string>
     <string name="history_delete">Выдаленне</string>
@@ -437,13 +433,6 @@
     <string name="tabs_new">Новая ўкладка</string>
     <string name="tabs_pin_folder">Замацаваць папку</string>
     <string name="tabs_single_pane">Адна панэль</string>
-    <string name="text_first_match">Да першага супадзення</string>
-    <string name="text_outline">Змест</string>
-    <string name="text_profile_plain">ТЭКСТ</string>
-    <string name="text_read_failed">Не ўдалося прачытаць файл.</string>
-    <string name="text_search">Пошук у файле</string>
-    <string name="text_shows_beginning"> · паказаны пачатак</string>
-    <string name="text_wrap">Перанос радкоў</string>
     <string name="trash_empty_action">Ачысціць</string>
     <string name="trash_empty_text">Сметніца пустая. Выдаленыя файлы трапляюць сюды і застаюцца на тым самым носьбіце, таму не займаюць дадатковага месца.</string>
     <string name="trash_restore">Аднавіць</string>
@@ -465,9 +454,6 @@
     <string name="zip_extract_here">Распакаваць сюды</string>
     <string name="zip_name">Назва архіва</string>
     <string name="zip_pack">Запакаваць</string>
-    <string name="zoom_fit">Па памеры</string>
-    <string name="zoom_in">Павялічыць</string>
-    <string name="zoom_out">Паменшыць</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d дзень</item>
         <item quantity="few">%1$d дні</item>
@@ -503,12 +489,6 @@
         <item quantity="few">%1$d элементы</item>
         <item quantity="many">%1$d элементаў</item>
         <item quantity="other">%1$d элемента</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d радок</item>
-        <item quantity="few">%1$d радкі</item>
-        <item quantity="many">%1$d радкоў</item>
-        <item quantity="other">%1$d радка</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d разыходжанне — выберыце версію</item>

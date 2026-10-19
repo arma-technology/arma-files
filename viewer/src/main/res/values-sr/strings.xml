@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Прилагоди екрану</string>
     <string name="viewer_go">Иди</string>
     <string name="viewer_go_to_page">Иди на страницу</string>
+    <string name="viewer_image_fullscreen">Цео екран</string>
+    <string name="viewer_image_fullscreen_close">Затвори цео екран</string>
+    <string name="viewer_image_fullscreen_exit">Изађи из целог екрана</string>
+    <string name="viewer_image_open_failed">Слика није могла да се отвори.</string>
+    <string name="viewer_image_zoom_fit">Прилагоди</string>
+    <string name="viewer_image_zoom_in">Увећај</string>
+    <string name="viewer_image_zoom_out">Умањи</string>
     <string name="viewer_layers">Слојеви</string>
     <string name="viewer_layers_all">Сви</string>
     <string name="viewer_layers_count">Слојеви (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">на линији</string>
     <string name="viewer_snap_perpendicular">нормално</string>
     <string name="viewer_snapping">Хватање</string>
+    <string name="viewer_text_binary">Ово није текстуална датотека.</string>
+    <string name="viewer_text_close_search">Затвори претрагу</string>
+    <string name="viewer_text_first_match">Иди на први резултат</string>
+    <string name="viewer_text_outline">Садржај</string>
+    <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_text_read_failed">Датотека није могла да се прочита.</string>
+    <string name="viewer_text_search">Претражи датотеку</string>
+    <string name="viewer_text_shows_beginning"> · приказан је почетак</string>
+    <string name="viewer_text_wrap">Прелом редова</string>
     <string name="viewer_too_large">Датотека је превелика да би се отворила на овом уређају.</string>
     <string name="viewer_undo">Опозови</string>
     <string name="viewer_unit_foot">стопа</string>
@@ -129,4 +145,9 @@
     <string name="viewer_use">Користи</string>
     <string name="viewer_zoom_in">Увећај</string>
     <string name="viewer_zoom_out">Умањи</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d ред</item>
+        <item quantity="few">%1$d реда</item>
+        <item quantity="other">%1$d редова</item>
+    </plurals>
 </resources>

@@ -161,7 +161,6 @@
     <string name="err_needs_config">Šis savienojums vēl jākonfigurē.</string>
     <string name="err_no_path">Failam nav ceļa.</string>
     <string name="err_no_target">Nav mērķa mapes.</string>
-    <string name="err_not_text">Tas nav teksta fails.</string>
     <string name="err_open_read">Failu nevar atvērt lasīšanai.</string>
     <string name="err_open_write">Failu nevar atvērt rakstīšanai.</string>
     <string name="err_operation_failed">Darbība neizdevās.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: pārsūtīšana netika pabeigta.</string>
     <string name="ftp_write_incomplete">FTP: augšupielāde netika pabeigta.</string>
     <string name="ftps_reuse">FTPS: serveris pieprasa TLS sesijas atsākšanu datu kanālā, ko lietotne neatbalsta. Izmantojiet SFTP vai izslēdziet šo prasību serverī (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Pilnekrāns</string>
-    <string name="fullscreen_close">Aizvērt pilnekrānu</string>
-    <string name="fullscreen_exit">Iziet no pilnekrāna</string>
     <string name="history_clear">Notīrīt</string>
     <string name="history_copy">Kopēšana</string>
     <string name="history_delete">Dzēšana</string>
@@ -437,13 +433,6 @@ izvēloties cilni joslā augšā.</string>
     <string name="tabs_new">Jauna cilne</string>
     <string name="tabs_pin_folder">Piespraust mapi</string>
     <string name="tabs_single_pane">Viens panelis</string>
-    <string name="text_first_match">Uz pirmo atbilstību</string>
-    <string name="text_outline">Saturs</string>
-    <string name="text_profile_plain">TEKSTS</string>
-    <string name="text_read_failed">Neizdevās nolasīt failu.</string>
-    <string name="text_search">Meklēt failā</string>
-    <string name="text_shows_beginning"> · rādīts sākums</string>
-    <string name="text_wrap">Rindu aplaušana</string>
     <string name="trash_empty_action">Iztukšot</string>
     <string name="trash_empty_text">Miskaste ir tukša. Dzēstie faili nonāk šeit un paliek tajā pašā atmiņā, tāpēc neaizņem papildu vietu.</string>
     <string name="trash_restore">Atjaunot</string>
@@ -465,9 +454,6 @@ izvēloties cilni joslā augšā.</string>
     <string name="zip_extract_here">Izpakot šeit</string>
     <string name="zip_name">Arhīva nosaukums</string>
     <string name="zip_pack">Saspiest</string>
-    <string name="zoom_fit">Ietilpināt</string>
-    <string name="zoom_in">Tuvināt</string>
-    <string name="zoom_out">Tālināt</string>
     <plurals name="cache_days">
         <item quantity="zero">%1$d dienu</item>
         <item quantity="one">%1$d diena</item>
@@ -497,11 +483,6 @@ izvēloties cilni joslā augšā.</string>
         <item quantity="zero">%1$d vienumu</item>
         <item quantity="one">%1$d vienums</item>
         <item quantity="other">%1$d vienumi</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="zero">%1$d rindu</item>
-        <item quantity="one">%1$d rinda</item>
-        <item quantity="other">%1$d rindas</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="zero">%1$d neatbilstību — izvēlieties versijas</item>

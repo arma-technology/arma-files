@@ -161,7 +161,6 @@
     <string name="err_needs_config">Kjo lidhje duhet ende të konfigurohet.</string>
     <string name="err_no_path">Skedari nuk ka shteg.</string>
     <string name="err_no_target">Mungon dosja e destinacionit.</string>
-    <string name="err_not_text">Ky nuk është skedar teksti.</string>
     <string name="err_open_read">Skedari nuk mund të hapet për lexim.</string>
     <string name="err_open_write">Skedari nuk mund të hapet për shkrim.</string>
     <string name="err_operation_failed">Veprimi dështoi.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: transferimi nuk përfundoi.</string>
     <string name="ftp_write_incomplete">FTP: ngarkimi nuk përfundoi.</string>
     <string name="ftps_reuse">FTPS: serveri kërkon rifillimin e seancës TLS në kanalin e të dhënave, gjë që aplikacioni nuk e mbështet. Përdor SFTP ose çaktivizoje këtë kërkesë në server (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Ekran i plotë</string>
-    <string name="fullscreen_close">Mbyll ekranin e plotë</string>
-    <string name="fullscreen_exit">Dil nga ekrani i plotë</string>
     <string name="history_clear">Pastro</string>
     <string name="history_copy">Kopjim</string>
     <string name="history_delete">Fshirje</string>
@@ -437,13 +433,6 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="tabs_new">Skedë e re</string>
     <string name="tabs_pin_folder">Fikso dosjen</string>
     <string name="tabs_single_pane">Një panel</string>
-    <string name="text_first_match">Shko te përputhja e parë</string>
-    <string name="text_outline">Përmbajtja</string>
-    <string name="text_profile_plain">TEKST</string>
-    <string name="text_read_failed">Skedari nuk u lexua dot.</string>
-    <string name="text_search">Kërko në skedar</string>
-    <string name="text_shows_beginning"> · shfaqet fillimi</string>
-    <string name="text_wrap">Mbështjellja e rreshtave</string>
     <string name="trash_empty_action">Zbraz</string>
     <string name="trash_empty_text">Koshi është bosh. Skedarët e fshirë vijnë këtu dhe mbeten në të njëjtën hapësirë, prandaj nuk zënë vend shtesë.</string>
     <string name="trash_restore">Rikthe</string>
@@ -465,9 +454,6 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="zip_extract_here">Shpaketo këtu</string>
     <string name="zip_name">Emri i arkivit</string>
     <string name="zip_pack">Ngjesh</string>
-    <string name="zoom_fit">Përshtat</string>
-    <string name="zoom_in">Zmadho</string>
-    <string name="zoom_out">Zvogëlo</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d ditë</item>
         <item quantity="other">%1$d ditë</item>
@@ -491,10 +477,6 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <plurals name="n_items">
         <item quantity="one">%1$d element</item>
         <item quantity="other">%1$d elemente</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d rresht</item>
-        <item quantity="other">%1$d rreshta</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d mospërputhje — zgjidhni versionin</item>

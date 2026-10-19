@@ -161,7 +161,6 @@
     <string name="err_needs_config">Ezt a kapcsolatot még be kell állítani.</string>
     <string name="err_no_path">A fájlnak nincs útvonala.</string>
     <string name="err_no_target">Nincs célmappa.</string>
-    <string name="err_not_text">Ez nem szöveges fájl.</string>
     <string name="err_open_read">A fájl nem nyitható meg olvasásra.</string>
     <string name="err_open_write">A fájl nem nyitható meg írásra.</string>
     <string name="err_operation_failed">A művelet sikertelen.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: az átvitel nem fejeződött be.</string>
     <string name="ftp_write_incomplete">FTP: a feltöltés nem fejeződött be.</string>
     <string name="ftps_reuse">FTPS: a szerver megköveteli a TLS-munkamenet újrafelhasználását az adatcsatornán, amit az alkalmazás nem támogat. Használj SFTP-t, vagy kapcsold ki ezt a követelményt a szerveren (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Teljes képernyő</string>
-    <string name="fullscreen_close">Teljes képernyő bezárása</string>
-    <string name="fullscreen_exit">Kilépés a teljes képernyőből</string>
     <string name="history_clear">Törlés</string>
     <string name="history_copy">Másolás</string>
     <string name="history_delete">Törlés</string>
@@ -437,13 +433,6 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="tabs_new">Új lap</string>
     <string name="tabs_pin_folder">Mappa rögzítése</string>
     <string name="tabs_single_pane">Egy panel</string>
-    <string name="text_first_match">Ugrás az első találatra</string>
-    <string name="text_outline">Tartalom</string>
-    <string name="text_profile_plain">SZÖVEG</string>
-    <string name="text_read_failed">Nem sikerült beolvasni a fájlt.</string>
-    <string name="text_search">Keresés a fájlban</string>
-    <string name="text_shows_beginning"> · az eleje látható</string>
-    <string name="text_wrap">Sortörés</string>
     <string name="trash_empty_action">Ürítés</string>
     <string name="trash_empty_text">A lomtár üres. A törölt fájlok ide kerülnek és ugyanazon a tárhelyen maradnak, így nem foglalnak extra helyet.</string>
     <string name="trash_restore">Visszaállítás</string>
@@ -465,9 +454,6 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="zip_extract_here">Kicsomagolás ide</string>
     <string name="zip_name">Archívum neve</string>
     <string name="zip_pack">Tömörítés</string>
-    <string name="zoom_fit">Igazítás</string>
-    <string name="zoom_in">Nagyítás</string>
-    <string name="zoom_out">Kicsinyítés</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d nap</item>
         <item quantity="other">%1$d nap</item>
@@ -491,10 +477,6 @@ a fenti sávon egy lap kiválasztásával.</string>
     <plurals name="n_items">
         <item quantity="one">%1$d elem</item>
         <item quantity="other">%1$d elem</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d sor</item>
-        <item quantity="other">%1$d sor</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d ütközés — válasszon verziót</item>

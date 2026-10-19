@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Fit to screen</string>
     <string name="viewer_go">Go</string>
     <string name="viewer_go_to_page">Go to page</string>
+    <string name="viewer_image_fullscreen">Full screen</string>
+    <string name="viewer_image_fullscreen_close">Close full screen</string>
+    <string name="viewer_image_fullscreen_exit">Exit full screen</string>
+    <string name="viewer_image_open_failed">Could not open the image.</string>
+    <string name="viewer_image_zoom_fit">Fit</string>
+    <string name="viewer_image_zoom_in">Zoom in</string>
+    <string name="viewer_image_zoom_out">Zoom out</string>
     <string name="viewer_layers">Layers</string>
     <string name="viewer_layers_all">All</string>
     <string name="viewer_layers_count">Layers (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">on line</string>
     <string name="viewer_snap_perpendicular">perpendicular</string>
     <string name="viewer_snapping">Snap</string>
+    <string name="viewer_text_binary">This is not a text file.</string>
+    <string name="viewer_text_close_search">Close search</string>
+    <string name="viewer_text_first_match">Go to first match</string>
+    <string name="viewer_text_outline">Contents</string>
+    <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_text_read_failed">Could not read the file.</string>
+    <string name="viewer_text_search">Search in file</string>
+    <string name="viewer_text_shows_beginning"> · beginning shown</string>
+    <string name="viewer_text_wrap">Wrap lines</string>
     <string name="viewer_too_large">The file is too large to open on this device.</string>
     <string name="viewer_undo">Undo</string>
     <string name="viewer_unit_foot">foot</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Use</string>
     <string name="viewer_zoom_in">Zoom in</string>
     <string name="viewer_zoom_out">Zoom out</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
 </resources>

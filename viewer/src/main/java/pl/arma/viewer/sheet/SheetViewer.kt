@@ -921,7 +921,7 @@ private fun SheetPageLoader(
 
 /** Paski systemu schowane; gest od krawędzi pokazuje je na chwilę. */
 @Composable
-private fun HiddenSystemBars() {
+internal fun HiddenSystemBars() {
     val view = LocalView.current
     DisposableEffect(view) {
         val window = ((view.parent as? DialogWindowProvider) ?: (view as? DialogWindowProvider))?.window

@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Sobita ekraanile</string>
     <string name="viewer_go">Mine</string>
     <string name="viewer_go_to_page">Mine lehele</string>
+    <string name="viewer_image_fullscreen">Täisekraan</string>
+    <string name="viewer_image_fullscreen_close">Sulge täisekraan</string>
+    <string name="viewer_image_fullscreen_exit">Välju täisekraanist</string>
+    <string name="viewer_image_open_failed">Pilti ei õnnestunud avada.</string>
+    <string name="viewer_image_zoom_fit">Sobita</string>
+    <string name="viewer_image_zoom_in">Suurenda</string>
+    <string name="viewer_image_zoom_out">Vähenda</string>
     <string name="viewer_layers">Kihid</string>
     <string name="viewer_layers_all">Kõik</string>
     <string name="viewer_layers_count">Kihid (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">joonel</string>
     <string name="viewer_snap_perpendicular">risti</string>
     <string name="viewer_snapping">Haare</string>
+    <string name="viewer_text_binary">See pole tekstifail.</string>
+    <string name="viewer_text_close_search">Sulge otsing</string>
+    <string name="viewer_text_first_match">Mine esimese vasteni</string>
+    <string name="viewer_text_outline">Sisukord</string>
+    <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_text_read_failed">Faili ei õnnestunud lugeda.</string>
+    <string name="viewer_text_search">Otsi failist</string>
+    <string name="viewer_text_shows_beginning"> · kuvatud on algus</string>
+    <string name="viewer_text_wrap">Ridade murdmine</string>
     <string name="viewer_too_large">Fail on selles seadmes avamiseks liiga suur.</string>
     <string name="viewer_undo">Võta tagasi</string>
     <string name="viewer_unit_foot">jalg</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Kasuta</string>
     <string name="viewer_zoom_in">Suurenda</string>
     <string name="viewer_zoom_out">Vähenda</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d rida</item>
+        <item quantity="other">%1$d rida</item>
+    </plurals>
 </resources>

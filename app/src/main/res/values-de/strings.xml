@@ -161,7 +161,6 @@
     <string name="err_needs_config">Diese Verbindung muss noch eingerichtet werden.</string>
     <string name="err_no_path">Die Datei hat keinen Pfad.</string>
     <string name="err_no_target">Kein Zielordner.</string>
-    <string name="err_not_text">Das ist keine Textdatei.</string>
     <string name="err_open_read">Die Datei kann nicht zum Lesen geöffnet werden.</string>
     <string name="err_open_write">Die Datei kann nicht zum Schreiben geöffnet werden.</string>
     <string name="err_operation_failed">Der Vorgang ist fehlgeschlagen.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: Die Übertragung wurde nicht abgeschlossen.</string>
     <string name="ftp_write_incomplete">FTP: Das Hochladen wurde nicht abgeschlossen.</string>
     <string name="ftps_reuse">FTPS: Der Server verlangt die Wiederaufnahme der TLS-Sitzung im Datenkanal, was die App nicht unterstützt. Verwende SFTP oder deaktiviere diese Anforderung auf dem Server (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Vollbild</string>
-    <string name="fullscreen_close">Vollbild schließen</string>
-    <string name="fullscreen_exit">Vollbild beenden</string>
     <string name="history_clear">Leeren</string>
     <string name="history_copy">Kopieren</string>
     <string name="history_delete">Löschen</string>
@@ -437,13 +433,6 @@ indem du oben einen Tab auswählst.</string>
     <string name="tabs_new">Neuer Tab</string>
     <string name="tabs_pin_folder">Ordner anheften</string>
     <string name="tabs_single_pane">Ein Bereich</string>
-    <string name="text_first_match">Zum ersten Treffer</string>
-    <string name="text_outline">Inhalt</string>
-    <string name="text_profile_plain">TEXT</string>
-    <string name="text_read_failed">Die Datei konnte nicht gelesen werden.</string>
-    <string name="text_search">In Datei suchen</string>
-    <string name="text_shows_beginning"> · Anfang wird angezeigt</string>
-    <string name="text_wrap">Zeilenumbruch</string>
     <string name="trash_empty_action">Leeren</string>
     <string name="trash_empty_text">Der Papierkorb ist leer. Gelöschte Dateien landen hier und bleiben auf demselben Speicher, belegen also keinen zusätzlichen Platz.</string>
     <string name="trash_restore">Wiederherstellen</string>
@@ -465,9 +454,6 @@ indem du oben einen Tab auswählst.</string>
     <string name="zip_extract_here">Hier entpacken</string>
     <string name="zip_name">Archivname</string>
     <string name="zip_pack">Packen</string>
-    <string name="zoom_fit">Einpassen</string>
-    <string name="zoom_in">Vergrößern</string>
-    <string name="zoom_out">Verkleinern</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d Tag</item>
         <item quantity="other">%1$d Tage</item>
@@ -491,10 +477,6 @@ indem du oben einen Tab auswählst.</string>
     <plurals name="n_items">
         <item quantity="one">%1$d Element</item>
         <item quantity="other">%1$d Elemente</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d Zeile</item>
-        <item quantity="other">%1$d Zeilen</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d Konflikt — Version wählen</item>

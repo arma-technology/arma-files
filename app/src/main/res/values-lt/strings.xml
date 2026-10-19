@@ -161,7 +161,6 @@
     <string name="err_needs_config">Šį ryšį dar reikia sukonfigūruoti.</string>
     <string name="err_no_path">Failas neturi kelio.</string>
     <string name="err_no_target">Nėra paskirties aplanko.</string>
-    <string name="err_not_text">Tai ne tekstinis failas.</string>
     <string name="err_open_read">Nepavyksta atidaryti failo skaitymui.</string>
     <string name="err_open_write">Nepavyksta atidaryti failo rašymui.</string>
     <string name="err_operation_failed">Operacija nepavyko.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: perdavimas nebaigtas.</string>
     <string name="ftp_write_incomplete">FTP: įkėlimas nebaigtas.</string>
     <string name="ftps_reuse">FTPS: serveris reikalauja tęsti TLS seansą duomenų kanale, o programa to nepalaiko. Naudokite SFTP arba išjunkite šį reikalavimą serveryje (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Visas ekranas</string>
-    <string name="fullscreen_close">Uždaryti visą ekraną</string>
-    <string name="fullscreen_exit">Išeiti iš viso ekrano</string>
     <string name="history_clear">Išvalyti</string>
     <string name="history_copy">Kopijavimas</string>
     <string name="history_delete">Ištrynimas</string>
@@ -437,13 +433,6 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="tabs_new">Naujas skirtukas</string>
     <string name="tabs_pin_folder">Prisegti aplanką</string>
     <string name="tabs_single_pane">Vienas skydelis</string>
-    <string name="text_first_match">Eiti į pirmą atitikmenį</string>
-    <string name="text_outline">Turinys</string>
-    <string name="text_profile_plain">TEKSTAS</string>
-    <string name="text_read_failed">Nepavyko perskaityti failo.</string>
-    <string name="text_search">Ieškoti faile</string>
-    <string name="text_shows_beginning"> · rodoma pradžia</string>
-    <string name="text_wrap">Eilučių laužymas</string>
     <string name="trash_empty_action">Ištuštinti</string>
     <string name="trash_empty_text">Šiukšlinė tuščia. Ištrinti failai patenka čia ir lieka toje pačioje laikmenoje, todėl neužima papildomos vietos.</string>
     <string name="trash_restore">Atkurti</string>
@@ -465,9 +454,6 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="zip_extract_here">Išskleisti čia</string>
     <string name="zip_name">Archyvo pavadinimas</string>
     <string name="zip_pack">Suglaudinti</string>
-    <string name="zoom_fit">Pritaikyti</string>
-    <string name="zoom_in">Didinti</string>
-    <string name="zoom_out">Mažinti</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d diena</item>
         <item quantity="few">%1$d dienos</item>
@@ -503,12 +489,6 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
         <item quantity="few">%1$d elementai</item>
         <item quantity="many">%1$d elemento</item>
         <item quantity="other">%1$d elementų</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d eilutė</item>
-        <item quantity="few">%1$d eilutės</item>
-        <item quantity="many">%1$d eilutės</item>
-        <item quantity="other">%1$d eilučių</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d nesutapimas — pasirinkite versiją</item>

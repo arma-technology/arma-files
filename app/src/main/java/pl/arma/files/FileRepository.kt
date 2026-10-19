@@ -196,7 +196,7 @@ class FileRepository(private val context: Context) : FileOps {
      * Poprzednia wersja składała tekst, dekodując każdą porcję osobno — znak
      * wielobajtowy rozcięty na granicy porcji rozpadał się wtedy na dwa znaki
      * zastępcze, co przy polskich tekstach psuło co któryś wyraz. Dekodowanie
-     * należy do [pl.arma.files.text.TextReader], który dostaje całość naraz.
+     * należy do [pl.arma.viewer.text.TextReader], który dostaje całość naraz.
      */
     suspend fun readBytes(uri: Uri, maxBytes: Int = 2_000_000): ByteArray = withContext(Dispatchers.IO) {
         openInput(uri).use { input ->
@@ -215,7 +215,7 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     suspend fun readText(uri: Uri, maxBytes: Int = 2_000_000): String =
-        pl.arma.files.text.TextReader.decode(readBytes(uri, maxBytes)).first
+        pl.arma.viewer.text.TextReader.decode(readBytes(uri, maxBytes)).first
 
     suspend fun writeText(uri: Uri, text: String) = withContext(Dispatchers.IO) {
         openOutput(uri).bufferedWriter().use { it.write(text) }

@@ -161,7 +161,6 @@
     <string name="err_needs_config">Це підключення ще потрібно налаштувати.</string>
     <string name="err_no_path">Файл не має шляху.</string>
     <string name="err_no_target">Немає папки призначення.</string>
-    <string name="err_not_text">Це не текстовий файл.</string>
     <string name="err_open_read">Не вдається відкрити файл для читання.</string>
     <string name="err_open_write">Не вдається відкрити файл для запису.</string>
     <string name="err_operation_failed">Операція не вдалася.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: передавання не завершено.</string>
     <string name="ftp_write_incomplete">FTP: вивантаження не завершено.</string>
     <string name="ftps_reuse">FTPS: сервер вимагає відновлення TLS-сеансу в каналі даних, а застосунок цього не підтримує. Використайте SFTP або вимкніть цю вимогу на сервері (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Повний екран</string>
-    <string name="fullscreen_close">Закрити повний екран</string>
-    <string name="fullscreen_exit">Вийти з повноекранного режиму</string>
     <string name="history_clear">Очистити</string>
     <string name="history_copy">Копіювання</string>
     <string name="history_delete">Видалення</string>
@@ -437,13 +433,6 @@
     <string name="tabs_new">Нова вкладка</string>
     <string name="tabs_pin_folder">Закріпити папку</string>
     <string name="tabs_single_pane">Одна панель</string>
-    <string name="text_first_match">До першого збігу</string>
-    <string name="text_outline">Зміст</string>
-    <string name="text_profile_plain">ТЕКСТ</string>
-    <string name="text_read_failed">Не вдалося прочитати файл.</string>
-    <string name="text_search">Пошук у файлі</string>
-    <string name="text_shows_beginning"> · показано початок</string>
-    <string name="text_wrap">Перенесення рядків</string>
     <string name="trash_empty_action">Очистити</string>
     <string name="trash_empty_text">Кошик порожній. Видалені файли потрапляють сюди й лишаються на тому самому носії, тож не займають додаткового місця.</string>
     <string name="trash_restore">Відновити</string>
@@ -465,9 +454,6 @@
     <string name="zip_extract_here">Розпакувати сюди</string>
     <string name="zip_name">Назва архіву</string>
     <string name="zip_pack">Запакувати</string>
-    <string name="zoom_fit">За розміром</string>
-    <string name="zoom_in">Збільшити</string>
-    <string name="zoom_out">Зменшити</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d день</item>
         <item quantity="few">%1$d дні</item>
@@ -503,12 +489,6 @@
         <item quantity="few">%1$d елементи</item>
         <item quantity="many">%1$d елементів</item>
         <item quantity="other">%1$d елемента</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d рядок</item>
-        <item quantity="few">%1$d рядки</item>
-        <item quantity="many">%1$d рядків</item>
-        <item quantity="other">%1$d рядка</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d розбіжність — виберіть версію</item>

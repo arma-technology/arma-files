@@ -64,6 +64,13 @@
     <string name="viewer_fit_screen">Прилагоди на екранот</string>
     <string name="viewer_go">Оди</string>
     <string name="viewer_go_to_page">Оди на страница</string>
+    <string name="viewer_image_fullscreen">Цел екран</string>
+    <string name="viewer_image_fullscreen_close">Затвори цел екран</string>
+    <string name="viewer_image_fullscreen_exit">Излези од цел екран</string>
+    <string name="viewer_image_open_failed">Сликата не можеше да се отвори.</string>
+    <string name="viewer_image_zoom_fit">Прилагоди</string>
+    <string name="viewer_image_zoom_in">Зголеми</string>
+    <string name="viewer_image_zoom_out">Намали</string>
     <string name="viewer_layers">Слоеви</string>
     <string name="viewer_layers_all">Сите</string>
     <string name="viewer_layers_count">Слоеви (%1$d)</string>
@@ -121,6 +128,15 @@
     <string name="viewer_snap_nearest">на линијата</string>
     <string name="viewer_snap_perpendicular">нормално</string>
     <string name="viewer_snapping">Зафаќање</string>
+    <string name="viewer_text_binary">Ова не е текстуална датотека.</string>
+    <string name="viewer_text_close_search">Затвори пребарување</string>
+    <string name="viewer_text_first_match">Оди на првиот резултат</string>
+    <string name="viewer_text_outline">Содржина</string>
+    <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_text_read_failed">Датотеката не можеше да се прочита.</string>
+    <string name="viewer_text_search">Пребарај во датотеката</string>
+    <string name="viewer_text_shows_beginning"> · прикажан е почетокот</string>
+    <string name="viewer_text_wrap">Прекршување на редовите</string>
     <string name="viewer_too_large">Датотеката е преголема за да се отвори на овој уред.</string>
     <string name="viewer_undo">Врати</string>
     <string name="viewer_unit_foot">стапка</string>
@@ -129,4 +145,8 @@
     <string name="viewer_use">Користи</string>
     <string name="viewer_zoom_in">Зголеми</string>
     <string name="viewer_zoom_out">Намали</string>
+    <plurals name="viewer_text_lines">
+        <item quantity="one">%1$d ред</item>
+        <item quantity="other">%1$d редови</item>
+    </plurals>
 </resources>

@@ -12,6 +12,7 @@ android {
 
     defaultConfig {
         minSdk = 26
+        consumerProguardFiles("consumer-rules.pro")
         ndk {
             // Telefony arm64 i emulator x86_64; 32-bitowe ARM pominięte —
             // duży rysunek i tak nie zmieściłby się w ich przestrzeni adresowej.

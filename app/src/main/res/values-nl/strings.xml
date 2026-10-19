@@ -161,7 +161,6 @@
     <string name="err_needs_config">Deze verbinding moet nog worden ingesteld.</string>
     <string name="err_no_path">Het bestand heeft geen pad.</string>
     <string name="err_no_target">Geen doelmap.</string>
-    <string name="err_not_text">Dit is geen tekstbestand.</string>
     <string name="err_open_read">Kan het bestand niet openen om te lezen.</string>
     <string name="err_open_write">Kan het bestand niet openen om te schrijven.</string>
     <string name="err_operation_failed">De bewerking is mislukt.</string>
@@ -198,9 +197,6 @@
     <string name="ftp_transfer_incomplete">FTP: de overdracht is niet voltooid.</string>
     <string name="ftp_write_incomplete">FTP: het uploaden is niet voltooid.</string>
     <string name="ftps_reuse">FTPS: de server vereist hervatting van de TLS-sessie op het datakanaal, wat de app niet ondersteunt. Gebruik SFTP of zet deze eis uit op de server (vsftpd: require_ssl_reuse=NO).</string>
-    <string name="fullscreen">Volledig scherm</string>
-    <string name="fullscreen_close">Volledig scherm sluiten</string>
-    <string name="fullscreen_exit">Volledig scherm verlaten</string>
     <string name="history_clear">Wissen</string>
     <string name="history_copy">Kopiëren</string>
     <string name="history_delete">Verwijderen</string>
@@ -437,13 +433,6 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="tabs_new">Nieuw tabblad</string>
     <string name="tabs_pin_folder">Map vastzetten</string>
     <string name="tabs_single_pane">Eén paneel</string>
-    <string name="text_first_match">Naar eerste treffer</string>
-    <string name="text_outline">Inhoud</string>
-    <string name="text_profile_plain">TEKST</string>
-    <string name="text_read_failed">Het bestand kon niet worden gelezen.</string>
-    <string name="text_search">Zoeken in bestand</string>
-    <string name="text_shows_beginning"> · begin wordt getoond</string>
-    <string name="text_wrap">Regels omloop</string>
     <string name="trash_empty_action">Legen</string>
     <string name="trash_empty_text">De prullenbak is leeg. Verwijderde bestanden komen hier terecht en blijven op dezelfde opslag, dus ze nemen geen extra ruimte in.</string>
     <string name="trash_restore">Terugzetten</string>
@@ -465,9 +454,6 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="zip_extract_here">Hier uitpakken</string>
     <string name="zip_name">Archiefnaam</string>
     <string name="zip_pack">Inpakken</string>
-    <string name="zoom_fit">Passend maken</string>
-    <string name="zoom_in">Inzoomen</string>
-    <string name="zoom_out">Uitzoomen</string>
     <plurals name="cache_days">
         <item quantity="one">%1$d dag</item>
         <item quantity="other">%1$d dagen</item>
@@ -491,10 +477,6 @@ door bovenaan een tabblad te kiezen.</string>
     <plurals name="n_items">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
-    </plurals>
-    <plurals name="n_lines">
-        <item quantity="one">%1$d regel</item>
-        <item quantity="other">%1$d regels</item>
     </plurals>
     <plurals name="offline_conflicts">
         <item quantity="one">%1$d conflict — kies een versie</item>
