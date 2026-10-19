@@ -183,8 +183,9 @@ Czytnik pokazuje pierwsze 2 MB (dla większych informuje, że to początek).
     kolory i większość kreskowań (na prawdziwych rysunkach 132 z 351 i 712
     z 3150 wypełnień wg ODA). Moduł `dwg` od tej wersji zapisuje DXF
     tekstowy. Jeśli konwertujesz DWG gdzie indziej (np. `dwg2dxf` na
-    serwerze), też używaj tekstowego — czytnik pomija linie, które LibreDWG
-    psuje surowym znakiem nowej linii w MTEXT (dawniej odrzucał cały rysunek).
+    serwerze), też używaj tekstowego. Napisy, które LibreDWG łamie surowym
+    znakiem nowej linii, czytnik skleja z powrotem (jako nowy wiersz MTEXT) —
+    naprawa po konwersji nie jest już potrzebna.
 15. **Pierwsza kompilacja `dwg` ze źródeł** buduje część natywną przez CMake
     (około minuty). Statyczna LibreDWG jest gotowa w `libs/`; przebudowa:
     `dwg/build-libredwg.sh`.

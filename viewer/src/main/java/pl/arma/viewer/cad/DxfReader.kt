@@ -116,9 +116,9 @@ class DxfReader(input: InputStream) : Closeable {
                 b == '-'.code -> sign = -1
                 b in '0'.code..'9'.code -> { c = c * 10 + (b - '0'.code); any = true }
                 b == ' '.code || b == '\t'.code -> Unit
-                // LibreDWG 0.14 zostawia w tekście surowy znak nowej linii —
-                // dalszy ciąg napisu trafia w miejsce kodu grupy. Pomijamy tę
-                // linię (napis traci końcówkę) zamiast odrzucać cały rysunek.
+                // Linia, która nie jest kodem, a nie przyszła po tekście (tam
+                // dokleja ją [appendContinuations]) — pomijamy ją zamiast
+                // odrzucać cały rysunek.
                 else -> return if (code >= 0) nextText() else throw IOException("Invalid DXF group code")
             }
         }
@@ -132,7 +132,62 @@ class DxfReader(input: InputStream) : Closeable {
         // Nazwy (typy obiektów, sekcje, warstwy) bywają zapisane ze spacjami
         // na brzegach przez starsze programy; w tekście spacje są istotne.
         if (code == 0 || code == 2 || code == 8 || code == 9) trimBuffer()
+        if (code == 1 || code == 3) appendContinuations()
         return true
+    }
+
+    private var peek = ByteArray(256)
+
+    /**
+     * LibreDWG 0.14 zapisuje w napisach surowy znak nowej linii zamiast `\P`,
+     * więc dalszy ciąg napisu ląduje w miejscu następnego kodu grupy.
+     * Zaglądamy w kolejną linię: jeśli nie jest kodem, to ciąg dalszy —
+     * doklejamy go jako nowy wiersz MTEXT, żeby napis był cały.
+     */
+    private fun appendContinuations() {
+        while (true) {
+            stream.mark(1 shl 20)
+            val count = readLineInto()
+            if (count < 0 || isGroupCode(peek, count)) {
+                stream.reset()
+                return
+            }
+            val needed = length + 2 + count
+            if (needed > buffer.size) buffer = buffer.copyOf(maxOf(needed, buffer.size * 2))
+            buffer[length++] = '\\'.code.toByte()
+            buffer[length++] = 'P'.code.toByte()
+            System.arraycopy(peek, 0, buffer, length, count)
+            length += count
+        }
+    }
+
+    /** Linia do [peek]; liczba bajtów albo -1 na końcu pliku. */
+    private fun readLineInto(): Int {
+        var count = 0
+        var b = stream.read()
+        if (b < 0) return -1
+        while (b >= 0 && b != '\n'.code) {
+            if (b != '\r'.code) {
+                if (count == peek.size) peek = peek.copyOf(peek.size * 2)
+                peek[count++] = b.toByte()
+            }
+            b = stream.read()
+        }
+        return count
+    }
+
+    /** Czy linia jest kodem grupy: cyfry (z minusem), otoczone spacjami. Pusta też — koniec pliku. */
+    private fun isGroupCode(line: ByteArray, count: Int): Boolean {
+        var digits = 0
+        for (i in 0 until count) {
+            val b = line[i].toInt()
+            when {
+                b in '0'.code..'9'.code -> digits++
+                b == '-'.code || b == ' '.code || b == '\t'.code -> Unit
+                else -> return false
+            }
+        }
+        return digits > 0 || count == 0
     }
 
     private fun trimBuffer() {
