@@ -165,7 +165,17 @@ Czytnik pokazuje pierwsze 2 MB (dla większych informuje, że to początek).
 10. **Wersje Compose.** Moduł jest testowany z BOM 2025.05.01. Starszy BOM
     w aplikacji może nie mieć użytych API (np. `pluralStringResource`
     w tej postaci) — trzymaj BOM ≥ 2025.05.01.
-11. **Pierwsza kompilacja `dwg` ze źródeł** buduje część natywną przez CMake
+11. **Marginesy systemowe (targetSdk 35+).** Android rysuje od krawędzi do
+    krawędzi, a komponenty nie dodają marginesów same — w zwykłym widoku
+    treść wchodzi pod pasek tytułu, stan i nawigację (sprawdzone na
+    telefonie). Daj im `Modifier.safeDrawingPadding()` albo umieść
+    w `Scaffold` i użyj jego `innerPadding`. Wyjątek: `SheetViewerDialog`
+    i `FullscreenImageViewer` są pełnoekranowe i obsługują to same.
+12. **Dostęp do plików.** Komponenty czytają plik bezpośrednio — aplikacja musi
+    mieć do niego prawo (własny katalog, `cacheDir`, pliki z SAF skopiowane
+    do siebie). Brak dostępu daje czytelny komunikat w miejscu dokumentu,
+    a nie awarię.
+13. **Pierwsza kompilacja `dwg` ze źródeł** buduje część natywną przez CMake
     (około minuty). Statyczna LibreDWG jest gotowa w `libs/`; przebudowa:
     `dwg/build-libredwg.sh`.
 
