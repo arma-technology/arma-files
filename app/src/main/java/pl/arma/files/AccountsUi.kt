@@ -224,9 +224,12 @@ fun AccountEditorSheet(
             )
             OutlinedTextField(
                 value = draft.host,
-                onValueChange = { draft = draft.copy(host = it) },
+                // Adres nie ma spacji, a klawiatura tekstowa wstawia ją po kropce
+                // („100. 76.35.24”) — stąd klawiatura adresów i filtr spacji.
+                onValueChange = { draft = draft.copy(host = it.filterNot(Char::isWhitespace)) },
                 label = { Text(stringResource(R.string.accounts_host)) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(

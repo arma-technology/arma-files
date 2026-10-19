@@ -1227,7 +1227,9 @@ private fun ComputerHome(
             item {
                 SectionTitle(stringResource(R.string.home_connected), Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
             }
-            items(connectedSources, key = { "source_${it.type.name}" }) { source ->
+            // Klucz z konta, nie z typu: dwa połączenia SMB (dom, firma) dawały
+            // ten sam klucz i ekran główny wywracał aplikację przy starcie.
+            items(connectedSources, key = { "source_${it.type.name}_${it.accountId ?: it.rootUri}" }) { source ->
                 ConnectedSourceCard(source = source, onClick = { onOpenSource(source) })
             }
         }
