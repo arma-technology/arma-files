@@ -73,12 +73,16 @@ class VideoClip(val uri: Uri, val name: String, val key: String = uri.toString()
 @OptIn(UnstableApi::class)
 @Composable
 fun FullscreenVideoPlayer(
-    clips: List<VideoClip>,
+    playlist: List<VideoClip>,
     startIndex: Int,
     onDismiss: () -> Unit,
     onCurrentChanged: (Int) -> Unit = {}
 ) {
-    if (clips.isEmpty()) return
+    if (playlist.isEmpty()) return
+    // Kolejka z chwili otwarcia. Lista u gospodarza potrafi się zmienić w trakcie
+    // (film dopisany do „Ostatnich”, odświeżony folder) — indeksy odtwarzacza
+    // wskazywałyby wtedy inne filmy albo wychodziły poza listę.
+    val clips = remember { playlist }
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var current by remember { mutableIntStateOf(startIndex.coerceIn(clips.indices)) }
@@ -113,6 +117,16 @@ fun FullscreenVideoPlayer(
                 if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
                     val resume = VideoPositions.get(context, clips[current].key)
                     if (resume > 0) player.seekTo(resume)
+                }
+            }
+
+            // Przejście do innego filmu (przycisk, koniec) — miejsce w poprzednim
+            // zapisujemy, zanim indeks wskaże już następny.
+            override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) {
+                if (old.mediaItemIndex != new.mediaItemIndex && old.mediaItemIndex in clips.indices) {
+                    val duration = player.getCurrentTimeline().takeIf { !it.isEmpty && old.mediaItemIndex < it.windowCount }
+                        ?.getWindow(old.mediaItemIndex, androidx.media3.common.Timeline.Window())?.durationMs ?: C.TIME_UNSET
+                    VideoPositions.remember(context, clips[old.mediaItemIndex].key, old.positionMs, duration)
                 }
             }
 

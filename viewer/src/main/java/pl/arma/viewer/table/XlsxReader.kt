@@ -287,6 +287,9 @@ internal class ValueFormat(private val locale: Locale, private val date1904: Boo
         val literal = Regex(""""([^"]*)"""").findAll(section).joinToString("") { it.groupValues[1] } +
             Regex("""\[\$([^-\]]*)""").find(section)?.groupValues?.get(1).orEmpty()
 
+        // Czas trwania „[h]:mm:ss” liczy godziny ponad dobę; nawiasy kwadratowe
+        // znikają z `plain`, więc sprawdzamy je w oryginale.
+        if (Regex("""^\[[hms]+]""", RegexOption.IGNORE_CASE).containsMatchIn(section.trim())) return duration(value)
         if (isDate(plain)) return date(value, plain) ?: general(value)
         if (plain.contains('%')) return number(value * 100, plain.replace("%", "")) + "%"
         if (plain.contains('E', ignoreCase = true)) return String.format(locale, "%.2E", value)
@@ -315,6 +318,12 @@ internal class ValueFormat(private val locale: Locale, private val date1904: Boo
         return rounded.toPlainString().replace('.', symbols.decimalSeparator)
     }
 
+    private fun duration(value: Double): String {
+        val total = kotlin.math.round(kotlin.math.abs(value) * 86_400).toLong()
+        val sign = if (value < 0) "-" else ""
+        return "%s%d:%02d:%02d".format(sign, total / 3600, total % 3600 / 60, total % 60)
+    }
+
     /** Numer seryjny Excela → data. 1900: dzień 1 = 1.01.1900, z fałszywym 29.02.1900. */
     private fun date(value: Double, code: String): String? {
         if (value < 0 || value > 2_958_465) return null
@@ -327,11 +336,6 @@ internal class ValueFormat(private val locale: Locale, private val date1904: Boo
         val hasTime = lower.contains('h') || lower.contains('s')
         val datePattern = if (polish) "dd.MM.yyyy" else "yyyy-MM-dd"
         val timePattern = if (lower.contains('s')) "HH:mm:ss" else "HH:mm"
-        // Czas trwania „[h]:mm” liczy godziny ponad dobę.
-        if (lower.startsWith("[h]")) {
-            val total = kotlin.math.round(value * 86_400).toLong()
-            return "%d:%02d:%02d".format(total / 3600, total % 3600 / 60, total % 60)
-        }
         val pattern = when {
             hasDate && hasTime -> "$datePattern $timePattern"
             hasTime -> timePattern

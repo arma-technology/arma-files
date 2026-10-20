@@ -38,9 +38,15 @@ class VideoThumbnails(private val context: Context, private val scope: Coroutine
     private val directory get() = File(context.cacheDir, DIRECTORY).apply { mkdirs() }
     private var prefetch: Job? = null
 
-    /** Serwery i archiwa mają własne schematy adresów, więc wystarczy file/content. */
+    /**
+     * Tylko pliki leżące w telefonie. content:// to nie zawsze telefon:
+     * folder Dropboxa czy Dysku Google podpięty przez SAF też daje content://,
+     * a dostawca na prośbę o klatkę ściąga cały film — przy wejściu do folderu
+     * byłyby to setki megabajtów. Serwery i archiwa mają własne schematy.
+     */
     fun supports(item: FileItem): Boolean =
-        !item.isDirectory && item.mimeType.startsWith("video/") && (item.uri.scheme == "file" || item.uri.scheme == "content")
+        !item.isDirectory && item.mimeType.startsWith("video/") &&
+            (item.uri.scheme == "file" || (item.uri.scheme == "content" && item.uri.authority in LOCAL_PROVIDERS))
 
     /** Z pamięci, z dysku albo zdekodowana; null, gdy film się nie da odczytać. */
     suspend fun load(item: FileItem): Bitmap? {
@@ -141,6 +147,13 @@ class VideoThumbnails(private val context: Context, private val scope: Coroutine
 
     companion object {
         const val DIRECTORY = "video_thumbs"
+        /** Dostawcy SAF, których pliki są w pamięci telefonu albo na karcie. */
+        private val LOCAL_PROVIDERS = setOf(
+            "com.android.externalstorage.documents",
+            "com.android.providers.downloads.documents",
+            "com.android.providers.media.documents",
+            MediaStore.AUTHORITY
+        )
         private const val SIDE = 512
         /** Folder z tysiącami filmów: dalsze miniatury powstaną przy przewijaniu. */
         private const val PREFETCH_LIMIT = 300

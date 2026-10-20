@@ -10,7 +10,31 @@ import java.io.File
  */
 object CsvReader {
 
-    fun readFile(file: File, name: String = file.name): Workbook = read(file.readBytes(), name)
+    /**
+     * Najwyżej [MAX_CSV_BYTES] z początku pliku — eksport z bazy potrafi mieć
+     * setki megabajtów, a cały tekst i tak trafia do pamięci jako komórki.
+     */
+    fun readFile(file: File, name: String = file.name): Workbook {
+        val bytes = file.inputStream().use { input ->
+            val buffer = ByteArray(minOf(file.length(), MAX_CSV_BYTES.toLong()).toInt())
+            var read = 0
+            while (read < buffer.size) {
+                val n = input.read(buffer, read, buffer.size - read)
+                if (n < 0) break
+                read += n
+            }
+            if (read < buffer.size) buffer.copyOf(read) else buffer
+        }
+        val book = read(cutAtLastLine(bytes, file.length() > bytes.size), name)
+        return if (file.length() > bytes.size) Workbook(book.sheets, (book.notes + "truncated").distinct()) else book
+    }
+
+    /** Ucięty plik kończymy na ostatniej pełnej linii — bez połówki wiersza i znaku UTF-8. */
+    private fun cutAtLastLine(bytes: ByteArray, truncated: Boolean): ByteArray {
+        if (!truncated) return bytes
+        val end = bytes.indexOfLast { it == '\n'.code.toByte() }
+        return if (end > 0) bytes.copyOf(end + 1) else bytes
+    }
 
     fun read(bytes: ByteArray, name: String): Workbook {
         val (text, _) = TextReader.decode(bytes)
@@ -93,6 +117,8 @@ object CsvReader {
     /** Liczba w zapisie polskim albo angielskim: „-1 234,50”, „1,234.5”, „12%”. */
     internal fun looksNumeric(value: String): Boolean =
         value.length < 30 && NUMBER.matches(value.trim())
+
+    private const val MAX_CSV_BYTES = 32 * 1024 * 1024
 
     private val NUMBER = Regex("""^[-+]?(\d{1,3}([  .,]\d{3})*|\d+)([.,]\d+)?\s?%?$""")
 }

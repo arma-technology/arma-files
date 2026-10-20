@@ -876,7 +876,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 .ifEmpty { listOf(item) }
             val clips = videos.map { pl.arma.viewer.video.VideoClip(it.uri, it.name, "${it.uri}|${it.size}") }
             pl.arma.viewer.video.FullscreenVideoPlayer(
-                clips = clips,
+                playlist = clips,
                 startIndex = videos.indexOfFirst { it.uri == item.uri }.coerceAtLeast(0),
                 onDismiss = { preview = null },
                 onCurrentChanged = { index -> videos.getOrNull(index)?.let(vm::addRecent) }

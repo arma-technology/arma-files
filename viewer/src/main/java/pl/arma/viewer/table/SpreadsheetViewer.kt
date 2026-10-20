@@ -122,6 +122,11 @@ private fun SheetGrid(sheet: Sheet, modifier: Modifier) {
     var scrollX by remember { mutableFloatStateOf(0f) }
     var selected by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val maxScroll = (lefts.last() - viewport).coerceAtLeast(0f)
+    // Po obrocie ekran jest szerszy: przewinięcie sprzed obrotu wyjechałoby
+    // za ostatnią kolumnę i zostawiło pusty pas.
+    LaunchedEffect(maxScroll, viewport) {
+        if (scrollX > maxScroll && viewport > 0) scrollX = maxScroll
+    }
     val horizontal = rememberScrollableState { delta ->
         val before = scrollX
         scrollX = (scrollX - delta).coerceIn(0f, maxScroll)

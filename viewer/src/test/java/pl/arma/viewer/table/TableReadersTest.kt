@@ -111,6 +111,28 @@ class TableReadersTest {
         assertEquals("65%", book.sheets[1].cell(2, 3)?.text)
     }
 
+    @Test
+    fun `czas trwania liczy godziny ponad dobe`() {
+        val format = ValueFormat(Locale.forLanguageTag("pl-PL"), date1904 = false)
+        // 1,5 doby w formacie [h]:mm:ss to 36 godzin, nie 12:00.
+        assertEquals("36:00:00", format.format(1.5, "[h]:mm:ss"))
+        assertEquals("12:00", format.format(1.5, "hh:mm"))
+        assertEquals("20.10.2026", format.format(46315.0, "dd.mm.yyyy"))
+    }
+
+    @Test
+    fun `duzy csv jest uciety na pelnej linii z uwaga`() {
+        val line = "x;" + "a".repeat(1000) + "\n"
+        val file = File.createTempFile("duzy", ".csv").apply { deleteOnExit() }
+        file.bufferedWriter().use { w -> repeat(40_000) { w.write(line) } }
+        val book = CsvReader.readFile(file)
+        assertTrue("truncated" in book.notes)
+        val sheet = book.sheets.single()
+        assertTrue(sheet.rowCount in 30_000 until 40_000)
+        // Ostatni wiersz jest cały, nie połówką.
+        assertEquals(1000, sheet.cell(sheet.rowCount - 1, 1)?.text?.length)
+    }
+
     private fun xlsx(vararg entries: Pair<String, String>): File {
         val file = File.createTempFile("test", ".xlsx")
         ZipOutputStream(file.outputStream()).use { zip ->
