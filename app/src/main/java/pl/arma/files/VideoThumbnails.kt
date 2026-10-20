@@ -46,7 +46,7 @@ class VideoThumbnails(private val context: Context, private val scope: Coroutine
      */
     fun supports(item: FileItem): Boolean =
         !item.isDirectory && item.mimeType.startsWith("video/") &&
-            (item.uri.scheme == "file" || (item.uri.scheme == "content" && item.uri.authority in LOCAL_PROVIDERS))
+            LocalFiles.isLocal(item.uri)
 
     /** Z pamięci, z dysku albo zdekodowana; null, gdy film się nie da odczytać. */
     suspend fun load(item: FileItem): Bitmap? {
@@ -147,13 +147,6 @@ class VideoThumbnails(private val context: Context, private val scope: Coroutine
 
     companion object {
         const val DIRECTORY = "video_thumbs"
-        /** Dostawcy SAF, których pliki są w pamięci telefonu albo na karcie. */
-        private val LOCAL_PROVIDERS = setOf(
-            "com.android.externalstorage.documents",
-            "com.android.providers.downloads.documents",
-            "com.android.providers.media.documents",
-            MediaStore.AUTHORITY
-        )
         private const val SIDE = 512
         /** Folder z tysiącami filmów: dalsze miniatury powstaną przy przewijaniu. */
         private const val PREFETCH_LIMIT = 300

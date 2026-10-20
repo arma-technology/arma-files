@@ -220,6 +220,16 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val _clipboard = MutableStateFlow<ClipboardPayload?>(null)
     val clipboard: StateFlow<ClipboardPayload?> = _clipboard.asStateFlow()
 
+    /**
+     * Szuflada: pliki zbierane z różnych folderów (i różnych źródeł), które
+     * potem wyciąga się jednym ruchem w folderze docelowym. W odróżnieniu od
+     * schowka nie zastępuje się przy każdym dodaniu i przeżywa zamknięcie
+     * aplikacji.
+     */
+    private val shelfStore = ShelfStore(app)
+    private val _shelf = MutableStateFlow(shelfStore.load())
+    val shelf: StateFlow<List<FileItem>> = _shelf.asStateFlow()
+
     private val _deviceStorages = MutableStateFlow<List<DeviceStorage>>(emptyList())
     val deviceStorages: StateFlow<List<DeviceStorage>> = _deviceStorages.asStateFlow()
 
@@ -1062,6 +1072,72 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearClipboard() { _clipboard.value = null }
+
+    fun addToShelf(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        val known = _shelf.value.map { it.uri.toString() }.toSet()
+        val added = items.filter { it.uri.toString() !in known }
+        _shelf.value = _shelf.value + added
+        shelfStore.save(_shelf.value)
+        _notice.value = text(R.string.shelf_added, added.size)
+    }
+
+    fun removeFromShelf(item: FileItem) {
+        _shelf.value = _shelf.value.filterNot { it.uri == item.uri }
+        shelfStore.save(_shelf.value)
+    }
+
+    fun clearShelf() {
+        _shelf.value = emptyList()
+        shelfStore.save(emptyList())
+    }
+
+    /** Czy bieżący folder przyjmie zawartość szuflady. */
+    fun canDropHere(): Boolean = _currentDir.value?.let { !ArchiveRepository.isArchive(it) } == true
+
+    /**
+     * Wyciąga szufladę do bieżącego folderu. Wpisy z archiwów zawsze się
+     * wypakowuje (źródła nie da się usunąć), resztę kopiuje albo przenosi.
+     */
+    fun dropShelf(move: Boolean) {
+        val items = _shelf.value
+        if (items.isEmpty()) return
+        val target = writableDir() ?: run { _error.value = text(R.string.shelf_no_target); return }
+        val (packed, plain) = items.partition { ArchiveRepository.isArchive(it.uri) }
+        if (packed.isNotEmpty()) enqueue(OperationKind.EXTRACT, packed, target)
+        if (plain.isNotEmpty()) enqueue(if (move) OperationKind.MOVE else OperationKind.COPY, plain, target)
+        clearShelf()
+    }
+
+    /**
+     * Zawartość folderu bez wchodzenia do niego — do żywych kart i szybkiego
+     * podglądu. Foldery najpierw, potem pliki od najnowszych.
+     */
+    suspend fun peekFolder(item: FileItem): List<FileItem> =
+        repo.listChildren(item.uri).sortedWith(compareBy<FileItem> { !it.isDirectory }.thenByDescending { it.lastModified })
+
+    /** Korzeń archiwum do zajrzenia bez otwierania; hasło → [ArchivePasswordException]. */
+    suspend fun peekArchive(item: FileItem): List<FileItem> = withContext(Dispatchers.IO) {
+        val root = repo.archives.rootOf(item.uri, item.name)
+        repo.archives.ensureReadable(root)
+        repo.listChildren(root).sortedWith(compareBy<FileItem> { !it.isDirectory }.thenBy { it.name.lowercase() })
+    }
+
+    suspend fun listArchiveFolder(uri: Uri): List<FileItem> =
+        repo.listChildren(uri).sortedWith(compareBy<FileItem> { !it.isDirectory }.thenBy { it.name.lowercase() })
+
+    /** Wyciąga pojedyncze wpisy z archiwum do folderu, w którym leży archiwum. */
+    fun extractFromArchive(entries: List<FileItem>) {
+        if (entries.isEmpty()) return
+        val target = writableDir() ?: return
+        enqueue(OperationKind.EXTRACT, entries, target)
+    }
+
+    /** Folder, do którego prowadzi „wstecz” — warstwa pod bieżącą w widoku głębi. */
+    fun backTarget(): Uri? = active().navStack.lastOrNull()
+
+    /** Ile poziomów „wstecz” ma bieżący folder — głębokość warstwy. */
+    fun navDepth(): Int = active().navStack.size
 
     fun paste() {
         val clip = _clipboard.value ?: return

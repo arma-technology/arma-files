@@ -52,6 +52,8 @@ android {
             // aplikacji, żeby je sprawdzić bez kasowania jej danych:
             // ./gradlew assembleRelease -PreleaseIdSuffix=.test
             local("releaseIdSuffix")?.let { applicationIdSuffix = it }
+            // Druga ikona na telefonie musi się różnić od pierwszej.
+            manifestPlaceholders["appLabel"] = local("releaseLabel") ?: "ARMA Files"
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -65,6 +67,7 @@ android {
             // Wersja robocza obok wydania na tym samym telefonie — inaczej
             // instalacja jednej nadpisywałaby drugą i gubiła jej dane.
             applicationIdSuffix = ".debug"
+            manifestPlaceholders["appLabel"] = "ARMA Files debug"
         }
     }
 
@@ -111,6 +114,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-svg:3.2.0")
+    // Odtwarzanie muzyki w szybkim podglądzie.
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
     implementation("commons-net:commons-net:3.13.0")
     // 2.1.10, bo 2.1.9 potrzebowal bcprov-jdk15on, a z nowszym bcprov-jdk18on
     // (od sshj) brakowalo mu DERApplicationSpecific i SMB nie laczyl sie wcale.

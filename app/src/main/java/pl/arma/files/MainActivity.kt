@@ -148,7 +148,16 @@ class MainActivity : ComponentActivity() {
         externalOpen.value = intent?.data?.let { it to System.nanoTime() }
         setContent {
             val open = externalOpen.value
-            ArmaFilesTheme { FileManagerApp(vm, open?.first, open?.second) }
+            ArmaFilesTheme {
+                // Orbita działań rysuje się nad całym oknem, gest zaczyna się w liście.
+                val orbit = remember { OrbitController() }
+                androidx.compose.runtime.CompositionLocalProvider(LocalOrbit provides orbit) {
+                    Box(Modifier.fillMaxSize()) {
+                        FileManagerApp(vm, open?.first, open?.second)
+                        OrbitOverlay(orbit)
+                    }
+                }
+            }
         }
     }
 
@@ -231,6 +240,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var category by remember { mutableStateOf(FileCategory.ALL) }
     var selectedUris by remember { mutableStateOf<Set<String>>(emptySet()) }
     var preview by remember { mutableStateOf<FileItem?>(null) }
+    // Szybki podgląd po przytrzymaniu i puszczeniu pliku.
+    var peekItem by remember { mutableStateOf<FileItem?>(null) }
+    val orbit = LocalOrbit.current
+    val shelfItems by vm.shelf.collectAsStateWithLifecycle()
     var details by remember { mutableStateOf<FileItem?>(null) }
     var createDialog by remember { mutableStateOf<String?>(null) }
     var renameItem by remember { mutableStateOf<FileItem?>(null) }
@@ -382,6 +395,24 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         baseFiles.filter { it.uri.toString() in selectedUris }
     }
     val selectionMode = selectedUris.isNotEmpty()
+
+    // Wynik gestu orbity: puszczenie bez ruchu = szybki podgląd, ruch = akcja z koła.
+    val onOrbit: (OrbitResult) -> Unit = { result ->
+        when (result) {
+            is OrbitResult.Peek -> peekItem = result.item
+            is OrbitResult.Action -> {
+                val item = result.item
+                when (result.action) {
+                    OrbitAction.SHARE -> appScope.launch { shareItems(context, listOf(item), vm) }
+                    OrbitAction.SHELF -> vm.addToShelf(listOf(item))
+                    OrbitAction.RENAME -> renameItem = item
+                    OrbitAction.DELETE -> deleteItems = listOf(item)
+                    OrbitAction.SELECT -> selectedUris = toggleSelection(selectedUris, item)
+                    OrbitAction.DETAILS -> details = item
+                }
+            }
+        }
+    }
     val computerHome = tab == Tab.FILES && currentDir == null
 
     BackHandler(
@@ -476,6 +507,17 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     onCancel = vm::cancelOperation,
                     onOpenQueue = { showQueue = true }
                 )
+                // Szuflada nad nawigacją, gdy coś w niej leży.
+                AnimatedVisibility(shelfItems.isNotEmpty() && !selectionMode) {
+                    ShelfBar(
+                        items = shelfItems,
+                        vm = vm,
+                        canDrop = tab == Tab.FILES && currentDir != null && !inArchive,
+                        onDrop = vm::dropShelf,
+                        onRemove = vm::removeFromShelf,
+                        onClear = vm::clearShelf
+                    )
+                }
                 if (!selectionMode) {
                     NavigationBar(tonalElevation = 0.dp) {
                     NavItem(Tab.FILES, tab, Icons.Default.Computer, stringResource(R.string.nav_home)) {
@@ -735,11 +777,26 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         // z podfolderu albo archiwum lista stoi tam, gdzie ją zostawiono.
                         // Stan żyje poza samą listą, bo ta znika na czas wczytywania.
                         val paneId = tabs.firstOrNull { it.active }?.id.orEmpty()
-                        val savedScroll = remember(paneId, currentDir) { vm.scrollPosition(paneId, currentDir) }
-                        val listState = remember(paneId, currentDir) { LazyListState(savedScroll.first, savedScroll.second) }
-                        val gridState = remember(paneId, currentDir) { LazyGridState(savedScroll.first, savedScroll.second) }
-                        // Wartości z chwili kompozycji — w onDispose currentDir byłby już nowym folderem.
-                        val shownDir = currentDir
+                        // Ostatnio widziane pliki każdego folderu — warstwa pod bieżącym arkuszem.
+                        val layerCache = remember { androidx.compose.runtime.mutableStateMapOf<String, List<FileItem>>() }
+                        LaunchedEffect(currentDir, visibleFiles) { layerCache[currentDir.toString()] = visibleFiles }
+                        val depthLayer = remember(currentDir, visibleFiles, tab) {
+                            DepthLayer(currentDir, visibleFiles, if (tab == Tab.FILES) vm.navDepth() else 0, vm.backTarget())
+                        }
+                        DepthStack(
+                            layer = depthLayer,
+                            behind = { parent -> parent?.let { layerCache[it.toString()] } },
+                            vm = vm,
+                            onBack = { vm.goBack() },
+                            modifier = fileAreaModifier
+                        ) { layer ->
+                        val layerDir = layer.dir
+                        val layerFiles = layer.files
+                        val savedScroll = remember(paneId, layerDir) { vm.scrollPosition(paneId, layerDir) }
+                        val listState = remember(paneId, layerDir) { LazyListState(savedScroll.first, savedScroll.second) }
+                        val gridState = remember(paneId, layerDir) { LazyGridState(savedScroll.first, savedScroll.second) }
+                        // Wartości z chwili kompozycji — w onDispose folder byłby już nowym folderem.
+                        val shownDir = layerDir
                         val shownMode = viewMode
                         DisposableEffect(paneId, shownDir, shownMode) {
                             onDispose {
@@ -749,12 +806,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             }
                         }
 
-                        Box(fileAreaModifier) {
-                            if (visibleFiles.isEmpty()) {
+                        Box(Modifier.fillMaxSize()) {
+                            if (layerFiles.isEmpty()) {
                                 EmptyFolder(filtered = query.isNotBlank() || category != FileCategory.ALL, tab = tab)
                             } else if (viewMode == ViewMode.LIST) {
                                 LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp)) {
-                                    items(visibleFiles, key = { it.uri.toString() }) { item ->
+                                    items(layerFiles, key = { it.uri.toString() }) { item ->
                                         FileRow(
                                             item = item,
                                             vm = vm,
@@ -763,7 +820,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
                                             onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
-                                            onMenu = { selectedUris = setOf(item.uri.toString()) }
+                                            onMenu = { selectedUris = setOf(item.uri.toString()) },
+                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
                                         )
                                     }
                                 }
@@ -775,7 +833,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
                                     contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = 88.dp)
                                 ) {
-                                    gridItems(visibleFiles, key = { it.uri.toString() }) { item ->
+                                    gridItems(layerFiles, key = { it.uri.toString() }) { item ->
                                         FileTile(
                                             item = item,
                                             vm = vm,
@@ -783,11 +841,13 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             selected = item.uri.toString() in selectedUris,
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
-                                            onLongClick = { selectedUris = toggleSelection(selectedUris, item) }
+                                            onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
+                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
                                         )
                                     }
                                 }
                             }
+                        }
                         }
                     }
                 }
@@ -834,6 +894,25 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             )
         }
         }
+    }
+
+    peekItem?.let { item ->
+        QuickPeek(
+            item = item,
+            vm = vm,
+            actions = PeekActions(
+                open = { target ->
+                    peekItem = null
+                    openItem(vm, target, onOpenFile = { preview = it }, onInstallApk = { apkToInstall = it })
+                    if (target.isDirectory || ArchiveFormats.canBrowse(target.name)) { tab = Tab.FILES; query = ""; category = FileCategory.ALL }
+                },
+                share = { target -> appScope.launch { shareItems(context, listOf(target), vm) } },
+                shelf = { target -> vm.addToShelf(listOf(target)) },
+                rename = { target -> renameItem = target },
+                delete = { target -> deleteItems = listOf(target) }
+            ),
+            onDismiss = { peekItem = null }
+        )
     }
 
     preview?.let { item ->
@@ -1941,7 +2020,8 @@ private fun FileRow(
     selectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    interaction: Modifier? = null
 ) {
     // Płaski wiersz bez karty: obramowanie każdego pliku zabierało miejsce
     // i męczyło wzrok, a podział niosą teraz kolorowe ikony typów.
@@ -1949,7 +2029,7 @@ private fun FileRow(
         Modifier
             .fillMaxWidth()
             .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1998,13 +2078,14 @@ private fun FileTile(
     selected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    interaction: Modifier? = null
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(14.dp),
         border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .5f)) else null,
-        modifier = Modifier.aspectRatio(.9f).combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        modifier = Modifier.aspectRatio(.9f).then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
     ) {
         Column(Modifier.padding(6.dp)) {
             Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -2044,7 +2125,7 @@ private fun FileTile(
 }
 
 @Composable
-private fun FileVisual(
+internal fun FileVisual(
     item: FileItem,
     modifier: Modifier,
     thumbnail: Boolean,
@@ -2054,6 +2135,18 @@ private fun FileVisual(
     crop: Boolean = false
 ) {
     val tint = fileTint(item)
+    // Żywe karty folderów i miniatury mówiące więcej niż ikona — tylko dla
+    // plików w telefonie; zdalne i z chmury SAF zostają przy ikonie.
+    if (thumbnail && vm != null && LocalFiles.isLocal(item.uri)) {
+        val ext = item.name.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        val icon: @Composable () -> Unit = { FileIconTile(item, Modifier.fillMaxSize()) }
+        when {
+            item.isDirectory -> { FolderLiveCard(item, vm, modifier, compact = crop); return }
+            isPdf(item) && item.size in 1..PDF_THUMB_LIMIT -> { PdfPageThumb(item, modifier, icon); return }
+            item.mimeType.startsWith("audio/") -> { AudioArtThumb(item, modifier, icon); return }
+            !crop && ext in Syntax.CODE_EXTENSIONS && item.size in 1..CODE_THUMB_LIMIT -> { CodeThumb(item, modifier); return }
+        }
+    }
     val rasterImage = thumbnail && item.mimeType.startsWith("image/") && !item.name.endsWith(".svg", true) && !item.mimeType.contains("svg")
     val svgImage = thumbnail && item.mimeType.startsWith("image/") && (item.name.endsWith(".svg", true) || item.mimeType.contains("svg"))
     val videoThumbnails = LocalContext.current.armaApp.videoThumbnails
@@ -2147,14 +2240,24 @@ private fun FileVisual(
                 Icon(Icons.Default.Folder, null, Modifier.fillMaxSize(.9f), tint = tint)
             }
         } else {
-            Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = tint.copy(alpha = .16f)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(fileIcon(item), null, Modifier.fillMaxSize(.55f), tint = tint)
-                }
-            }
+            FileIconTile(item, modifier)
         }
     }
 }
+
+/** Zwykła ikona typu pliku na kolorowym tle. */
+@Composable
+private fun FileIconTile(item: FileItem, modifier: Modifier) {
+    val tint = fileTint(item)
+    Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = tint.copy(alpha = .16f)) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(fileIcon(item), null, Modifier.fillMaxSize(.55f), tint = tint)
+        }
+    }
+}
+
+private const val PDF_THUMB_LIMIT = 60L * 1024 * 1024
+private const val CODE_THUMB_LIMIT = 5L * 1024 * 1024
 
 @Composable
 private fun fileTint(item: FileItem): Color {
@@ -2176,7 +2279,7 @@ private fun fileTint(item: FileItem): Color {
     }
 }
 
-private fun fileIcon(item: FileItem): ImageVector {
+internal fun fileIcon(item: FileItem): ImageVector {
     val ext = item.name.substringAfterLast('.', "").lowercase(Locale.ROOT)
     return when {
         item.isDirectory -> Icons.Default.Folder
@@ -2828,7 +2931,7 @@ private fun folderLabel(uri: Uri?): String {
     }.getOrDefault(uri.lastPathSegment ?: text(R.string.folder_label_folder))
 }
 
-private fun meta(item: FileItem): String {
+internal fun meta(item: FileItem): String {
     val date = formatDate(item.lastModified)
     return if (item.isDirectory) {
         date.ifBlank { text(R.string.detail_folder) }
