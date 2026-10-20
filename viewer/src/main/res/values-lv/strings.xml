@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Bez vienības: milimetri</string>
     <string name="viewer_cancel">Atcelt</string>
     <string name="viewer_clear_measurements">Dzēst visus mērījumus</string>
+    <string name="viewer_video_error">Video nevar atskaņot (%1$s)</string>
     <string name="viewer_close">Aizvērt</string>
     <string name="viewer_close_panel">Aizvērt paneli</string>
     <string name="viewer_close_search">Aizvērt meklēšanu</string>

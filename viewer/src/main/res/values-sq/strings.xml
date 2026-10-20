@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Pa njësi: milimetra</string>
     <string name="viewer_cancel">Anulo</string>
     <string name="viewer_clear_measurements">Fshi të gjitha matjet</string>
+    <string name="viewer_video_error">Videoja nuk mund të luhet (%1$s)</string>
     <string name="viewer_close">Mbyll</string>
     <string name="viewer_close_panel">Mbyll panelin</string>
     <string name="viewer_close_search">Mbyll kërkimin</string>

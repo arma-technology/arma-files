@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Bez jednotky: milimetre</string>
     <string name="viewer_cancel">Zrušiť</string>
     <string name="viewer_clear_measurements">Odstrániť všetky merania</string>
+    <string name="viewer_video_error">Video sa nedá prehrať (%1$s)</string>
     <string name="viewer_close">Zavrieť</string>
     <string name="viewer_close_panel">Zavrieť panel</string>
     <string name="viewer_close_search">Zavrieť vyhľadávanie</string>

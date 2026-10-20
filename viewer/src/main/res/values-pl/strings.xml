@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Bez jednostki: milimetry</string>
     <string name="viewer_cancel">Anuluj</string>
     <string name="viewer_clear_measurements">Usuń wszystkie pomiary</string>
+    <string name="viewer_video_error">Nie można odtworzyć filmu (%1$s)</string>
     <string name="viewer_close">Zamknij</string>
     <string name="viewer_close_panel">Zamknij panel</string>
     <string name="viewer_close_search">Zamknij wyszukiwanie</string>

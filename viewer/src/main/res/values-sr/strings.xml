@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Без јединице: милиметри</string>
     <string name="viewer_cancel">Откажи</string>
     <string name="viewer_clear_measurements">Избриши сва мерења</string>
+    <string name="viewer_video_error">Видео не може да се репродукује (%1$s)</string>
     <string name="viewer_close">Затвори</string>
     <string name="viewer_close_panel">Затвори панел</string>
     <string name="viewer_close_search">Затвори претрагу</string>

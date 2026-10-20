@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Be vieneto: milimetrai</string>
     <string name="viewer_cancel">Atšaukti</string>
     <string name="viewer_clear_measurements">Ištrinti visus matavimus</string>
+    <string name="viewer_video_error">Vaizdo įrašo paleisti nepavyko (%1$s)</string>
     <string name="viewer_close">Uždaryti</string>
     <string name="viewer_close_panel">Uždaryti skydelį</string>
     <string name="viewer_close_search">Uždaryti paiešką</string>

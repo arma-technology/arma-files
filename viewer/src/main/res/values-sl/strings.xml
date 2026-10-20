@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Brez enote: milimetri</string>
     <string name="viewer_cancel">Prekliči</string>
     <string name="viewer_clear_measurements">Izbriši vse meritve</string>
+    <string name="viewer_video_error">Videoposnetka ni mogoče predvajati (%1$s)</string>
     <string name="viewer_close">Zapri</string>
     <string name="viewer_close_panel">Zapri ploščo</string>
     <string name="viewer_close_search">Zapri iskanje</string>

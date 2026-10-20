@@ -869,6 +869,20 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             )
             return@let
         }
+        // Film z telefonu: od razu odtwarzacz na całym ekranie, a pozostałe filmy
+        // z widocznej listy są kolejką. Filmy z serwerów — na razie jak dotąd.
+        if (item.mimeType.startsWith("video/") && (item.uri.scheme == "file" || item.uri.scheme == "content")) {
+            val videos = visibleFiles.filter { it.mimeType.startsWith("video/") && (it.uri.scheme == "file" || it.uri.scheme == "content") }
+                .ifEmpty { listOf(item) }
+            val clips = videos.map { pl.arma.viewer.video.VideoClip(it.uri, it.name, "${it.uri}|${it.size}") }
+            pl.arma.viewer.video.FullscreenVideoPlayer(
+                clips = clips,
+                startIndex = videos.indexOfFirst { it.uri == item.uri }.coerceAtLeast(0),
+                onDismiss = { preview = null },
+                onCurrentChanged = { index -> videos.getOrNull(index)?.let(vm::addRecent) }
+            )
+            return@let
+        }
         // Obraz w poziomie też od razu na całym ekranie, narzędzia na nim.
         if (landscape && item.mimeType.startsWith("image/")) {
             val images = visibleFiles.filter { it.mimeType.startsWith("image/") }

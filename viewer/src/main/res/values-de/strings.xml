@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Ohne Einheit: Millimeter</string>
     <string name="viewer_cancel">Abbrechen</string>
     <string name="viewer_clear_measurements">Alle Messungen löschen</string>
+    <string name="viewer_video_error">Video kann nicht abgespielt werden (%1$s)</string>
     <string name="viewer_close">Schließen</string>
     <string name="viewer_close_panel">Bereich schließen</string>
     <string name="viewer_close_search">Suche schließen</string>

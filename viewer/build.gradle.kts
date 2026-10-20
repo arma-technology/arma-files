@@ -49,6 +49,9 @@ dependencies {
     // Obrazy SVG w przeglądarce obrazów.
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("io.coil-kt.coil3:coil-svg:3.2.0")
+    // Odtwarzacz filmów (ExoPlayer) z gotowym paskiem przycisków.
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
+    implementation("androidx.media3:media3-ui:1.11.1")
     // Geometria do przyciągania, komentarze, warstwy i skala z PDF. Sam obraz
     // strony rysuje systemowy PdfRenderer — jest szybszy i ostrzejszy.
     // BouncyCastle z PdfBox (jdk15to18) dubluje klasy z jdk18on, którego

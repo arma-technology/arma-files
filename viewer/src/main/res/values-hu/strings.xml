@@ -41,6 +41,7 @@
     <string name="viewer_calibration_unit">Mértékegység nélkül: milliméter</string>
     <string name="viewer_cancel">Mégse</string>
     <string name="viewer_clear_measurements">Összes mérés törlése</string>
+    <string name="viewer_video_error">A videó nem játszható le (%1$s)</string>
     <string name="viewer_close">Bezárás</string>
     <string name="viewer_close_panel">Panel bezárása</string>
     <string name="viewer_close_search">Keresés bezárása</string>
