@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Przejdź do pierwszego trafienia</string>
     <string name="viewer_text_outline">Spis treści</string>
     <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_table_truncated">Arkusz jest bardzo duży — pokazano tylko jego początek.</string>
     <string name="viewer_text_read_failed">Nie udało się odczytać pliku.</string>
     <string name="viewer_text_search">Szukaj w pliku</string>
     <string name="viewer_text_shows_beginning"> · pokazano początek</string>

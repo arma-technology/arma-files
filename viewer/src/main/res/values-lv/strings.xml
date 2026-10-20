@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Uz pirmo atbilstību</string>
     <string name="viewer_text_outline">Saturs</string>
     <string name="viewer_text_plain">TEKSTS</string>
+    <string name="viewer_table_truncated">Lapa ir ļoti liela — parādīts tikai tās sākums.</string>
     <string name="viewer_text_read_failed">Neizdevās nolasīt failu.</string>
     <string name="viewer_text_search">Meklēt failā</string>
     <string name="viewer_text_shows_beginning"> · rādīts sākums</string>

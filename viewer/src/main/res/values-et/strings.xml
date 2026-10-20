@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Mine esimese vasteni</string>
     <string name="viewer_text_outline">Sisukord</string>
     <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_table_truncated">Leht on väga suur — näidatakse ainult selle algust.</string>
     <string name="viewer_text_read_failed">Faili ei õnnestunud lugeda.</string>
     <string name="viewer_text_search">Otsi failist</string>
     <string name="viewer_text_shows_beginning"> · kuvatud on algus</string>

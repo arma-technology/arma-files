@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Přejít na první výskyt</string>
     <string name="viewer_text_outline">Obsah</string>
     <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_table_truncated">List je velmi velký — zobrazen je jen jeho začátek.</string>
     <string name="viewer_text_read_failed">Soubor se nepodařilo přečíst.</string>
     <string name="viewer_text_search">Hledat v souboru</string>
     <string name="viewer_text_shows_beginning"> · zobrazen začátek</string>

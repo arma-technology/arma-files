@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Да першага супадзення</string>
     <string name="viewer_text_outline">Змест</string>
     <string name="viewer_text_plain">ТЭКСТ</string>
+    <string name="viewer_table_truncated">Аркуш вельмі вялікі — паказаны толькі яго пачатак.</string>
     <string name="viewer_text_read_failed">Не ўдалося прачытаць файл.</string>
     <string name="viewer_text_search">Пошук у файле</string>
     <string name="viewer_text_shows_beginning"> · паказаны пачатак</string>

@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Go to first match</string>
     <string name="viewer_text_outline">Contents</string>
     <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_table_truncated">The sheet is very large — only its beginning is shown.</string>
     <string name="viewer_text_read_failed">Could not read the file.</string>
     <string name="viewer_text_search">Search in file</string>
     <string name="viewer_text_shows_beginning"> · beginning shown</string>

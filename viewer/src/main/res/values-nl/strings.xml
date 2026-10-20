@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Naar eerste treffer</string>
     <string name="viewer_text_outline">Inhoud</string>
     <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_table_truncated">Het blad is erg groot — alleen het begin wordt getoond.</string>
     <string name="viewer_text_read_failed">Het bestand kon niet worden gelezen.</string>
     <string name="viewer_text_search">Zoeken in bestand</string>
     <string name="viewer_text_shows_beginning"> · begin wordt getoond</string>

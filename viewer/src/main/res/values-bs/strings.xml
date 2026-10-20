@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Idi na prvi rezultat</string>
     <string name="viewer_text_outline">Sadržaj</string>
     <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_table_truncated">List je vrlo velik — prikazan je samo njegov početak.</string>
     <string name="viewer_text_read_failed">Datoteka se nije mogla pročitati.</string>
     <string name="viewer_text_search">Pretraži datoteku</string>
     <string name="viewer_text_shows_beginning"> · prikazan je početak</string>

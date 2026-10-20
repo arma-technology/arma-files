@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Ugrás az első találatra</string>
     <string name="viewer_text_outline">Tartalom</string>
     <string name="viewer_text_plain">SZÖVEG</string>
+    <string name="viewer_table_truncated">A munkalap nagyon nagy — csak az eleje látható.</string>
     <string name="viewer_text_read_failed">Nem sikerült beolvasni a fájlt.</string>
     <string name="viewer_text_search">Keresés a fájlban</string>
     <string name="viewer_text_shows_beginning"> · az eleje látható</string>

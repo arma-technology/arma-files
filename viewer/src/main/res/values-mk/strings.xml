@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Оди на првиот резултат</string>
     <string name="viewer_text_outline">Содржина</string>
     <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_table_truncated">Листот е многу голем — прикажан е само неговиот почеток.</string>
     <string name="viewer_text_read_failed">Датотеката не можеше да се прочита.</string>
     <string name="viewer_text_search">Пребарај во датотеката</string>
     <string name="viewer_text_shows_beginning"> · прикажан е почетокот</string>

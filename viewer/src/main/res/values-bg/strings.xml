@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Към първото съвпадение</string>
     <string name="viewer_text_outline">Съдържание</string>
     <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_table_truncated">Листът е много голям — показано е само началото му.</string>
     <string name="viewer_text_read_failed">Файлът не можа да се прочете.</string>
     <string name="viewer_text_search">Търсене във файла</string>
     <string name="viewer_text_shows_beginning"> · показано е началото</string>

@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Shko te përputhja e parë</string>
     <string name="viewer_text_outline">Përmbajtja</string>
     <string name="viewer_text_plain">TEKST</string>
+    <string name="viewer_table_truncated">Fleta është shumë e madhe — shfaqet vetëm fillimi i saj.</string>
     <string name="viewer_text_read_failed">Skedari nuk u lexua dot.</string>
     <string name="viewer_text_search">Kërko në skedar</string>
     <string name="viewer_text_shows_beginning"> · shfaqet fillimi</string>

@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Mergi la prima potrivire</string>
     <string name="viewer_text_outline">Cuprins</string>
     <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_table_truncated">Foaia este foarte mare — se afișează doar începutul ei.</string>
     <string name="viewer_text_read_failed">Fișierul nu a putut fi citit.</string>
     <string name="viewer_text_search">Caută în fișier</string>
     <string name="viewer_text_shows_beginning"> · se afișează începutul</string>

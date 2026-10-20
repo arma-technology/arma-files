@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Zum ersten Treffer</string>
     <string name="viewer_text_outline">Inhalt</string>
     <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_table_truncated">Das Blatt ist sehr groß — nur der Anfang wird angezeigt.</string>
     <string name="viewer_text_read_failed">Die Datei konnte nicht gelesen werden.</string>
     <string name="viewer_text_search">In Datei suchen</string>
     <string name="viewer_text_shows_beginning"> · Anfang wird angezeigt</string>

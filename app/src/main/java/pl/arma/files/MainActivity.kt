@@ -2360,6 +2360,16 @@ private fun PreviewSheet(
                         )
                     }
                 }
+                // Arkusz (xlsx, CSV) jako tabela. CSV wciąż da się edytować jako tekst
+                // przez „Otwórz w innej aplikacji” — tu tylko do oglądania.
+                pl.arma.viewer.table.Spreadsheets.canOpen(item.name) -> {
+                    pl.arma.viewer.table.SpreadsheetViewer(
+                        name = item.name,
+                        key = item.uri to item.lastModified,
+                        load = { pl.arma.viewer.table.Spreadsheets.read(vm.prepareDocument(item), item.name) },
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    )
+                }
                 isText(item) -> {
                     if (editing) {
                         OutlinedTextField(

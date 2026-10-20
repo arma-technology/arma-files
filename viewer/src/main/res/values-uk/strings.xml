@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">До першого збігу</string>
     <string name="viewer_text_outline">Зміст</string>
     <string name="viewer_text_plain">ТЕКСТ</string>
+    <string name="viewer_table_truncated">Аркуш дуже великий — показано лише його початок.</string>
     <string name="viewer_text_read_failed">Не вдалося прочитати файл.</string>
     <string name="viewer_text_search">Пошук у файлі</string>
     <string name="viewer_text_shows_beginning"> · показано початок</string>

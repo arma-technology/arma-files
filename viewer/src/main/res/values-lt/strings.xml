@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Eiti į pirmą atitikmenį</string>
     <string name="viewer_text_outline">Turinys</string>
     <string name="viewer_text_plain">TEKSTAS</string>
+    <string name="viewer_table_truncated">Lapas labai didelis — rodoma tik jo pradžia.</string>
     <string name="viewer_text_read_failed">Nepavyko perskaityti failo.</string>
     <string name="viewer_text_search">Ieškoti faile</string>
     <string name="viewer_text_shows_beginning"> · rodoma pradžia</string>

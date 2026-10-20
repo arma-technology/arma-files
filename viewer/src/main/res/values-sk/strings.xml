@@ -135,6 +135,7 @@
     <string name="viewer_text_first_match">Prejsť na prvý výskyt</string>
     <string name="viewer_text_outline">Obsah</string>
     <string name="viewer_text_plain">TEXT</string>
+    <string name="viewer_table_truncated">Hárok je veľmi veľký — zobrazený je len jeho začiatok.</string>
     <string name="viewer_text_read_failed">Súbor sa nepodarilo prečítať.</string>
     <string name="viewer_text_search">Hľadať v súbore</string>
     <string name="viewer_text_shows_beginning"> · zobrazený začiatok</string>
