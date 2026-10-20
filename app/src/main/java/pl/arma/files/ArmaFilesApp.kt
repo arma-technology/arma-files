@@ -43,6 +43,7 @@ class ArmaFilesApp : Application() {
     val indexer: Indexer by lazy { Indexer(index, scope) }
 
     val cacheJanitor: CacheJanitor by lazy { CacheJanitor(this, scope) }
+    val videoThumbnails: VideoThumbnails by lazy { VideoThumbnails(this, scope) }
 
     val indexAutomation: IndexAutomation by lazy { IndexAutomation(this, indexer, scope) }
 

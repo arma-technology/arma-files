@@ -20,7 +20,7 @@ class CacheJanitor(private val context: Context, private val scope: CoroutineSco
 
     companion object {
         /** Katalogi w `cacheDir`, którymi zarządzamy. */
-        val DIRECTORIES = listOf("dwg_dxf", "doc_preview", "image_preview", "remote_files", "archives", "archive_out", "pdf_work")
+        val DIRECTORIES = listOf("dwg_dxf", "doc_preview", "image_preview", "remote_files", "archives", "archive_out", "pdf_work", VideoThumbnails.DIRECTORY)
 
         val SIZE_OPTIONS_MB = listOf(100, 250, 500, 1000, 2000)
         val AGE_OPTIONS_DAYS = listOf(1, 3, 7, 14, 30)

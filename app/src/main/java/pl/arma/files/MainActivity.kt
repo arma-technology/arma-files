@@ -373,6 +373,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             .toList()
     }
 
+    // Miniatury filmów w kolejności wyświetlania, zanim kafelki o nie poproszą.
+    LaunchedEffect(visibleFiles) {
+        context.armaApp.videoThumbnails.prefetch(visibleFiles)
+    }
+
     val selectedItems = remember(baseFiles, selectedUris) {
         baseFiles.filter { it.uri.toString() in selectedUris }
     }
@@ -1993,6 +1998,8 @@ private fun FileVisual(
     val tint = fileTint(item)
     val rasterImage = thumbnail && item.mimeType.startsWith("image/") && !item.name.endsWith(".svg", true) && !item.mimeType.contains("svg")
     val svgImage = thumbnail && item.mimeType.startsWith("image/") && (item.name.endsWith(".svg", true) || item.mimeType.contains("svg"))
+    val videoThumbnails = LocalContext.current.armaApp.videoThumbnails
+    val video = thumbnail && vm != null && videoThumbnails.supports(item)
 
     if (rasterImage && vm != null) {
         var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
@@ -2030,6 +2037,35 @@ private fun FileVisual(
                 }
                 if (bitmap == null && !failed) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 if (failed) Icon(Icons.Default.Image, null, Modifier.fillMaxSize(.5f), tint = tint)
+            }
+        }
+    } else if (video) {
+        val key = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+        var bitmap by remember(item.uri, item.lastModified) { mutableStateOf(ThumbnailCache.get(key)) }
+        var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
+        LaunchedEffect(item.uri, item.lastModified) {
+            if (bitmap != null) return@LaunchedEffect
+            bitmap = videoThumbnails.load(item)
+            failed = bitmap == null
+        }
+        Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = if (bitmap == null) tint.copy(alpha = .16f) else MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                val shown = bitmap
+                if (shown != null) {
+                    Image(
+                        bitmap = shown.asImageBitmap(),
+                        contentDescription = item.name,
+                        modifier = if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp),
+                        contentScale = if (crop) ContentScale.Crop else ContentScale.Fit
+                    )
+                    // Znak odtwarzania odróżnia film od zdjęcia.
+                    Surface(shape = CircleShape, color = Color.Black.copy(alpha = .45f), modifier = Modifier.fillMaxSize(.42f).widthIn(max = 36.dp).aspectRatio(1f)) {
+                        Icon(Icons.Default.PlayArrow, null, Modifier.padding(2.dp), tint = Color.White)
+                    }
+                } else {
+                    // Do czasu zdekodowania (albo gdy się nie da) — zwykła ikona filmu.
+                    Icon(Icons.Default.Movie, null, Modifier.fillMaxSize(.55f), tint = tint)
+                }
             }
         }
     } else if (svgImage && vm != null) {
