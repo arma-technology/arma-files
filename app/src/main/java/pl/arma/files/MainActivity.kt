@@ -470,6 +470,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     onClose = { selectedUris = emptySet() },
                     onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
                     onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
+                    onShelf = { vm.addToShelf(selectedItems); selectedUris = emptySet() },
                     onCopy = {
                         vm.setClipboard(selectedItems, cut = false)
                         selectedUris = emptySet(); tab = Tab.FILES
@@ -2330,6 +2331,7 @@ private fun MultiSelectionTopBar(
     onClose: () -> Unit,
     onSelectAll: () -> Unit,
     onFavorite: () -> Unit,
+    onShelf: () -> Unit,
     onCopy: () -> Unit,
     onCut: () -> Unit,
     onArchive: () -> Unit,
@@ -2348,6 +2350,8 @@ private fun MultiSelectionTopBar(
         navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close_app)) } },
         actions = {
             IconButton(onClick = onFavorite) { Icon(Icons.Default.StarBorder, stringResource(R.string.nav_favorites)) }
+            // Szuflada zbiera zaznaczenie z wielu folderów — w odróżnieniu od kopiowania.
+            IconButton(onClick = onShelf) { Icon(Icons.Default.Inbox, stringResource(R.string.shelf_add)) }
             IconButton(onClick = onCopy) { Icon(Icons.Default.ContentCopy, stringResource(R.string.common_copy)) }
             if (!readOnly) IconButton(onClick = onCut) { Icon(Icons.Default.ContentCut, stringResource(R.string.common_cut)) }
             Box {
