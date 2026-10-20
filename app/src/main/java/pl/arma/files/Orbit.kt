@@ -5,6 +5,13 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.material3.ripple
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -180,11 +187,21 @@ fun Modifier.orbitGestures(
 ): Modifier = composed {
     val haptics = LocalHapticFeedback.current
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    // Podświetlenie pod palcem jak przy zwykłym kliknięciu.
+    val interactions = remember { MutableInteractionSource() }
     this
         .onGloballyPositioned { coordinates = it }
+        .indication(interactions, ripple())
+        // Czytnik ekranu nie wykona gestu — dostaje te same akcje wprost.
+        .semantics {
+            onClick { onClick(); true }
+            onLongClick { if (selectionMode) onLongClick() else onResult(OrbitResult.Peek(item)); true }
+        }
         .pointerInput(item.uri, selectionMode) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
+                val press = PressInteraction.Press(down.position)
+                interactions.tryEmit(press)
                 // null = palec wciąż trzyma po czasie przytrzymania.
                 val outcome = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                     var result = 0
@@ -200,6 +217,7 @@ fun Modifier.orbitGestures(
                     }
                     result
                 }
+                interactions.tryEmit(if (outcome == TAP_CANCEL) PressInteraction.Cancel(press) else PressInteraction.Release(press))
                 when (outcome) {
                     TAP -> onClick()
                     TAP_CANCEL -> Unit

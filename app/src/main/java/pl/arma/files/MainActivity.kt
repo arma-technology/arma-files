@@ -778,7 +778,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         // Stan żyje poza samą listą, bo ta znika na czas wczytywania.
                         val paneId = tabs.firstOrNull { it.active }?.id.orEmpty()
                         // Ostatnio widziane pliki każdego folderu — warstwa pod bieżącym arkuszem.
-                        val layerCache = remember { androidx.compose.runtime.mutableStateMapOf<String, List<FileItem>>() }
+                        val layerCache = remember {
+                            // Najwyżej 20 ostatnich folderów — duże foldery to tysiące wpisów.
+                            object : LinkedHashMap<String, List<FileItem>>(16, .75f, true) {
+                                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<FileItem>>) = size > 20
+                            }
+                        }
                         LaunchedEffect(currentDir, visibleFiles) { layerCache[currentDir.toString()] = visibleFiles }
                         val depthLayer = remember(currentDir, visibleFiles, tab) {
                             DepthLayer(currentDir, visibleFiles, if (tab == Tab.FILES) vm.navDepth() else 0, vm.backTarget())
