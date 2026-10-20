@@ -127,15 +127,15 @@ fun ImageViewer(
             shape = RoundedCornerShape(22.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            // W podglądzie arkuszowym obraz jest kotwiczony do górnej krawędzi.
-            // Dzięki temu pionowe obrazy/dokumenty nie zaczynają się w połowie popupu.
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            // Obraz pośrodku pola: poziome zdjęcie przyklejone do górnej krawędzi
+            // zostawiało pusty pas pod spodem i wyglądało na źle ułożone.
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 bitmap?.let { image ->
                     Image(
                         bitmap = image.asImageBitmap(),
                         contentDescription = name,
                         contentScale = ContentScale.Fit,
-                        alignment = Alignment.TopCenter,
+                        alignment = Alignment.Center,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(4.dp)
@@ -225,13 +225,13 @@ fun SvgImageViewer(model: Any?, name: String, modifier: Modifier = Modifier) {
             shape = RoundedCornerShape(22.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AsyncImage(
                     model = uri,
                     contentDescription = name,
                     modifier = Modifier.fillMaxSize().padding(8.dp),
                     contentScale = ContentScale.Fit,
-                    alignment = Alignment.TopCenter
+                    alignment = Alignment.Center
                 )
             }
         }
