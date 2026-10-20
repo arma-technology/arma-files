@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import pl.arma.viewer.R
@@ -69,6 +70,11 @@ class SheetViewerState internal constructor() {
     internal var firstPoint by mutableStateOf<PagePoint?>(null)
     internal var axisLock by mutableStateOf(false)
     internal var snapping by mutableStateOf(true)
+    /**
+     * Celownik jako ułamek szerokości i wysokości obszaru dokumentu — po
+     * obrocie zostaje w tym samym miejscu ekranu, choć zmienia się jego rozmiar.
+     */
+    internal var aim by mutableStateOf(Offset(0.5f, 0.5f))
     /** Przełączniki pomiaru wczytane z ustawień (raz na przeglądarkę). */
     internal var measurePrefsLoaded = false
     internal val geometries = mutableStateMapOf<Int, SnapGeometry>()

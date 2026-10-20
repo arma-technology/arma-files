@@ -97,8 +97,16 @@ data class SheetView(val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f)
      * Widok mieszczący się w dokumencie. Dokument niższy od ekranu (poziomy
      * arkusz na telefonie) stoi pośrodku zamiast przyklejać się do góry,
      * a węższy (oddalony poniżej szerokości ekranu) — pośrodku w poziomie.
+     * [insetTop] i [insetBottom] to pasy ekranu zasłonięte narzędziami: przy
+     * pomiarze krawędź arkusza może wyjechać spod nich, żeby celownik jej sięgnął.
      */
-    fun clamped(layout: SheetLayout, viewHeight: Float, maxZoom: Float): SheetView {
+    fun clamped(
+        layout: SheetLayout,
+        viewHeight: Float,
+        maxZoom: Float,
+        insetTop: Float = 0f,
+        insetBottom: Float = 0f
+    ): SheetView {
         val z = zoom.coerceIn(layout.minZoom(viewHeight), maxZoom)
         val contentWidth = layout.viewWidth * z
         val clampedX = if (contentWidth <= layout.viewWidth) {
@@ -107,10 +115,11 @@ data class SheetView(val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f)
             x.coerceIn(0f, contentWidth - layout.viewWidth)
         }
         val contentHeight = layout.height * z
-        val clampedY = if (contentHeight <= viewHeight) {
-            -(viewHeight - contentHeight) / 2f
+        val visible = (viewHeight - insetTop - insetBottom).coerceAtLeast(1f)
+        val clampedY = if (contentHeight <= visible) {
+            -(insetTop + (visible - contentHeight) / 2f)
         } else {
-            y.coerceIn(0f, contentHeight - viewHeight)
+            y.coerceIn(-insetTop, contentHeight - viewHeight + insetBottom)
         }
         return SheetView(z, clampedX, clampedY)
     }

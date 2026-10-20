@@ -68,6 +68,19 @@ class SheetLayoutTest {
     }
 
     @Test
+    fun `przy pomiarze krawedz arkusza wyjezdza spod narzedzi`() {
+        // Panel pomiaru zaslania dol ekranu (400 px), pasek gore (150 px).
+        val bottom = SheetView(zoom = 2f, y = 1e9f).clamped(layout, 1800f, max, insetTop = 150f, insetBottom = 400f)
+        assertEquals(layout.height * 2f - 1800f + 400f, bottom.y, 0.01f)
+        val top = SheetView(zoom = 2f, y = -1e9f).clamped(layout, 1800f, max, insetTop = 150f, insetBottom = 400f)
+        assertEquals(-150f, top.y, 0.01f)
+        // Niski arkusz stoi posrodku odslonietego pasa, nie calego ekranu.
+        val sheet = SheetLayout(listOf(SheetSize(2551f, 1684f)), viewWidth = 1000f, margin = 10f, gap = 20f)
+        val view = SheetView().clamped(sheet, 1800f, max, insetTop = 150f, insetBottom = 400f)
+        assertEquals(-(150f + (1250f - sheet.height) / 2f), view.y, 0.01f)
+    }
+
+    @Test
     fun `niski arkusz stoi posrodku ekranu`() {
         val sheet = SheetLayout(listOf(SheetSize(2551f, 1684f)), viewWidth = 1000f, margin = 10f, gap = 20f)
         val view = SheetView().clamped(sheet, viewHeight = 1800f, maxZoom = max)

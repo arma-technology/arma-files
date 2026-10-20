@@ -160,11 +160,10 @@ internal fun DrawScope.drawCommentMarks(
 }
 
 /**
- * Celownik pośrodku ekranu, znacznik punktu, do którego przyciągnął,
+ * Celownik w punkcie [center], znacznik punktu, do którego przyciągnął,
  * i gumka od pierwszego punktu z bieżącą długością.
  */
-internal fun DrawScope.drawCursor(p: Projection, state: SheetViewerState, cursor: PagePoint?, paints: MeasurePaints) {
-    val center = Offset(size.width / 2, size.height / 2)
+internal fun DrawScope.drawCursor(p: Projection, state: SheetViewerState, cursor: PagePoint?, center: Offset, paints: MeasurePaints) {
     val arm = 16.dp.toPx()
     val gap = 5.dp.toPx()
     val stroke = 1.5.dp.toPx()

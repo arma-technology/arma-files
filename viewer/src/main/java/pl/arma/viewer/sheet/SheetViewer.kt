@@ -206,6 +206,10 @@ private fun DocumentView(
         document.notes.firstOrNull()?.let { state.message = it }
     }
     var viewSize by remember { mutableStateOf(IntSize.Zero) }
+    // Wysokość panelu pomiaru i (w trybie pełnoekranowym) paska narzędzi
+    // leżących na dokumencie — pasy ekranu, w które celownik nie wjeżdża.
+    var panelHeight by remember { mutableStateOf(0) }
+    var toolbarHeight by remember { mutableStateOf(0) }
     var toolsVisible by remember { mutableStateOf(true) }
     var jumpDialog by remember { mutableStateOf(false) }
     // Na niskim ekranie (telefon w poziomie) miniatury zabierałyby prawie
@@ -238,8 +242,11 @@ private fun DocumentView(
 
     fun projection(): Projection? = layout?.let { Projection(it, document.pageSizes, state.view) }
 
+    fun insetTop(): Float = if (state.placement != Placement.NONE && immersive) toolbarHeight.toFloat() else 0f
+    fun insetBottom(): Float = if (state.placement != Placement.NONE) panelHeight.toFloat() else 0f
+
     fun settled(next: SheetView): SheetView =
-        layout?.let { next.clamped(it, viewSize.height.toFloat(), MAX_ZOOM) } ?: next
+        layout?.let { next.clamped(it, viewSize.height.toFloat(), MAX_ZOOM, insetTop(), insetBottom()) } ?: next
 
     // Po obrocie na środku ekranu zostaje to samo miejsce dokumentu. Lewy
     // górny róg byłby złą kotwicą: w poziomie widać zupełnie inny wycinek.
@@ -392,12 +399,54 @@ private fun DocumentView(
 
     // ---- celownik pomiaru i komentarza ----------------------------------
 
-    /** Strona i punkt pod środkiem ekranu, przyciągnięty do linii. */
+    /** Celownik w pikselach obszaru dokumentu. */
+    fun aimPx(): Offset = Offset(state.aim.x * viewSize.width, state.aim.y * viewSize.height)
+
+    /** Celownik w pasie ekranu niezasłoniętym przez narzędzia. */
+    fun setAim(position: Offset) {
+        val w = viewSize.width.toFloat()
+        val h = viewSize.height.toFloat()
+        if (w <= 0f || h <= 0f) return
+        val top = insetTop().coerceAtMost(h)
+        val bottom = (h - insetBottom()).coerceAtLeast(top)
+        state.aim = Offset(position.x.coerceIn(0f, w) / w, position.y.coerceIn(top, bottom) / h)
+    }
+
+    /**
+     * Przesuwa celownik jak kursor na touchpadzie. Wypchnięty w pas przy
+     * krawędzi przewija dokument; gdy dokument dalej nie jedzie, celownik
+     * dochodzi do samej krawędzi — sięga więc też brzegów i rogów arkusza.
+     */
+    fun moveAim(delta: Offset) {
+        val w = viewSize.width.toFloat()
+        val h = viewSize.height.toFloat()
+        if (w <= 0f || h <= 0f) return
+        val edge = with(density) { AIM_EDGE.toPx() }
+        val top = insetTop() + edge
+        val bottom = (h - insetBottom() - edge).coerceAtLeast(top)
+        val desired = aimPx() + delta
+        val inside = Offset(desired.x.coerceIn(edge, (w - edge).coerceAtLeast(edge)), desired.y.coerceIn(top, bottom))
+        val overflow = desired - inside
+        val before = state.view
+        if (overflow != Offset.Zero) state.view = settled(before.panned(-overflow.x, -overflow.y))
+        val scrolled = Offset(state.view.x - before.x, state.view.y - before.y)
+        setAim(inside + overflow - scrolled)
+    }
+
+    // Celownik startuje pośrodku; po wyjściu z pomiaru dokument wraca spod
+    // pasów, w które mógł wyjechać, gdy narzędzia go zasłaniały.
+    LaunchedEffect(state.placement) {
+        if (state.placement != Placement.NONE) state.aim = Offset(0.5f, 0.5f)
+        else animateTo { state.view }
+    }
+
+    /** Strona i punkt pod celownikiem, przyciągnięty do linii. */
     val cursor by remember {
         derivedStateOf {
             if (state.placement == Placement.NONE) return@derivedStateOf null
             val p = projection() ?: return@derivedStateOf null
-            val (page, ux, uy) = p.toPage(viewSize.width / 2f, viewSize.height / 2f)
+            val aim = aimPx()
+            val (page, ux, uy) = p.toPage(aim.x, aim.y)
             val geometry = state.geometries[page]
             val first = state.firstPoint?.takeIf { it.page == page }?.snap
             val radius = with(density) { SNAP_RADIUS.toPx() } * p.unitsPerPixel(page)
@@ -451,13 +500,6 @@ private fun DocumentView(
         }
         state.measurements += Measurement(point.page, first.snap.x, first.snap.y, point.snap.x, point.snap.y)
         state.firstPoint = null
-    }
-
-    fun centerOnScreenPoint(position: Offset) {
-        val view = state.view
-        animateTo {
-            view.copy(x = view.x + position.x - viewSize.width / 2f, y = view.y + position.y - viewSize.height / 2f)
-        }
     }
 
     val comments by document.comments.collectAsState()
@@ -585,9 +627,7 @@ private fun DocumentView(
                                     val centroid = event.calculateCentroid()
                                     // W trybie pomiaru powiększamy wokół celownika —
                                     // inaczej punkt pod nim uciekałby przy każdym geście.
-                                    val focus = if (state.placement != Placement.NONE) {
-                                        Offset(size.width / 2f, size.height / 2f)
-                                    } else centroid
+                                    val focus = if (state.placement != Placement.NONE) aimPx() else centroid
                                     state.view = settled(
                                         state.view.zoomedAround(zoom, focus.x, focus.y, MAX_ZOOM, minZoom())
                                             .panned(pan.x, pan.y)
@@ -595,20 +635,22 @@ private fun DocumentView(
                                     event.changes.forEach { it.consume() }
                                 } else if (pressed.size == 1) {
                                     // Jeden palec przesuwa w obu osiach naraz — także
-                                    // ten, który został po szczypaniu.
+                                    // ten, który został po szczypaniu. Przy pomiarze
+                                    // rusza celownikiem, a dokument tylko dwoma palcami.
                                     val change = pressed.first()
                                     val delta = change.position - change.previousPosition
                                     travel += delta
                                     if (!moved && travel.getDistance() > viewConfiguration.touchSlop) moved = true
                                     if (moved) {
-                                        state.view = settled(state.view.panned(delta.x, delta.y))
+                                        if (state.placement != Placement.NONE) moveAim(delta)
+                                        else state.view = settled(state.view.panned(delta.x, delta.y))
                                         change.consume()
                                     }
                                     tracker.addPosition(change.uptimeMillis, change.position)
                                 }
                             } while (event.changes.any { it.pressed })
 
-                            if (moved && !pinched) {
+                            if (moved && !pinched && state.placement == Placement.NONE) {
                                 val velocity = tracker.calculateVelocity()
                                 animation = scope.launch {
                                     launch {
@@ -644,10 +686,10 @@ private fun DocumentView(
                                     singleTap = scope.launch {
                                         delay(DOUBLE_TAP_MS)
                                         when {
-                                            // Przy celowniku tapnięcie przenosi wskazane
-                                            // miejsce pod celownik — palec zasłania punkt,
-                                            // a celownik nie.
-                                            state.placement != Placement.NONE -> centerOnScreenPoint(position)
+                                            // Przy celowniku tapnięcie przenosi celownik
+                                            // we wskazane miejsce; dokładnie ustawia się go
+                                            // przeciągnięciem, przy którym palec go nie zasłania.
+                                            state.placement != Placement.NONE -> setAim(position)
                                             else -> {
                                                 val hit = projection()?.let { p ->
                                                     val (page, ux, uy) = p.toPage(position.x, position.y)
@@ -715,7 +757,7 @@ private fun DocumentView(
                 }
                 drawCommentMarks(p, comments, state.selectedComment, first..last)
                 drawMeasurements(p, state, first..last, overlay)
-                if (state.placement != Placement.NONE) drawCursor(p, state, cursor, overlay)
+                if (state.placement != Placement.NONE) drawCursor(p, state, cursor, aimPx(), overlay)
             }
             if (state.bases[currentPage - 1] == null) {
                 CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -828,11 +870,11 @@ private fun DocumentView(
                 visible = toolsVisible || state.searchOpen || state.placement != Placement.NONE,
                 enter = fadeIn(),
                 exit = fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter).padding(8.dp)
+                modifier = Modifier.align(Alignment.TopCenter).onSizeChanged { toolbarHeight = it.height }.padding(8.dp)
             ) {
                 OverlaySurface { toolbar() }
             }
-            Column(Modifier.align(Alignment.BottomCenter).padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.align(Alignment.BottomCenter).onSizeChanged { panelHeight = it.height }.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (state.placement != Placement.NONE) {
                     OverlaySurface { measurePanel() }
                 } else if (showThumbnails) {
@@ -860,7 +902,7 @@ private fun DocumentView(
                         canvas(Modifier.fillMaxSize())
                     }
                     if (state.placement != Placement.NONE) {
-                        Box(Modifier.align(Alignment.BottomCenter).padding(8.dp)) {
+                        Box(Modifier.align(Alignment.BottomCenter).onSizeChanged { panelHeight = it.height }.padding(8.dp)) {
                             OverlaySurface { measurePanel() }
                         }
                     }
@@ -975,6 +1017,9 @@ private const val DOUBLE_TAP_MS = 280L
 private val SEARCH_TEXT_HEIGHT = 18.dp
 /** Zasięg przyciągania wokół celownika. */
 private val SNAP_RADIUS = 22.dp
+
+/** Pas przy krawędzi, w którym celownik przewija dokument. */
+private val AIM_EDGE = 32.dp
 private val MATCH = Color(0x66FFD600)
 private val ACTIVE_MATCH = Color(0x80FF9100)
 private val ACTIVE_MATCH_OUTLINE = Color(0xFFE65100)
