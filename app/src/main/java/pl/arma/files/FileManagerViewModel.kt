@@ -576,6 +576,39 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         afterSourceDisabled(enabled) { it.type == type }
     }
 
+    /**
+     * Odłącza folder podpięty przez SAF — lokalny albo z aplikacji chmury
+     * (Dropbox, Drive, OneDrive) — i oddaje uprawnienie do niego. Konta
+     * sieciowe mają własne usuwanie w ustawieniach.
+     */
+    fun disconnectSource(source: StorageSource) {
+        val cloud = source.type in setOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX)
+        val tree = when {
+            source.type == SourceType.LOCAL -> prefs.treeUri
+            cloud -> networkPrefs.cloudTree(source.type)
+            else -> null
+        } ?: return
+        // Katalog do opuszczenia trzeba znać, zanim źródło zniknie z listy.
+        val leaving = source.rootUri
+        if (cloud) {
+            networkPrefs.setCloudTree(source.type, null)
+            networkPrefs.setEnabled(source.type, false)
+        } else {
+            prefs.treeUri = null
+        }
+        val stillUsed = prefs.treeUri == tree ||
+            listOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX).any { networkPrefs.cloudTree(it) == tree }
+        if (!stillUsed) repo.releaseTreePermission(tree)
+        updateSources()
+        loadSavedCollections()
+        if (leaving != null && _root.value == leaving) goComputerHome()
+        // Chmura po nazwie usługi; folder lokalny po nazwie folderu, o ile
+        // dostawca ją podał (Dropbox jej nie podaje — zostaje „Podłączony”).
+        val name = if (cloud) source.label
+        else source.subtitle.takeIf { it.isNotBlank() && it != text(R.string.source_attached) } ?: source.label
+        _notice.value = text(R.string.source_disconnected, name)
+    }
+
     /** Włącza lub wyłącza jedno konkretne połączenie sieciowe. */
     fun setAccountEnabled(id: String, enabled: Boolean) {
         val account = accounts.get(id) ?: return
@@ -1622,7 +1655,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
         fun doc(tree: Uri?): Uri? = tree?.let { runCatching { repo.treeToDocumentUri(it) }.getOrNull() }
         _sources.value = listOf(
-            StorageSource(SourceType.LOCAL, text(R.string.source_local_folder), true, localTree != null, doc(localTree), text(R.string.source_local_folder_hint)),
+            // Nazwa podpiętego folderu: „Folder lokalny” bywa folderem z Dropboxa
+            // czy Drive’a, a sam opis „przez SAF” nie mówił, którym.
+            StorageSource(SourceType.LOCAL, text(R.string.source_local_folder), true, localTree != null, doc(localTree), if (localTree != null) attachedLabel(localTree) else text(R.string.source_local_folder_hint)),
             StorageSource(SourceType.GOOGLE_DRIVE, "Google Drive", networkPrefs.isEnabled(SourceType.GOOGLE_DRIVE), googleTree != null, doc(googleTree), attachedLabel(googleTree)),
             StorageSource(SourceType.ONEDRIVE, "OneDrive", networkPrefs.isEnabled(SourceType.ONEDRIVE), oneDriveTree != null, doc(oneDriveTree), attachedLabel(oneDriveTree)),
             StorageSource(SourceType.DROPBOX, "Dropbox", networkPrefs.isEnabled(SourceType.DROPBOX), dropboxTree != null, doc(dropboxTree), attachedLabel(dropboxTree)),

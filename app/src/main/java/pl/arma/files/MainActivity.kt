@@ -555,6 +555,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             pendingCloudSource = type
                             cloudFolderPicker.launch(null)
                         },
+                        onDisconnect = vm::disconnectSource,
                         onEditAccount = { editedAccount = it to false },
                         onAccountEnabled = { account, on -> vm.setAccountEnabled(account.id, on) },
                         onAddAccount = { editedAccount = vm.newAccountDraft() to true },
@@ -581,6 +582,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenPinned = { openLocal(it.rootUri) },
                         onOpenStorage = { openLocal(it.rootUri) },
                         onOpenSource = { vm.openSource(it) },
+                        onDisconnectSource = vm::disconnectSource,
+                        onDisableSource = { source -> source.accountId?.let { vm.setAccountEnabled(it, false) } },
+                        onManageSources = { tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL },
                         offlineEntries = offlineEntries,
                         offlineProgress = offlineProgress,
                         onOpenOffline = { entry ->
@@ -1089,6 +1093,9 @@ private fun ComputerHome(
     onOpenPinned: (PinnedFolder) -> Unit,
     onOpenStorage: (DeviceStorage) -> Unit,
     onOpenSource: (StorageSource) -> Unit,
+    onDisconnectSource: (StorageSource) -> Unit,
+    onDisableSource: (StorageSource) -> Unit,
+    onManageSources: () -> Unit,
     offlineEntries: List<OfflineStore.Entry>,
     offlineProgress: Map<String, OfflineStore.Progress>,
     onOpenOffline: (OfflineStore.Entry) -> Unit,
@@ -1235,7 +1242,13 @@ private fun ComputerHome(
             // Klucz z konta, nie z typu: dwa połączenia SMB (dom, firma) dawały
             // ten sam klucz i ekran główny wywracał aplikację przy starcie.
             items(connectedSources, key = { "source_${it.type.name}_${it.accountId ?: it.rootUri}" }) { source ->
-                ConnectedSourceCard(source = source, onClick = { onOpenSource(source) })
+                ConnectedSourceCard(
+                    source = source,
+                    onClick = { onOpenSource(source) },
+                    onDisconnect = { onDisconnectSource(source) },
+                    onDisable = { onDisableSource(source) },
+                    onManage = onManageSources
+                )
             }
         }
 
@@ -1546,7 +1559,14 @@ private fun DeviceStorageCard(
 }
 
 @Composable
-private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
+private fun ConnectedSourceCard(
+    source: StorageSource,
+    onClick: () -> Unit,
+    onDisconnect: () -> Unit,
+    onDisable: () -> Unit,
+    onManage: () -> Unit
+) {
+    var menu by remember { mutableStateOf(false) }
     Surface(
         onClick = onClick,
         modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth(),
@@ -1562,7 +1582,31 @@ private fun ConnectedSourceCard(source: StorageSource, onClick: () -> Unit) {
                 Text(source.label, fontWeight = FontWeight.SemiBold)
                 Text(source.subtitle.ifBlank { stringResource(R.string.source_attached) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Folder SAF (także Dropbox i inne chmury) się odłącza; konto
+            // sieciowe wyłącza albo edytuje w ustawieniach, gdzie da się je też usunąć.
+            Box {
+                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_options)) }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    if (source.accountId == null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.source_disconnect)) },
+                            leadingIcon = { Icon(Icons.Default.LinkOff, null) },
+                            onClick = { menu = false; onDisconnect() }
+                        )
+                    } else {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.source_disable)) },
+                            leadingIcon = { Icon(Icons.Default.VisibilityOff, null) },
+                            onClick = { menu = false; onDisable() }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.source_manage)) },
+                        leadingIcon = { Icon(Icons.Default.Settings, null) },
+                        onClick = { menu = false; onManage() }
+                    )
+                }
+            }
         }
     }
 }

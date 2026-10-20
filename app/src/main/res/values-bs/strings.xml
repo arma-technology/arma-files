@@ -388,6 +388,10 @@ odabirom kartice na traci iznad.</string>
     <string name="sort_name">Naziv</string>
     <string name="sort_size">Veličina</string>
     <string name="sort_type">Vrsta datoteke</string>
+    <string name="source_disconnect">Odspoji</string>
+    <string name="source_disable">Isključi</string>
+    <string name="source_manage">Postavke veza</string>
+    <string name="source_disconnected">Odspojeno: %1$s</string>
     <string name="source_attached">Povezano</string>
     <string name="source_local_folder">Lokalna mapa</string>
     <string name="source_local_folder_hint">Pristup putem Android SAF-a</string>

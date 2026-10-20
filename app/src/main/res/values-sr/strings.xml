@@ -388,6 +388,10 @@
     <string name="sort_name">Назив</string>
     <string name="sort_size">Величина</string>
     <string name="sort_type">Врста датотеке</string>
+    <string name="source_disconnect">Прекини везу</string>
+    <string name="source_disable">Искључи</string>
+    <string name="source_manage">Подешавања веза</string>
+    <string name="source_disconnected">Веза прекинута: %1$s</string>
     <string name="source_attached">Повезано</string>
     <string name="source_local_folder">Локална фасцикла</string>
     <string name="source_local_folder_hint">Приступ преко Android SAF-а</string>

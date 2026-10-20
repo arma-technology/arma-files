@@ -388,6 +388,10 @@ výběrem karty v liště nahoře.</string>
     <string name="sort_name">Název</string>
     <string name="sort_size">Velikost</string>
     <string name="sort_type">Typ souboru</string>
+    <string name="source_disconnect">Odpojit</string>
+    <string name="source_disable">Vypnout</string>
+    <string name="source_manage">Nastavení připojení</string>
+    <string name="source_disconnected">Odpojeno: %1$s</string>
     <string name="source_attached">Připojeno</string>
     <string name="source_local_folder">Místní složka</string>
     <string name="source_local_folder_hint">Přístup přes Android SAF</string>

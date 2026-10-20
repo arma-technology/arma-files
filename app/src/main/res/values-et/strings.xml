@@ -388,6 +388,10 @@ valides ülal ribal vahelehe.</string>
     <string name="sort_name">Nimi</string>
     <string name="sort_size">Suurus</string>
     <string name="sort_type">Failitüüp</string>
+    <string name="source_disconnect">Ühenda lahti</string>
+    <string name="source_disable">Lülita välja</string>
+    <string name="source_manage">Ühenduste seaded</string>
+    <string name="source_disconnected">Lahti ühendatud: %1$s</string>
     <string name="source_attached">Ühendatud</string>
     <string name="source_local_folder">Kohalik kaust</string>
     <string name="source_local_folder_hint">Juurdepääs Android SAF-i kaudu</string>

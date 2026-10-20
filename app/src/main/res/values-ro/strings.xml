@@ -388,6 +388,10 @@ alegând o filă din bara de sus.</string>
     <string name="sort_name">Nume</string>
     <string name="sort_size">Dimensiune</string>
     <string name="sort_type">Tipul fișierului</string>
+    <string name="source_disconnect">Deconectează</string>
+    <string name="source_disable">Dezactivează</string>
+    <string name="source_manage">Setări conexiuni</string>
+    <string name="source_disconnected">Deconectat: %1$s</string>
     <string name="source_attached">Conectat</string>
     <string name="source_local_folder">Dosar local</string>
     <string name="source_local_folder_hint">Acces prin Android SAF</string>

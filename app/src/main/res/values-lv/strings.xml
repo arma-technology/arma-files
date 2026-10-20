@@ -388,6 +388,10 @@ izvēloties cilni joslā augšā.</string>
     <string name="sort_name">Nosaukums</string>
     <string name="sort_size">Izmērs</string>
     <string name="sort_type">Faila tips</string>
+    <string name="source_disconnect">Atvienot</string>
+    <string name="source_disable">Izslēgt</string>
+    <string name="source_manage">Savienojumu iestatījumi</string>
+    <string name="source_disconnected">Atvienots: %1$s</string>
     <string name="source_attached">Pievienots</string>
     <string name="source_local_folder">Lokālā mape</string>
     <string name="source_local_folder_hint">Piekļuve caur Android SAF</string>

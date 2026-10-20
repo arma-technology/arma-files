@@ -310,6 +310,15 @@ class FileRepository(private val context: Context) : FileOps {
         }
     }
 
+    /** Oddaje uprawnienie do folderu SAF — znika też z listy dostępów w ustawieniach Androida. */
+    fun releaseTreePermission(treeUri: Uri) {
+        val flags = resolver.persistedUriPermissions.firstOrNull { it.uri == treeUri }?.let { grant ->
+            (if (grant.isReadPermission) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0) or
+                (if (grant.isWritePermission) Intent.FLAG_GRANT_WRITE_URI_PERMISSION else 0)
+        } ?: return
+        runCatching { resolver.releasePersistableUriPermission(treeUri, flags) }
+    }
+
     fun remoteRoot(account: RemoteAccount): Uri = RemoteRepository.rootOf(account)
 
     /** Obserwacja folderu na serwerze; null, gdy protokół jej nie ma. */

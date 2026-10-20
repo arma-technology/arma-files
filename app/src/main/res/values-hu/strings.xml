@@ -388,6 +388,10 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="sort_name">Név</string>
     <string name="sort_size">Méret</string>
     <string name="sort_type">Fájltípus</string>
+    <string name="source_disconnect">Leválasztás</string>
+    <string name="source_disable">Kikapcsolás</string>
+    <string name="source_manage">Kapcsolatbeállítások</string>
+    <string name="source_disconnected">Leválasztva: %1$s</string>
     <string name="source_attached">Csatlakoztatva</string>
     <string name="source_local_folder">Helyi mappa</string>
     <string name="source_local_folder_hint">Hozzáférés Android SAF-on keresztül</string>

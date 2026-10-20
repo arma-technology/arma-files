@@ -388,6 +388,10 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="sort_name">Pavadinimas</string>
     <string name="sort_size">Dydis</string>
     <string name="sort_type">Failo tipas</string>
+    <string name="source_disconnect">Atjungti</string>
+    <string name="source_disable">Išjungti</string>
+    <string name="source_manage">Ryšių nustatymai</string>
+    <string name="source_disconnected">Atjungta: %1$s</string>
     <string name="source_attached">Prijungta</string>
     <string name="source_local_folder">Vietinis aplankas</string>
     <string name="source_local_folder_hint">Prieiga per Android SAF</string>

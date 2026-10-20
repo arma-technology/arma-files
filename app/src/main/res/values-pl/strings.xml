@@ -388,6 +388,10 @@ wybierając kartę z paska powyżej.</string>
     <string name="sort_name">Nazwa</string>
     <string name="sort_size">Rozmiar</string>
     <string name="sort_type">Typ pliku</string>
+    <string name="source_disconnect">Odłącz</string>
+    <string name="source_disable">Wyłącz</string>
+    <string name="source_manage">Ustawienia połączeń</string>
+    <string name="source_disconnected">Odłączono: %1$s</string>
     <string name="source_attached">Podłączony</string>
     <string name="source_local_folder">Folder lokalny</string>
     <string name="source_local_folder_hint">Dostęp przez Android SAF</string>

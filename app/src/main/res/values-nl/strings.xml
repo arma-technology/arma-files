@@ -388,6 +388,10 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="sort_name">Naam</string>
     <string name="sort_size">Grootte</string>
     <string name="sort_type">Bestandstype</string>
+    <string name="source_disconnect">Ontkoppelen</string>
+    <string name="source_disable">Uitschakelen</string>
+    <string name="source_manage">Verbindingsinstellingen</string>
+    <string name="source_disconnected">Ontkoppeld: %1$s</string>
     <string name="source_attached">Gekoppeld</string>
     <string name="source_local_folder">Lokale map</string>
     <string name="source_local_folder_hint">Toegang via Android SAF</string>

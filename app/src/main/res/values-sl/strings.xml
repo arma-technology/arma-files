@@ -388,6 +388,10 @@ z izbiro zavihka v vrstici zgoraj.</string>
     <string name="sort_name">Ime</string>
     <string name="sort_size">Velikost</string>
     <string name="sort_type">Vrsta datoteke</string>
+    <string name="source_disconnect">Prekini povezavo</string>
+    <string name="source_disable">Izklopi</string>
+    <string name="source_manage">Nastavitve povezav</string>
+    <string name="source_disconnected">Prekinjeno: %1$s</string>
     <string name="source_attached">Povezano</string>
     <string name="source_local_folder">Lokalna mapa</string>
     <string name="source_local_folder_hint">Dostop prek Android SAF</string>

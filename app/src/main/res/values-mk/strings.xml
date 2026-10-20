@@ -388,6 +388,10 @@
     <string name="sort_name">Име</string>
     <string name="sort_size">Големина</string>
     <string name="sort_type">Тип на датотека</string>
+    <string name="source_disconnect">Исклучи</string>
+    <string name="source_disable">Деактивирај</string>
+    <string name="source_manage">Поставки за врски</string>
+    <string name="source_disconnected">Исклучено: %1$s</string>
     <string name="source_attached">Поврзано</string>
     <string name="source_local_folder">Локална папка</string>
     <string name="source_local_folder_hint">Пристап преку Android SAF</string>

@@ -37,6 +37,7 @@ fun SettingsScreen(
     onPickLocalFolder: () -> Unit,
     onEnabled: (SourceType, Boolean) -> Unit,
     onConnectCloud: (SourceType) -> Unit,
+    onDisconnect: (StorageSource) -> Unit,
     onEditAccount: (RemoteAccount) -> Unit,
     onAccountEnabled: (RemoteAccount, Boolean) -> Unit,
     onAddAccount: () -> Unit,
@@ -70,7 +71,8 @@ fun SettingsScreen(
                 safConfigured = local.configured,
                 allFilesAccess = allFilesAccess,
                 onGrantAllFilesAccess = onGrantAllFilesAccess,
-                onPickLocalFolder = onPickLocalFolder
+                onPickLocalFolder = onPickLocalFolder,
+                onDisconnect = { onDisconnect(local) }
             )
         }
 
@@ -81,7 +83,8 @@ fun SettingsScreen(
                     source = source,
                     icon = sourceIcon(type),
                     onEnabled = { onEnabled(type, it) },
-                    onConnect = { onConnectCloud(type) }
+                    onConnect = { onConnectCloud(type) },
+                    onDisconnect = { onDisconnect(source) }
                 )
             }
         }
@@ -666,7 +669,8 @@ private fun LocalAccessCard(
     safConfigured: Boolean,
     allFilesAccess: Boolean,
     onGrantAllFilesAccess: () -> Unit,
-    onPickLocalFolder: () -> Unit
+    onPickLocalFolder: () -> Unit,
+    onDisconnect: () -> Unit
 ) {
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
@@ -711,12 +715,19 @@ private fun LocalAccessCard(
                     Text(if (safConfigured) stringResource(R.string.settings_change_saf) else stringResource(R.string.settings_saf_folder))
                 }
             }
+            if (safConfigured) {
+                OutlinedButton(onClick = onDisconnect, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.LinkOff, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.source_disconnect))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled: (Boolean) -> Unit, onConnect: () -> Unit) {
+private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled: (Boolean) -> Unit, onConnect: () -> Unit, onDisconnect: () -> Unit) {
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -735,6 +746,15 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
                     )
                 }
                 Switch(checked = source.enabled, onCheckedChange = onEnabled)
+            }
+            // Wyłączona chmura nadal trzyma uprawnienie do folderu — da się je
+            // oddać bez włączania jej z powrotem.
+            if (!source.enabled && source.configured) {
+                TextButton(onClick = onDisconnect) {
+                    Icon(Icons.Default.LinkOff, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.source_disconnect))
+                }
             }
             AnimatedVisibility(source.enabled) {
                 Column {
@@ -755,6 +775,13 @@ private fun CloudSourceCard(source: StorageSource, icon: ImageVector, onEnabled:
                         Icon(Icons.Default.FolderOpen, null)
                         Spacer(Modifier.width(8.dp))
                         Text(if (source.configured) stringResource(R.string.settings_change_attached) else stringResource(R.string.settings_attach_folder))
+                    }
+                    if (source.configured) {
+                        OutlinedButton(onClick = onDisconnect, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.LinkOff, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.source_disconnect))
+                        }
                     }
                 }
             }

@@ -388,6 +388,10 @@ indem du oben einen Tab auswählst.</string>
     <string name="sort_name">Name</string>
     <string name="sort_size">Größe</string>
     <string name="sort_type">Dateityp</string>
+    <string name="source_disconnect">Trennen</string>
+    <string name="source_disable">Ausschalten</string>
+    <string name="source_manage">Verbindungseinstellungen</string>
+    <string name="source_disconnected">Getrennt: %1$s</string>
     <string name="source_attached">Verbunden</string>
     <string name="source_local_folder">Lokaler Ordner</string>
     <string name="source_local_folder_hint">Zugriff über Android SAF</string>

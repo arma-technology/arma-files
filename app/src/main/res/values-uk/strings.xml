@@ -388,6 +388,10 @@
     <string name="sort_name">Назва</string>
     <string name="sort_size">Розмір</string>
     <string name="sort_type">Тип файлу</string>
+    <string name="source_disconnect">Від\'єднати</string>
+    <string name="source_disable">Вимкнути</string>
+    <string name="source_manage">Налаштування з\'єднань</string>
+    <string name="source_disconnected">Від\'єднано: %1$s</string>
     <string name="source_attached">Підключено</string>
     <string name="source_local_folder">Локальна папка</string>
     <string name="source_local_folder_hint">Доступ через Android SAF</string>

@@ -389,6 +389,10 @@ by picking a tab in the bar above.</string>
     <string name="sort_name">Name</string>
     <string name="sort_size">Size</string>
     <string name="sort_type">File type</string>
+    <string name="source_disconnect">Disconnect</string>
+    <string name="source_disable">Turn off</string>
+    <string name="source_manage">Connection settings</string>
+    <string name="source_disconnected">Disconnected: %1$s</string>
     <string name="source_attached">Attached</string>
     <string name="source_local_folder">Local folder</string>
     <string name="source_local_folder_hint">Access via Android SAF</string>

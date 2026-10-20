@@ -388,6 +388,10 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="sort_name">Emri</string>
     <string name="sort_size">Madhësia</string>
     <string name="sort_type">Lloji i skedarit</string>
+    <string name="source_disconnect">Shkëput</string>
+    <string name="source_disable">Çaktivizo</string>
+    <string name="source_manage">Cilësimet e lidhjeve</string>
+    <string name="source_disconnected">U shkëput: %1$s</string>
     <string name="source_attached">E lidhur</string>
     <string name="source_local_folder">Dosje lokale</string>
     <string name="source_local_folder_hint">Qasje përmes Android SAF</string>
