@@ -66,6 +66,10 @@ class DepthExplorerTest {
         assertEquals(Offset(130f, 130f), c.center)
         assertTrue(OrbitAction.SHARE !in c.actions)
         assertEquals(5, c.actions.size)
+        // Palec w miejscu przy krawędzi: to dalej podgląd, choć koło stoi gdzie indziej.
+        c.move(Offset(12f, 22f))
+        assertNull(c.selected)
+        assertEquals(OrbitResult.Peek(file("dir", dir = true)), c.end())
     }
 
     @Test

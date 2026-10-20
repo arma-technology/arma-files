@@ -104,9 +104,22 @@ internal object FolderPeeks {
             runCatching {
                 val children = vm.peekFolder(item)
                 val files = children.filterNot { it.isDirectory }
+                var media = files.filter { isVisualMedia(it) }.take(4)
+                // Folder z samymi podfolderami („Zdjęcia” → „2026”): kolaż z ich wnętrza,
+                // najwyżej dwa poziomy niżej i trzy podfoldery — karta ma powiedzieć, co tam jest.
+                if (media.isEmpty() && files.isEmpty()) {
+                    media = children.filter { it.isDirectory }.take(3).flatMap { sub ->
+                        val inner = runCatching { vm.peekFolder(sub) }.getOrDefault(emptyList())
+                        inner.filter { isVisualMedia(it) }.ifEmpty {
+                            inner.filter { it.isDirectory }.take(2).flatMap { deeper ->
+                                runCatching { vm.peekFolder(deeper) }.getOrDefault(emptyList()).filter { isVisualMedia(it) }
+                            }
+                        }
+                    }.sortedByDescending { it.lastModified }.take(4)
+                }
                 FolderPeek(
                     count = children.size,
-                    media = files.filter { isVisualMedia(it) }.take(4),
+                    media = media,
                     audio = files.filter { it.mimeType.startsWith("audio/") }.take(4),
                     kinds = files.distinctBy { it.name.substringAfterLast('.', "").lowercase() }.take(3)
                 )

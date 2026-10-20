@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -104,6 +106,14 @@ class OrbitController {
     var overShelf by mutableStateOf(false)
         private set
 
+    /**
+     * Miejsce przytrzymania. Kierunek i „bez ruchu” liczymy od niego, nie od
+     * środka koła — przy krawędzi ekranu koło jest przesunięte do środka,
+     * a puszczenie palca w miejscu ma dalej znaczyć podgląd.
+     */
+    var start by mutableStateOf(Offset.Zero)
+        private set
+
     /** Akcje dostępne dla bieżącego elementu (folderu nie udostępniamy). */
     var actions by mutableStateOf(OrbitAction.entries.toList())
         private set
@@ -124,6 +134,7 @@ class OrbitController {
             at.y.coerceIn(margin, (screen.y - margin).coerceAtLeast(margin))
         )
         pointer = at
+        start = at
         selected = null
         overShelf = false
     }
@@ -133,7 +144,7 @@ class OrbitController {
         pointer = to
         val before = selected to overShelf
         overShelf = to.y >= shelfTop
-        val delta = to - center
+        val delta = to - start
         selected = if (overShelf || delta.getDistance() < deadZone) null else {
             val angle = (atan2(delta.y, delta.x) + PI / 2 + 2 * PI) % (2 * PI)
             val sector = (2 * PI / actions.size)
@@ -148,7 +159,7 @@ class OrbitController {
         val result = when {
             overShelf -> OrbitResult.Action(target, OrbitAction.SHELF)
             selected != null -> OrbitResult.Action(target, selected!!)
-            (pointer - center).getDistance() < deadZone -> OrbitResult.Peek(target)
+            (pointer - start).getDistance() < deadZone -> OrbitResult.Peek(target)
             else -> null
         }
         item = null
@@ -237,7 +248,9 @@ fun Modifier.orbitGestures(
                             // Ruch należy do orbity, nie do przewijania listy.
                             change.consume()
                             if (controller.move(toWindow(change.position))) haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            if (change.changedToUp()) {
+                            // Nie changedToUp(): ten pomija zdarzenia już skonsumowane, a ruch
+                            // orbity konsumujemy sami — podniesienie palca by przepadło.
+                            if (!change.pressed) {
                                 controller.end()?.let(onResult)
                                 break
                             }
@@ -261,13 +274,15 @@ fun OrbitOverlay(controller: OrbitController) {
     val item = controller.item
     val appear by animateFloatAsState(if (item != null) 1f else 0f, spring(dampingRatio = .7f, stiffness = 500f), label = "orbit")
     val density = LocalDensity.current
+    // Strefa szuflady nad paskiem nawigacji systemu, nie pod nim.
+    val navigationBar = WindowInsets.navigationBars.getBottom(density).toFloat()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         with(density) {
             controller.radius = 96.dp.toPx()
             controller.deadZone = 36.dp.toPx()
             controller.margin = 128.dp.toPx()
             controller.screen = Offset(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
-            controller.shelfTop = constraints.maxHeight - 88.dp.toPx()
+            controller.shelfTop = constraints.maxHeight - 88.dp.toPx() - navigationBar
         }
         if (appear <= 0.01f) return@BoxWithConstraints
         val center = controller.center
@@ -278,7 +293,9 @@ fun OrbitOverlay(controller: OrbitController) {
             drawCircle(Color.White.copy(alpha = .10f), controller.radius + 40.dp.toPx(), center)
             drawCircle(Color.White.copy(alpha = .35f), controller.deadZone, center, style = Stroke(1.5.dp.toPx()))
             // Nić od środka do palca — widać, w którą akcję się celuje.
-            if (!controller.overShelf) drawLine(primary.copy(alpha = .8f), center, controller.pointer, strokeWidth = 3.dp.toPx())
+            if (!controller.overShelf) {
+                drawLine(primary.copy(alpha = .8f), center, center + (controller.pointer - controller.start), strokeWidth = 3.dp.toPx())
+            }
         }
         controller.actions.forEachIndexed { index, action ->
             val angle = -PI / 2 + index * 2 * PI / controller.actions.size
@@ -328,6 +345,7 @@ fun OrbitOverlay(controller: OrbitController) {
             color = if (controller.overShelf) primary else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .92f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .padding(bottom = with(density) { navigationBar.toDp() })
                 .fillMaxWidth()
                 .height(88.dp)
                 .graphicsLayer { translationY = (1f - appear) * 88.dp.toPx() }

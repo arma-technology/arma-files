@@ -158,7 +158,7 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
             shadowElevation = 14.dp,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 18.dp)
+                .padding(top = 40.dp)
                 .graphicsLayer { translationY = drag }
                 .nestedScroll(connection)
         ) {
