@@ -83,7 +83,9 @@ fun FullscreenVideoPlayer(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var current by remember { mutableIntStateOf(startIndex.coerceIn(clips.indices)) }
     var error by remember { mutableStateOf<String?>(null) }
-    var controls by remember { mutableStateOf(true) }
+    // Stan przycisków odtwarzacza podaje sam PlayerView — założone „widoczne”
+    // zostawało na ekranie, gdy przyciski schowały się bez zgłoszenia zmiany.
+    var controls by remember { mutableStateOf(false) }
 
     val player = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -151,12 +153,18 @@ fun FullscreenVideoPlayer(
                         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                         this.player = player
                         keepScreenOn = true
+                        // Z animacją przyciski nie znikają, tylko zwijają się do cienkiego
+                        // paska postępu i widok zostaje VISIBLE — pasek z nazwą nie wiedziałby,
+                        // że ma się schować.
+                        setControllerAnimationEnabled(false)
                         setShowNextButton(clips.size > 1)
                         setShowPreviousButton(clips.size > 1)
                         // Pasek z nazwą chowa się razem z przyciskami odtwarzacza.
                         setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
                             controls = visibility == android.view.View.VISIBLE
                         })
+                        // Na starcie przyciski pokazane jawnie, żeby zmiana trafiła do słuchacza.
+                        post { showController() }
                     }
                 },
                 modifier = Modifier.fillMaxSize()
