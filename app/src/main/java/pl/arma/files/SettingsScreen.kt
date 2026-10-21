@@ -56,6 +56,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item { SettingsHero() }
+        item { AppearanceSettings() }
         item {
             Text(
                 stringResource(R.string.settings_file_sources),

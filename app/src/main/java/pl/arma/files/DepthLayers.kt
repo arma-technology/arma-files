@@ -48,6 +48,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import pl.arma.files.ui.theme.ArmaStyle
+import pl.arma.files.ui.theme.LocalArmaStyle
+import androidx.compose.ui.draw.drawBehind
 
 /** Jeden poziom zagłębienia: folder, jego widoczne pliki i folder pod spodem. */
 class DepthLayer(val dir: Uri?, val files: List<FileItem>, val depth: Int, val parent: Uri?)
@@ -71,21 +74,26 @@ fun DepthStack(
     modifier: Modifier = Modifier,
     content: @Composable (DepthLayer) -> Unit
 ) {
+    val style = LocalArmaStyle.current
+    // „Spokojny ruch”: krótsze przejścia bez sprężyny.
+    val slow = if (style.calm) 120 else 260
     AnimatedContent(
         targetState = layer,
         contentKey = { it.dir },
         transitionSpec = {
-            if (targetState.depth >= initialState.depth) {
+            if (style.calm) {
+                fadeIn(tween(slow)).togetherWith(fadeOut(tween(slow)))
+            } else if (targetState.depth >= initialState.depth) {
                 // W głąb: nowy arkusz wjeżdża od dołu, poprzedni cofa się w tło.
                 (slideInVertically(spring(dampingRatio = .86f, stiffness = 380f)) { it / 3 } + fadeIn(tween(180)))
-                    .togetherWith(scaleOut(tween(260), targetScale = .92f) + fadeOut(tween(260)))
+                    .togetherWith(scaleOut(tween(slow), targetScale = .92f) + fadeOut(tween(slow)))
             } else {
                 // Wyżej: arkusz zjeżdża, rodzic wraca na pierwszy plan.
-                (scaleIn(tween(260), initialScale = .92f) + fadeIn(tween(220)))
+                (scaleIn(tween(slow), initialScale = .92f) + fadeIn(tween(220)))
                     .togetherWith(slideOutVertically(tween(240)) { it / 2 } + fadeOut(tween(240)))
             }
         },
-        modifier = modifier,
+        modifier = modifier.then(if (style.night) Modifier.drawBehind { accentGlow(style.accent) } else Modifier),
         label = "depth"
     ) { shown ->
         DepthSheet(shown, behind(shown.parent), vm, onBack) { content(shown) }
@@ -100,6 +108,7 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
         return
     }
     val scope = rememberCoroutineScope()
+    val style = LocalArmaStyle.current
     val threshold = with(LocalDensity.current) { 140.dp.toPx() }
     var drag by remember(layer.dir) { mutableFloatStateOf(0f) }
     val progress = (drag / threshold).coerceIn(0f, 1f)
@@ -139,23 +148,31 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
     }
 
     Box(Modifier.fillMaxSize()) {
-        // Folder nadrzędny pod spodem: rozmyty, przygaszony, lekko pomniejszony;
-        // im mocniej ciągniesz arkusz w dół, tym wyraźniej wraca.
-        BehindLayer(
-            behind.orEmpty(),
-            vm,
-            Modifier.graphicsLayer {
-                val scale = .93f + .07f * progress
-                scaleX = scale
-                scaleY = scale
-                alpha = .45f + .5f * progress
-                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 0f)
-            }.then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur((10 * (1f - progress)).dp) else Modifier)
-        )
+        if (style.night) {
+            // Noc: folder nadrzędny pod spodem rozmyty, przygaszony, lekko pomniejszony;
+            // im mocniej ciągniesz arkusz w dół, tym wyraźniej wraca.
+            BehindLayer(
+                behind.orEmpty(),
+                vm,
+                Modifier.graphicsLayer {
+                    val scale = .93f + .07f * progress
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = .45f + .5f * progress
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 0f)
+                }.then(
+                    if (style.blur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur((10 * (1f - progress)).dp) else Modifier
+                )
+            )
+        } else {
+            // Papier: głębia jako stos kartek — krawędzie poprzednich poziomów nad arkuszem.
+            PaperStack(Modifier.graphicsLayer { translationY = drag * .25f })
+        }
         Surface(
-            shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 14.dp,
+            shape = RoundedCornerShape(topStart = ArmaStyle.SheetRadius, topEnd = ArmaStyle.SheetRadius),
+            color = style.sheet,
+            border = androidx.compose.foundation.BorderStroke(1.dp, style.hairline),
+            shadowElevation = if (style.night) 14.dp else 4.dp,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 40.dp)
@@ -180,12 +197,47 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Surface(shape = RoundedCornerShape(3.dp), color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.width(40.dp).height(5.dp)) {}
+                    Surface(shape = RoundedCornerShape(2.dp), color = style.hairline, modifier = Modifier.width(36.dp).height(4.dp)) {}
                 }
                 content()
             }
         }
     }
+}
+
+/** Dwie krawędzie kartek nad arkuszem — poziomy wyżej w motywie Papier. */
+@Composable
+private fun PaperStack(modifier: Modifier) {
+    val style = LocalArmaStyle.current
+    val shape = RoundedCornerShape(topStart = ArmaStyle.SheetRadius, topEnd = ArmaStyle.SheetRadius)
+    Box(modifier.fillMaxWidth()) {
+        Surface(
+            shape = shape,
+            color = style.ground.copy(alpha = 1f).let { androidx.compose.ui.graphics.lerp(it, style.sheet, .45f) },
+            border = androidx.compose.foundation.BorderStroke(1.dp, style.hairline),
+            modifier = Modifier.padding(start = 30.dp, end = 30.dp, top = 14.dp).fillMaxWidth().height(60.dp)
+        ) {}
+        Surface(
+            shape = shape,
+            color = androidx.compose.ui.graphics.lerp(style.ground, style.sheet, .75f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, style.hairline),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 26.dp).fillMaxWidth().height(60.dp)
+        ) {}
+    }
+}
+
+/** Poświata akcentu w lewym górnym rogu — znak Nocy. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.accentGlow(accent: androidx.compose.ui.graphics.Color) {
+    val radius = size.minDimension * .75f
+    drawCircle(
+        brush = androidx.compose.ui.graphics.Brush.radialGradient(
+            listOf(accent.copy(alpha = .16f), accent.copy(alpha = 0f)),
+            center = Offset(size.width * .1f, 0f),
+            radius = radius
+        ),
+        radius = radius,
+        center = Offset(size.width * .1f, 0f)
+    )
 }
 
 /** Uproszczony podgląd folderu nadrzędnego — tylko do patrzenia, nie do dotykania. */

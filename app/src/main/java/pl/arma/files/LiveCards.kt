@@ -148,6 +148,11 @@ internal fun FolderLiveCard(item: FileItem, vm: FileManagerViewModel, modifier: 
     Surface(modifier = modifier, shape = RoundedCornerShape(if (compact) 10.dp else 14.dp), color = folderColor.copy(alpha = .16f)) {
         Box(Modifier.fillMaxSize()) {
             when {
+                // „Spokojny ruch”: kolaż bez paralaksy.
+                shown != null && shown.media.isNotEmpty() && pl.arma.files.ui.theme.LocalArmaStyle.current.calm ->
+                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp))) {
+                        Collage(shown.media) { child, m -> FileVisual(child, m, thumbnail = true, vm = vm, crop = true) }
+                    }
                 shown != null && shown.media.isNotEmpty() -> ParallaxCollage(shown.media, vm)
                 shown != null && shown.audio.isNotEmpty() -> Collage(shown.audio) { child, m -> AudioArtThumb(child, m) }
                 shown != null && shown.kinds.isNotEmpty() && !compact -> Row(

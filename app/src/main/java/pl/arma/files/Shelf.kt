@@ -56,6 +56,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import pl.arma.files.ui.theme.ArmaStyle
+import pl.arma.files.ui.theme.LocalArmaStyle
+import pl.arma.files.ui.theme.PlexMono
+import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 /**
@@ -79,13 +83,17 @@ internal fun ShelfBar(
     val pull = remember { Animatable(0f) }
     val threshold = with(LocalDensity.current) { 72.dp.toPx() }
     var armed by remember { mutableStateOf(false) }
+    val style = LocalArmaStyle.current
 
+    // Pływający pasek jak w makiecie: zaokrąglony, nad nawigacją, w kolorze szuflady motywu.
     Surface(
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        tonalElevation = 4.dp,
-        shadowElevation = 6.dp,
+        shape = RoundedCornerShape(ArmaStyle.ShelfRadius),
+        color = style.shelf,
+        contentColor = style.shelfText,
+        border = if (style.night) androidx.compose.foundation.BorderStroke(1.dp, style.hairline) else null,
+        shadowElevation = 8.dp,
         modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 6.dp)
             .fillMaxWidth()
             .offset { IntOffset(0, -pull.value.roundToInt()) }
             .animateContentSize()
@@ -112,8 +120,6 @@ internal fun ShelfBar(
     ) {
         Column(Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Inbox, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.shelf_title, items.size), fontWeight = FontWeight.SemiBold)
                     Text(
@@ -122,13 +128,13 @@ internal fun ShelfBar(
                             canDrop -> stringResource(R.string.shelf_pull_hint)
                             else -> stringResource(R.string.shelf_no_target)
                         },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .75f),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = PlexMono, fontSize = 11.sp),
+                        color = style.shelfText.copy(alpha = .72f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                if (!expanded) {
+                if (!expanded && !canDrop) {
                     // Kilka miniatur, każda lekko nachodzi na poprzednią — jak karty w dłoni.
                     Box(Modifier.width((22 + 18 * (items.size.coerceAtMost(4) - 1)).dp)) {
                         items.take(4).forEachIndexed { index, item ->
@@ -144,7 +150,22 @@ internal fun ShelfBar(
                     Spacer(Modifier.width(4.dp))
                 }
                 if (pull.value > 0f) {
-                    Icon(Icons.Default.KeyboardDoubleArrowUp, null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.KeyboardDoubleArrowUp, null, tint = style.accent)
+                } else if (!expanded && canDrop) {
+                    Surface(
+                        onClick = { onDrop(false) },
+                        shape = RoundedCornerShape(ArmaStyle.ControlRadius),
+                        color = style.shelfButton,
+                        contentColor = style.shelfButtonText
+                    ) {
+                        Text(
+                            stringResource(R.string.shelf_copy_here),
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                        )
+                    }
                 }
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(if (expanded) Icons.Default.ExpandMore else Icons.Default.ExpandLess, null)
@@ -159,26 +180,40 @@ internal fun ShelfBar(
                                 Spacer(Modifier.width(10.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
-                                    Text(folderOf(item), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .7f))
+                                    Text(folderOf(item), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = PlexMono),
+                                        color = style.shelfText.copy(alpha = .7f))
                                 }
                                 IconButton(onClick = { onRemove(item) }) { Icon(Icons.Default.Close, stringResource(R.string.common_delete)) }
                             }
                         }
                     }
                     Row(Modifier.padding(top = 4.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(onClick = { onDrop(false) }, enabled = canDrop, modifier = Modifier.weight(1f)) {
+                        FilledTonalButton(
+                            onClick = { onDrop(false) },
+                            enabled = canDrop,
+                            shape = RoundedCornerShape(ArmaStyle.ControlRadius),
+                            colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(containerColor = style.shelfButton, contentColor = style.shelfButtonText),
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(Icons.Default.ContentCopy, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.shelf_copy_here), maxLines = 1)
                         }
-                        OutlinedButton(onClick = { onDrop(true) }, enabled = canDrop, modifier = Modifier.weight(1f)) {
+                        OutlinedButton(
+                            onClick = { onDrop(true) },
+                            enabled = canDrop,
+                            shape = RoundedCornerShape(ArmaStyle.ControlRadius),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = style.shelfText),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, style.shelfText.copy(alpha = .5f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(Icons.Default.DriveFileMove, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(stringResource(R.string.shelf_move_here), maxLines = 1)
                         }
                     }
-                    TextButton(onClick = onClear, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.shelf_clear)) }
+                    TextButton(onClick = onClear, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.shelf_clear), color = style.shelfText) }
                 }
             }
         }

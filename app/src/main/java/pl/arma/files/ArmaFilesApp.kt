@@ -44,6 +44,7 @@ class ArmaFilesApp : Application() {
 
     val cacheJanitor: CacheJanitor by lazy { CacheJanitor(this, scope) }
     val videoThumbnails: VideoThumbnails by lazy { VideoThumbnails(this, scope) }
+    val appearance: pl.arma.files.ui.theme.AppearanceStore by lazy { pl.arma.files.ui.theme.AppearanceStore(this) }
 
     val indexAutomation: IndexAutomation by lazy { IndexAutomation(this, indexer, scope) }
 

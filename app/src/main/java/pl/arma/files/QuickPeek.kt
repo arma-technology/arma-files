@@ -123,7 +123,7 @@ fun QuickPeek(item: FileItem, vm: FileManagerViewModel, actions: PeekActions, on
             contentAlignment = Alignment.Center
         ) {
             Surface(
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(pl.arma.files.ui.theme.ArmaStyle.SheetRadius),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shadowElevation = 16.dp,
                 modifier = Modifier

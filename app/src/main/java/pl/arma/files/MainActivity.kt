@@ -95,6 +95,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
@@ -114,6 +118,10 @@ import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
 import pl.arma.files.ui.theme.ArmaFilesTheme
 import pl.arma.files.ui.theme.LocalFileTypeColors
+import pl.arma.files.ui.theme.LocalArmaStyle
+import pl.arma.files.ui.theme.ArmaStyle
+import pl.arma.files.ui.theme.PlexMono
+import androidx.compose.foundation.selection.selectable
 import pl.arma.viewer.SheetDocuments
 import pl.arma.viewer.image.FullscreenImageViewer
 import pl.arma.viewer.image.FullscreenSvgViewer
@@ -520,7 +528,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     )
                 }
                 if (!selectionMode) {
-                    NavigationBar(tonalElevation = 0.dp) {
+                    ArmaNavBar {
                     NavItem(Tab.FILES, tab, Icons.Default.Computer, stringResource(R.string.nav_home)) {
                         tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
                     }
@@ -712,7 +720,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             summary = pluralStringResource(R.plurals.n_items, baseFiles.size, baseFiles.size) + " · " +
                                 formatSize(baseFiles.filterNot { it.isDirectory }.sumOf { it.size }),
                             onRefresh = vm::refresh,
-                            onPickRoot = { folderPicker.launch(null) }
+                            onPickRoot = { folderPicker.launch(null) },
+                            files = baseFiles
                         )
 
                         CategoryRow(selected = category, source = baseFiles, onSelected = { category = it })
@@ -1819,8 +1828,10 @@ private fun FolderHeader(
     onView: (ViewMode) -> Unit,
     summary: String,
     onRefresh: () -> Unit,
-    onPickRoot: () -> Unit
+    onPickRoot: () -> Unit,
+    files: List<FileItem> = emptyList()
 ) {
+    Column(Modifier.fillMaxWidth()) {
     Row(
         Modifier.fillMaxWidth().height(52.dp).padding(start = 10.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -1880,16 +1891,13 @@ private fun FolderHeader(
             return@Row
         }
 
-        if (tab == Tab.FILES) {
-            LocationStrip(crumbs, onCrumb, Modifier.weight(1f))
-        } else {
-            Text(
-                if (tab == Tab.RECENT) stringResource(R.string.recent_title) else stringResource(R.string.nav_favorites),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
-            )
+        // Wstecz do folderu nadrzędnego — tytuł i ścieżka stoją pod paskiem.
+        if (tab == Tab.FILES && crumbs.size > 1) {
+            IconButton(onClick = { onCrumb(crumbs[crumbs.lastIndex - 1].second) }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.panes_back), tint = MaterialTheme.colorScheme.onSurface)
+            }
         }
+        Spacer(Modifier.weight(1f))
 
         val iconTint = MaterialTheme.colorScheme.onSurfaceVariant
         IconButton(onClick = { onSearchOpen(true) }) { Icon(Icons.Default.Search, stringResource(R.string.common_search), tint = iconTint) }
@@ -1935,6 +1943,89 @@ private fun FolderHeader(
             }
         }
     }
+    if (!searchOpen) HeaderTitle(tab, crumbs, onCrumb, files)
+    }
+}
+
+/**
+ * Tytuł jak w makiecie: ścieżka drobnym pismem maszynowym (każdy człon
+ * prowadzi do swojego folderu) i duża nazwa bieżącego folderu; przy
+ * folderze ze zdjęciami — kropki jego kolorów.
+ */
+@Composable
+private fun HeaderTitle(tab: Tab, crumbs: List<Pair<String, Uri>>, onCrumb: (Uri) -> Unit, files: List<FileItem>) {
+    val style = LocalArmaStyle.current
+    val title = when (tab) {
+        Tab.FILES -> crumbs.lastOrNull()?.first.orEmpty()
+        Tab.RECENT -> stringResource(R.string.recent_title)
+        else -> stringResource(R.string.nav_favorites)
+    }
+    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, bottom = 6.dp)) {
+        if (tab == Tab.FILES && crumbs.size > 1) {
+            val scroll = rememberScrollState()
+            LaunchedEffect(crumbs.size) { scroll.animateScrollTo(scroll.maxValue) }
+            Row(Modifier.horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
+                crumbs.dropLast(1).forEachIndexed { index, (name, uri) ->
+                    if (index > 0) Text(" / ", style = MonoCaption, color = style.muted)
+                    Text(
+                        name.uppercase(),
+                        style = MonoCaption,
+                        color = style.muted,
+                        maxLines = 1,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { onCrumb(uri) }.padding(vertical = 4.dp)
+                    )
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title,
+                fontSize = 34.sp,
+                lineHeight = 38.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-1).sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            if (style.folderColors && tab == Tab.FILES) FolderColorDots(files, Modifier.padding(start = 12.dp))
+        }
+    }
+}
+
+private val MonoCaption = androidx.compose.ui.text.TextStyle(fontFamily = PlexMono, fontSize = 11.sp, letterSpacing = .4.sp)
+
+/** Do czterech kolorów z miniatur zdjęć folderu — tych, które już są w pamięci. */
+@Composable
+private fun FolderColorDots(files: List<FileItem>, modifier: Modifier) {
+    var colors by remember(files) { mutableStateOf<List<Color>>(emptyList()) }
+    LaunchedEffect(files) {
+        val media = files.filter { it.mimeType.startsWith("image/") || it.mimeType.startsWith("video/") }.take(16)
+        if (media.isEmpty()) return@LaunchedEffect
+        // Miniatury dochodzą w tle — kilka podejść, aż będzie z czego liczyć.
+        repeat(4) {
+            kotlinx.coroutines.delay(700)
+            val found = withContext(Dispatchers.Default) {
+                media.mapNotNull { item ->
+                    ThumbnailCache.get(ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size))?.let { bitmap ->
+                        val one = Bitmap.createScaledBitmap(bitmap, 1, 1, true)
+                        Color(one.getPixel(0, 0))
+                    }
+                }
+            }
+            val distinct = mutableListOf<Color>()
+            for (c in found) {
+                if (distinct.none { d -> kotlin.math.abs(d.red - c.red) + kotlin.math.abs(d.green - c.green) + kotlin.math.abs(d.blue - c.blue) < .25f }) distinct += c
+                if (distinct.size == 4) break
+            }
+            colors = distinct
+            if (distinct.size >= 3) return@LaunchedEffect
+        }
+    }
+    if (colors.isEmpty()) return
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        colors.forEach { c -> Box(Modifier.size(14.dp).clip(CircleShape).background(c)) }
+    }
 }
 
 @Composable
@@ -1945,36 +2036,28 @@ private fun CategoryRow(selected: FileCategory, source: List<FileItem>, onSelect
     // Puste kategorie tylko zabierają miejsce w rzędzie; wybrana zostaje,
     // żeby dało się z niej wyjść, nawet gdy filtr nic nie znajduje.
     val shown = FileCategory.entries.filter { it == FileCategory.ALL || it == selected || (counts[it] ?: 0) > 0 }
+    val style = LocalArmaStyle.current
+    // Zakładki z podkreśleniem zamiast pigułek — jak w makiecie „Wspólny język”.
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 2.dp)
     ) {
         items(shown, key = { it.name }) { category ->
             val active = selected == category
-            Surface(
-                onClick = { onSelected(category) },
-                shape = CircleShape,
-                color = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                border = if (active) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .5f)) else null
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .selectable(selected = active, role = androidx.compose.ui.semantics.Role.Tab) { onSelected(category) }
+                    .padding(top = 6.dp)
             ) {
-                Row(
-                    Modifier.padding(start = 10.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(categoryIcon(category), null, Modifier.size(16.dp), tint = categoryColor(category))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        categoryLabel(category),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (active) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.width(5.dp))
-                    Text(
-                        "${counts[category] ?: 0}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    "${categoryLabel(category)} ${counts[category] ?: 0}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (active) style.text else style.muted,
+                    maxLines = 1
+                )
+                Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(2.dp).background(if (active) style.accent else Color.Transparent))
             }
         }
     }
@@ -2841,12 +2924,38 @@ private fun EmptyFolder(filtered: Boolean, tab: Tab) {
 
 @Composable
 private fun RowScope.NavItem(value: Tab, selected: Tab, icon: ImageVector, label: String, onClick: () -> Unit) {
-    NavigationBarItem(
-        selected = value == selected,
-        onClick = onClick,
-        icon = { Icon(icon, null) },
-        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-    )
+    val style = LocalArmaStyle.current
+    val active = value == selected
+    val underline by androidx.compose.animation.core.animateDpAsState(if (active) 28.dp else 0.dp, label = "navUnderline")
+    // Napis z podkreśleniem akcentem, jak w makiecie „Wspólny język”; ikona tylko dla czytnika ekranu.
+    Column(
+        Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(ArmaStyle.ControlRadius))
+            .selectable(selected = active, role = androidx.compose.ui.semantics.Role.Tab, onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (active) style.text else style.muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Box(Modifier.padding(top = 6.dp).width(underline).height(2.dp).background(style.accent))
+    }
+}
+
+/** Dolna nawigacja: cienka kreska u góry i cztery napisy — bez pigułek Material. */
+@Composable
+private fun ArmaNavBar(content: @Composable RowScope.() -> Unit) {
+    val style = LocalArmaStyle.current
+    Column(Modifier.background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
+        HorizontalDivider(color = style.hairline)
+        Row(Modifier.fillMaxWidth().height(60.dp), verticalAlignment = Alignment.CenterVertically, content = content)
+    }
 }
 
 private fun openItem(
