@@ -2,7 +2,9 @@ package pl.arma.files.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -14,6 +16,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
 /**
@@ -69,6 +72,18 @@ private val DarkFileColors = FileTypeColors(
 val LocalFileTypeColors = staticCompositionLocalOf { DarkFileColors }
 
 /**
+ * Zaokrąglenia Material z wartości stylu ARMA — okna, arkusze i menu mają te
+ * same promienie co arkusz Głębi i karty, zamiast domyślnych 28 dp i 4 dp.
+ */
+private val ArmaShapes = Shapes(
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(ArmaStyle.ControlRadius),
+    medium = RoundedCornerShape(ArmaStyle.CardRadius),
+    large = RoundedCornerShape(ArmaStyle.ShelfRadius),
+    extraLarge = RoundedCornerShape(ArmaStyle.SheetRadius)
+)
+
+/**
  * Motyw aplikacji: Noc albo Papier według ustawienia „Wygląd” (Automatyczny
  * idzie za trybem ciemnym systemu). Kolory Material, krój pisma i ikony
  * paska stanu pochodzą z jednego stylu ARMA.
@@ -102,6 +117,6 @@ fun ArmaFilesTheme(content: @Composable () -> Unit) {
         LocalFileTypeColors provides if (night) DarkFileColors else LightFileColors,
         LocalArmaStyle provides style
     ) {
-        MaterialTheme(colorScheme = scheme, typography = typography, content = content)
+        MaterialTheme(colorScheme = scheme, typography = typography, shapes = ArmaShapes, content = content)
     }
 }

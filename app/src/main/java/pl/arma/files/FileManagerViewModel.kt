@@ -2137,6 +2137,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 val monthsAgo = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000
                 StorageAnalysis(
                     usageByCategory = index.usageByCategory(),
+                    usageByStorage = _deviceStorages.value.associate { it.id to index.usageByCategoryUnder(it.rootUri.toString()) },
                     stats = index.stats(),
                     largestFiles = index.largestFiles(30).map(::toFileItem).filter { onPresentVolume(it.uri) },
                     largestFolders = index.largestFolders(20).filter { onPresentVolume(Uri.parse(it.parentUri)) },

@@ -276,6 +276,24 @@ class FileIndexDb(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, D
         }
     }
 
+    /** Jak [usageByCategory], ale tylko pliki spod [rootUri] — osobno dla każdego nośnika. */
+    fun usageByCategoryUnder(rootUri: String): Map<IndexCategory, Long> {
+        val prefix = rootUri.trimEnd('/') + "/"
+        return readableDatabase.rawQuery(
+            // substr zamiast LIKE: „_” i „%” w ścieżce nie są wtedy znakami wzorca.
+            "SELECT category, SUM(size) FROM files WHERE is_dir = 0 AND substr(uri, 1, ?) = ? GROUP BY category",
+            arrayOf(prefix.length.toString(), prefix)
+        ).use { cursor ->
+            buildMap {
+                while (cursor.moveToNext()) {
+                    val category = runCatching { IndexCategory.valueOf(cursor.getString(0)) }
+                        .getOrDefault(IndexCategory.OTHER)
+                    put(category, (get(category) ?: 0L) + cursor.getLong(1))
+                }
+            }
+        }
+    }
+
     /** Liczba plików w katalogu razem z podkatalogami. */
     fun countUnder(parentUri: String): Int = readableDatabase.rawQuery(
         "SELECT COUNT(*) FROM files WHERE is_dir = 0 AND (parent_uri = ? OR uri LIKE ?)",

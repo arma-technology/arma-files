@@ -216,6 +216,20 @@ class FileIndexDbTest {
     }
 
     @Test
+    fun `zajetosc osobno dla kazdego nosnika`() {
+        db.upsert(
+            listOf(
+                file("/storage/emulated/0/DCIM/a.jpg", size = 1_000),
+                file("/storage/1234-ABCD/DCIM/b.jpg", size = 2_000),
+                file("/storage/1234-ABCD_2/c.jpg", size = 4_000)
+            )
+        )
+        assertEquals(1_000L, db.usageByCategoryUnder("file:///storage/emulated/0")[IndexCategory.IMAGE])
+        // Prefiks nośnika nie łapie sąsiedniego katalogu o dłuższej nazwie ani „_” jako wzorca.
+        assertEquals(2_000L, db.usageByCategoryUnder("file:///storage/1234-ABCD/")[IndexCategory.IMAGE])
+    }
+
+    @Test
     fun `liczenie plikow obejmuje podkatalogi`() {
         db.upsert(
             listOf(

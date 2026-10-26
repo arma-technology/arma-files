@@ -224,7 +224,7 @@ fun CategorySearchRow(
 }
 
 @Composable
-private fun indexCategoryColor(category: IndexCategory): Color {
+internal fun indexCategoryColor(category: IndexCategory): Color {
     val colors = LocalFileTypeColors.current
     return when (category) {
         IndexCategory.IMAGE -> colors.image

@@ -739,12 +739,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             }
                         },
                         onRevealResult = vm::revealParent,
-                        storageUsage = analysis.usageByCategory
-                            .filterValues { it > 0 }
-                            .toList()
-                            .sortedByDescending { it.second }
-                            .take(4)
-                            .map { (category, bytes) -> categoryShortLabel(category) to bytes },
+                        storageUsage = analysis.usageByStorage,
                         onOpenHistory = { showHistory = true }
                     )
                 }
@@ -918,6 +913,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
                                             onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
+                                            columns = gridColumns,
                                             interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
                                         )
                                         }
@@ -1108,18 +1104,26 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             icon = { Icon(Icons.Default.DeleteOutline, null) },
             title = { Text(if (itemsToDelete.size == 1) stringResource(R.string.delete_one_title, itemsToDelete.first().name) else pluralStringResource(R.plurals.delete_n_title, itemsToDelete.size, itemsToDelete.size)) },
             text = {
-                Text(stringResource(R.string.delete_text))
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Text(stringResource(R.string.delete_text))
+                    // Nieodwracalne usunięcie osobno, w kolorze błędu — nie obok „Anuluj”,
+                    // gdzie łatwo trafić w nie zamiast w zwykłe zamknięcie okna.
+                    OutlinedButton(
+                        onClick = { vm.deleteForever(itemsToDelete); deleteItems = emptyList() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = .5f))
+                    ) {
+                        Icon(Icons.Default.DeleteForever, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.delete_forever))
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text(stringResource(R.string.delete_to_trash)) }
+                Button(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text(stringResource(R.string.delete_to_trash)) }
             },
             dismissButton = {
-                Row {
-                    TextButton(onClick = { deleteItems = emptyList() }) { Text(stringResource(R.string.common_cancel)) }
-                    TextButton(onClick = {
-                        vm.deleteForever(itemsToDelete); deleteItems = emptyList()
-                    }) { Text(stringResource(R.string.delete_forever)) }
-                }
+                TextButton(onClick = { deleteItems = emptyList() }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -1312,7 +1316,7 @@ private fun ComputerHome(
     onCloseResults: () -> Unit,
     onOpenResult: (FileItem) -> Unit,
     onRevealResult: (FileItem) -> Unit,
-    storageUsage: List<Pair<String, Long>>,
+    storageUsage: Map<String, Map<pl.arma.files.index.IndexCategory, Long>>,
     onOpenHistory: () -> Unit
 ) {
     LazyColumn(
@@ -1422,7 +1426,7 @@ private fun ComputerHome(
             SectionTitle(stringResource(R.string.home_this_computer), Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
         }
         items(storages, key = { it.id }) { storage ->
-            DeviceStorageCard(storage = storage, usage = storageUsage, onClick = { onOpenStorage(storage) })
+            DeviceStorageCard(storage = storage, usage = storageUsage[storage.id].orEmpty(), onClick = { onOpenStorage(storage) })
         }
 
         if (connectedSources.isNotEmpty()) {
@@ -1683,11 +1687,11 @@ private fun categoryShortLabel(category: pl.arma.files.index.IndexCategory): Str
 @Composable
 private fun DeviceStorageCard(
     storage: DeviceStorage,
-    usage: List<Pair<String, Long>>,
+    usage: Map<pl.arma.files.index.IndexCategory, Long>,
     onClick: () -> Unit
 ) {
     val used = (storage.totalBytes - storage.freeBytes).coerceAtLeast(0L)
-    val fraction = if (storage.totalBytes > 0) (used.toFloat() / storage.totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
+    val top = usage.filterValues { it > 0 }.toList().sortedByDescending { it.second }
     Surface(
         onClick = onClick,
         modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth(),
@@ -1723,17 +1727,25 @@ private fun DeviceStorageCard(
                         )
                     }
                 }
-                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)))
-                if (usage.isNotEmpty()) {
+                UsageBar(storage.totalBytes, used, top)
+                if (top.isNotEmpty()) {
                     // Rozbicie pochodzi z indeksu, więc pojawia się dopiero po
                     // jego zbudowaniu — bez niego nie mamy skąd wziąć kategorii.
-                    Text(
-                        usage.joinToString(" · ") { (label, bytes) -> "$label ${formatSize(bytes)}" },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    // Kropka w kolorze odcinka paska mówi, który to.
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        top.take(3).forEach { (category, bytes) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(7.dp).clip(CircleShape).background(indexCategoryColor(category)))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "${categoryShortLabel(category)} ${formatSize(bytes)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
                 Text(
                     if (storage.totalBytes > 0) {
@@ -1746,6 +1758,39 @@ private fun DeviceStorageCard(
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/**
+ * Pasek zajętości z odcinkami kategorii z indeksu; reszta zajętego miejsca
+ * (system, aplikacje, pliki spoza indeksu) to odcinek akcentu, wolne — tło.
+ */
+@Composable
+private fun UsageBar(total: Long, used: Long, parts: List<Pair<pl.arma.files.index.IndexCategory, Long>>) {
+    val track = MaterialTheme.colorScheme.surfaceContainerHighest
+    val rest = MaterialTheme.colorScheme.primary.copy(alpha = .55f)
+    val colors = parts.map { indexCategoryColor(it.first) }
+    // Pasek wypełnia się przy pierwszym pokazaniu, zamiast pojawić się gotowy.
+    val calm = LocalArmaStyle.current.calm
+    val grow = remember { androidx.compose.animation.core.Animatable(if (calm) 1f else 0f) }
+    LaunchedEffect(Unit) { grow.animateTo(1f, androidx.compose.animation.core.tween(700, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50))) {
+        drawRect(track)
+        if (total <= 0) return@Canvas
+        val scale = size.width / total * grow.value
+        var x = 0f
+        var known = 0L
+        parts.forEachIndexed { i, (_, bytes) ->
+            // Indeks może liczyć więcej niż system (twarde dowiązania) — nie wychodzimy poza zajęte.
+            val clamped = bytes.coerceAtMost((used - known).coerceAtLeast(0))
+            known += clamped
+            val w = clamped * scale
+            drawRect(colors[i], topLeft = Offset(x, 0f), size = Size(w, size.height))
+            x += w
+            // Cienka przerwa między odcinkami — kolory nie zlewają się w jedną plamę.
+            if (w > 2f) drawRect(track, topLeft = Offset(x - 1f, 0f), size = Size(1f, size.height))
+        }
+        drawRect(rest, topLeft = Offset(x, 0f), size = Size((used - known).coerceAtLeast(0) * scale, size.height))
     }
 }
 
@@ -2209,6 +2254,7 @@ private fun FileTile(
     selectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    columns: Int,
     interaction: Modifier? = null
 ) {
     Surface(
@@ -2238,12 +2284,15 @@ private fun FileTile(
                 }
             }
             Spacer(Modifier.height(6.dp))
+            // Przy szerokich kafelkach (2–3 kolumny) dwie linie — długie nazwy
+            // zdjęć i dokumentów różnią się zwykle dopiero na końcu.
             Text(
                 item.name,
-                maxLines = 1,
+                maxLines = if (columns <= 3) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodySmall,
+                lineHeight = 15.sp,
                 modifier = Modifier.padding(horizontal = 2.dp)
             )
             if (!item.isDirectory) {

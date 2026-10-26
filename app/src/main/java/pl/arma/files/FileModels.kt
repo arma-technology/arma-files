@@ -35,6 +35,8 @@ data class TabInfo(
 data class StorageAnalysis(
     val stats: pl.arma.files.index.IndexStats? = null,
     val usageByCategory: Map<pl.arma.files.index.IndexCategory, Long> = emptyMap(),
+    /** Rozbicie zajętości na kategorie dla każdego nośnika ([DeviceStorage.id]). */
+    val usageByStorage: Map<String, Map<pl.arma.files.index.IndexCategory, Long>> = emptyMap(),
     val largestFiles: List<FileItem> = emptyList(),
     val largestFolders: List<pl.arma.files.index.FolderUsage> = emptyList(),
     val oldFiles: List<FileItem> = emptyList()
