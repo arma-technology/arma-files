@@ -32,6 +32,7 @@
     <string name="analysis_counting">Wird gezählt…</string>
     <string name="analysis_duplicate_detail">%1$s · je %2$s · %3$s freizugeben</string>
     <string name="analysis_duplicates">Duplikate</string>
+    <string name="duplicates_hint">Markierte Kopien kommen in den Papierkorb. Standardmäßig sind alle außer der ältesten markiert.</string>
     <string name="analysis_largest_files">Größte Dateien</string>
     <string name="analysis_largest_folders">Größte Ordner</string>
     <string name="analysis_no_duplicates">Keine Duplikate unter Dateien über 4 KB gefunden. Verglichen wird der SHA-256-Hash, daher zählen Dateien gleicher Größe mit anderem Inhalt nicht.</string>

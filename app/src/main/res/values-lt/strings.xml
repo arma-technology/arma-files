@@ -32,6 +32,7 @@
     <string name="analysis_counting">Skaičiuojama…</string>
     <string name="analysis_duplicate_detail">%1$s · po %2$s · galima atlaisvinti %3$s</string>
     <string name="analysis_duplicates">Dublikatai</string>
+    <string name="duplicates_hint">Pažymėtos kopijos keliaus į šiukšlinę. Numatytai pažymėtos visos, išskyrus seniausią.</string>
     <string name="analysis_largest_files">Didžiausi failai</string>
     <string name="analysis_largest_folders">Didžiausi aplankai</string>
     <string name="analysis_no_duplicates">Tarp didesnių nei 4 KB failų dublikatų nerasta. Lyginama SHA-256 maiša, todėl to paties dydžio, bet skirtingo turinio failai neskaičiuojami.</string>

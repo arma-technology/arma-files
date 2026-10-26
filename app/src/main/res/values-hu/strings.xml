@@ -32,6 +32,7 @@
     <string name="analysis_counting">Számolás…</string>
     <string name="analysis_duplicate_detail">%1$s · egyenként %2$s · %3$s szabadítható fel</string>
     <string name="analysis_duplicates">Ismétlődések</string>
+    <string name="duplicates_hint">A bejelölt másolatok a kukába kerülnek. Alapértelmezés szerint a legrégebbi kivételével mind be van jelölve.</string>
     <string name="analysis_largest_files">Legnagyobb fájlok</string>
     <string name="analysis_largest_folders">Legnagyobb mappák</string>
     <string name="analysis_no_duplicates">A 4 KB-nál nagyobb fájlok között nincs ismétlődés. Az összehasonlítás SHA-256 kivonat alapján történik, így az azonos méretű, de eltérő tartalmú fájlok nem számítanak.</string>

@@ -32,6 +32,7 @@
     <string name="analysis_counting">Liczę…</string>
     <string name="analysis_duplicate_detail">%1$s · %2$s każda · do odzyskania %3$s</string>
     <string name="analysis_duplicates">Duplikaty</string>
+    <string name="duplicates_hint">Zaznaczone kopie trafią do kosza. Domyślnie zaznaczone są wszystkie poza najstarszą.</string>
     <string name="analysis_largest_files">Największe pliki</string>
     <string name="analysis_largest_folders">Największe katalogi</string>
     <string name="analysis_no_duplicates">Nie znaleziono duplikatów wśród plików powyżej 4 KB. Porównywany jest skrót SHA-256, więc pliki o tym samym rozmiarze, ale innej zawartości nie są zliczane.</string>

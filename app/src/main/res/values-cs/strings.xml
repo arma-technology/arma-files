@@ -32,6 +32,7 @@
     <string name="analysis_counting">Počítám…</string>
     <string name="analysis_duplicate_detail">%1$s · %2$s každá · lze uvolnit %3$s</string>
     <string name="analysis_duplicates">Duplikáty</string>
+    <string name="duplicates_hint">Označené kopie půjdou do koše. Ve výchozím stavu jsou označeny všechny kromě nejstarší.</string>
     <string name="analysis_largest_files">Největší soubory</string>
     <string name="analysis_largest_folders">Největší složky</string>
     <string name="analysis_no_duplicates">Mezi soubory nad 4 KB nebyly nalezeny duplikáty. Porovnává se otisk SHA-256, takže soubory stejné velikosti s jiným obsahem se nepočítají.</string>

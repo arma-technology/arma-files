@@ -32,6 +32,7 @@
     <string name="analysis_counting">Štejem…</string>
     <string name="analysis_duplicate_detail">%1$s · po %2$s · sprosti se lahko %3$s</string>
     <string name="analysis_duplicates">Dvojniki</string>
+    <string name="duplicates_hint">Označene kopije gredo v koš. Privzeto so označene vse razen najstarejše.</string>
     <string name="analysis_largest_files">Največje datoteke</string>
     <string name="analysis_largest_folders">Največje mape</string>
     <string name="analysis_no_duplicates">Med datotekami nad 4 KB ni dvojnikov. Primerja se zgoščena vrednost SHA-256, zato se datoteke enake velikosti z drugačno vsebino ne štejejo.</string>

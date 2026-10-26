@@ -32,6 +32,7 @@
     <string name="analysis_counting">Подсчёт…</string>
     <string name="analysis_duplicate_detail">%1$s · по %2$s · можно освободить %3$s</string>
     <string name="analysis_duplicates">Дубликаты</string>
+    <string name="duplicates_hint">Отмеченные копии попадут в корзину. По умолчанию отмечены все, кроме самой старой.</string>
     <string name="analysis_largest_files">Самые большие файлы</string>
     <string name="analysis_largest_folders">Самые большие папки</string>
     <string name="analysis_no_duplicates">Среди файлов больше 4 КБ дубликатов не найдено. Сравнивается хеш SHA-256, поэтому файлы одинакового размера с разным содержимым не учитываются.</string>

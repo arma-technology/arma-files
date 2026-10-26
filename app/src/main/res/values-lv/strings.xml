@@ -32,6 +32,7 @@
     <string name="analysis_counting">Skaita…</string>
     <string name="analysis_duplicate_detail">%1$s · katra %2$s · var atbrīvot %3$s</string>
     <string name="analysis_duplicates">Dublikāti</string>
+    <string name="duplicates_hint">Atzīmētās kopijas nonāks atkritnē. Pēc noklusējuma atzīmētas visas, izņemot vecāko.</string>
     <string name="analysis_largest_files">Lielākie faili</string>
     <string name="analysis_largest_folders">Lielākās mapes</string>
     <string name="analysis_no_duplicates">Starp failiem, kas lielāki par 4 KB, dublikāti netika atrasti. Tiek salīdzināts SHA-256 jaucējkods, tāpēc vienāda izmēra faili ar atšķirīgu saturu netiek skaitīti.</string>

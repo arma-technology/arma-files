@@ -32,6 +32,7 @@
     <string name="analysis_counting">Loendamine…</string>
     <string name="analysis_duplicate_detail">%1$s · igaüks %2$s · vabastada saab %3$s</string>
     <string name="analysis_duplicates">Duplikaadid</string>
+    <string name="duplicates_hint">Märgitud koopiad lähevad prügikasti. Vaikimisi on märgitud kõik peale vanima.</string>
     <string name="analysis_largest_files">Suurimad failid</string>
     <string name="analysis_largest_folders">Suurimad kaustad</string>
     <string name="analysis_no_duplicates">Üle 4 KB failide seas duplikaate ei leitud. Võrreldakse SHA-256 räsi, seega sama suurusega, kuid erineva sisuga faile ei loeta.</string>

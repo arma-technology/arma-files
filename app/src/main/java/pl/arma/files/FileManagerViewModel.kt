@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -952,6 +953,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun delete(items: List<FileItem>) {
         if (items.isEmpty()) return
+        dropFromDuplicates(items)
         viewModelScope.launch {
             val groups = items.groupBy { trashRootFor(it.uri)?.toString() }
             groups.forEach { (rootUri, group) ->
@@ -983,9 +985,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrNull()
     }
 
+    /** Usunięte kopie znikają z listy duplikatów; zbiór z jednym plikiem przestaje nim być. */
+    private fun dropFromDuplicates(items: List<FileItem>) {
+        val gone = items.map { it.uri.toString() }.toSet()
+        _duplicates.update { sets ->
+            sets.map { set -> set.copy(files = set.files.filterNot { it.uri.toString() in gone }) }.filter { it.files.size > 1 }
+        }
+    }
+
     /** Usuwa bezpowrotnie, z pominięciem kosza. */
     fun deleteForever(items: List<FileItem>) {
         if (items.isEmpty()) return
+        dropFromDuplicates(items)
         enqueue(OperationKind.DELETE, items, null)
     }
 
@@ -1965,6 +1976,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return "$label: ${parent.ifEmpty { "/" }}"
         }
         return parent.removePrefix("/storage/emulated/0")
+    }
+
+    /** Gdzie leży plik, po ludzku: nazwa nośnika albo konta i folder w nim. */
+    fun locationLabel(item: FileItem): String {
+        if (RemoteRepository.isRemoteScheme(item.uri.scheme)) return searchLocation(item)
+        val parent = item.uri.path.orEmpty().substringBeforeLast('/')
+        val storage = _deviceStorages.value
+            .filter { it.rootUri.scheme == item.uri.scheme && parent.startsWith(it.rootUri.path.orEmpty().trimEnd('/')) }
+            .maxByOrNull { it.rootUri.path.orEmpty().length }
+            ?: return parent
+        val inside = parent.removePrefix(storage.rootUri.path.orEmpty().trimEnd('/')).trim('/')
+        return if (inside.isEmpty()) storage.label else "${storage.label} › ${inside.replace("/", " › ")}"
     }
 
     /** Kategoria licząca się dla całej pamięci, nie tylko dla otwartego katalogu. */

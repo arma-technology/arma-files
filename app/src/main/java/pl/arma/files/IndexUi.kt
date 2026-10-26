@@ -27,6 +27,9 @@ import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material3.Button
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -252,9 +255,17 @@ fun StorageAnalysisSheet(
     busy: Boolean,
     onFindDuplicates: () -> Unit,
     onOpen: (FileItem) -> Unit,
+    onPreview: (FileItem) -> Unit,
+    onDeleteDuplicates: (List<FileItem>) -> Unit,
+    location: (FileItem) -> String,
+    vm: FileManagerViewModel,
+    marked: Set<String>,
+    onMarked: (Set<String>) -> Unit,
+    initialSection: Int = 0,
+    onSection: (Int) -> Unit = {},
     onDismiss: () -> Unit
 ) {
-    var section by remember { mutableStateOf(0) }
+    var section by remember { mutableStateOf(initialSection) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
@@ -280,6 +291,7 @@ fun StorageAnalysisSheet(
                     AssistChip(
                         onClick = {
                             section = target
+                            onSection(target)
                             if (target == 3 && duplicates.isEmpty()) onFindDuplicates()
                         },
                         label = { Text(label) }
@@ -335,14 +347,92 @@ fun StorageAnalysisSheet(
                                 )
                             }
                             items(set.files, key = { it.uri.toString() }) { item ->
-                                FileLine(item.name, "", item.uri.path.orEmpty()) { onOpen(item) }
+                                val key = item.uri.toString()
+                                DuplicateLine(
+                                    item = item,
+                                    location = location(item),
+                                    checked = key in marked,
+                                    vm = vm,
+                                    onCheck = { onMarked(if (it) marked + key else marked - key) },
+                                    onPreview = { onPreview(item) },
+                                    onReveal = { onOpen(item) }
+                                )
                             }
                         }
                     }
                 }
             }
+            if (section == 3 && duplicates.isNotEmpty()) {
+                val chosen = duplicates.flatMap { it.files }.filter { it.uri.toString() in marked }
+                Text(
+                    stringResource(R.string.duplicates_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
+                Button(
+                    onClick = { onDeleteDuplicates(chosen) },
+                    enabled = chosen.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Icon(Icons.Default.DeleteOutline, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.delete_to_trash) + " · " +
+                            pluralStringResource(R.plurals.n_files, chosen.size, chosen.size) + " · " +
+                            formatSize(chosen.sumOf { it.size })
+                    )
+                }
+            }
         }
     }
+}
+
+/** Jedna kopia: miniatura (dotknięcie = podgląd), gdzie leży, zaznaczenie do kosza. */
+@Composable
+private fun DuplicateLine(
+    item: FileItem,
+    location: String,
+    checked: Boolean,
+    vm: FileManagerViewModel,
+    onCheck: (Boolean) -> Unit,
+    onPreview: () -> Unit,
+    onReveal: () -> Unit
+) {
+    Row(
+        Modifier.fillMaxWidth().clickable { onCheck(!checked) }.padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheck)
+        FileVisual(
+            item,
+            Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).clickable(onClick = onPreview),
+            thumbnail = true,
+            vm = vm,
+            crop = true
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(item.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Folder w dwóch liniach: przy długiej ścieżce liczy się jej koniec.
+            Text(
+                location,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(item.lastModified)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onReveal) {
+            Icon(Icons.Default.FolderOpen, stringResource(R.string.show_in_folder))
+        }
+    }
+    HorizontalDivider()
 }
 
 private fun parentOf(item: FileItem): String =

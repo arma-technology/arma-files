@@ -32,6 +32,7 @@
     <string name="analysis_counting">Бројим…</string>
     <string name="analysis_duplicate_detail">%1$s · по %2$s · може се ослободити %3$s</string>
     <string name="analysis_duplicates">Дупликати</string>
+    <string name="duplicates_hint">Означене копије иду у отпад. Подразумевано су означене све осим најстарије.</string>
     <string name="analysis_largest_files">Највеће датотеке</string>
     <string name="analysis_largest_folders">Највеће фасцикле</string>
     <string name="analysis_no_duplicates">Међу датотекама већим од 4 KB нема дупликата. Упоређује се SHA-256 отисак, па се датотеке исте величине, али различитог садржаја не рачунају.</string>

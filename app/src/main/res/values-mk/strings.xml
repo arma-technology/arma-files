@@ -32,6 +32,7 @@
     <string name="analysis_counting">Бројам…</string>
     <string name="analysis_duplicate_detail">%1$s · по %2$s · може да се ослободат %3$s</string>
     <string name="analysis_duplicates">Дупликати</string>
+    <string name="duplicates_hint">Означените копии одат во корпата. Стандардно се означени сите освен најстарата.</string>
     <string name="analysis_largest_files">Најголеми датотеки</string>
     <string name="analysis_largest_folders">Најголеми папки</string>
     <string name="analysis_no_duplicates">Нема дупликати меѓу датотеките поголеми од 4 KB. Се споредува SHA-256 хешот, па датотеките со иста големина, а различна содржина не се бројат.</string>

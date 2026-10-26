@@ -32,6 +32,7 @@
     <string name="analysis_counting">Падлік…</string>
     <string name="analysis_duplicate_detail">%1$s · па %2$s · можна вызваліць %3$s</string>
     <string name="analysis_duplicates">Дублікаты</string>
+    <string name="duplicates_hint">Пазначаныя копіі трапяць у кошык. Па змаўчанні пазначаны ўсе, акрамя найстарэйшай.</string>
     <string name="analysis_largest_files">Найбуйнейшыя файлы</string>
     <string name="analysis_largest_folders">Найбуйнейшыя папкі</string>
     <string name="analysis_no_duplicates">Сярод файлаў больш за 4 КБ дублікатаў не знойдзена. Параўноўваецца хэш SHA-256, таму файлы аднолькавага памеру з розным змесцівам не ўлічваюцца.</string>

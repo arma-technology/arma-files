@@ -265,6 +265,18 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var editedAccount by remember { mutableStateOf<Pair<RemoteAccount, Boolean>?>(null) }
     var showDiscovery by remember { mutableStateOf(false) }
     var showAnalysis by remember { mutableStateOf(false) }
+    var reopenAnalysis by remember { mutableStateOf(false) }
+    var analysisSection by remember { mutableIntStateOf(0) }
+    // Do kosza domyślnie wszystkie kopie poza najstarszą — ta jest zwykle oryginałem.
+    var duplicateMarks by remember(duplicates) {
+        mutableStateOf(duplicates.flatMap { set -> set.files.sortedBy { it.lastModified }.drop(1) }.map { it.uri.toString() }.toSet())
+    }
+    LaunchedEffect(preview) {
+        if (preview == null && reopenAnalysis) {
+            reopenAnalysis = false
+            showAnalysis = true
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -1177,8 +1189,21 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             duplicates = duplicates,
             busy = analyzing,
             onFindDuplicates = vm::findDuplicates,
-            onOpen = { item -> showAnalysis = false; vm.revealParent(item) },
-            onDismiss = { showAnalysis = false }
+            onOpen = { item -> showAnalysis = false; analysisSection = 0; vm.revealParent(item) },
+            onPreview = { item ->
+                // Podgląd nad arkuszem by go nie przykrył — arkusz wraca po zamknięciu podglądu.
+                showAnalysis = false
+                reopenAnalysis = true
+                preview = item
+            },
+            onDeleteDuplicates = { deleteItems = it },
+            location = vm::locationLabel,
+            vm = vm,
+            marked = duplicateMarks,
+            onMarked = { duplicateMarks = it },
+            initialSection = analysisSection,
+            onSection = { analysisSection = it },
+            onDismiss = { showAnalysis = false; analysisSection = 0 }
         )
     }
 

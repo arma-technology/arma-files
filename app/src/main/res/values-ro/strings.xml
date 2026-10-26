@@ -32,6 +32,7 @@
     <string name="analysis_counting">Se numără…</string>
     <string name="analysis_duplicate_detail">%1$s · %2$s fiecare · %3$s de recuperat</string>
     <string name="analysis_duplicates">Duplicate</string>
+    <string name="duplicates_hint">Copiile bifate ajung în coș. Implicit sunt bifate toate, în afară de cea mai veche.</string>
     <string name="analysis_largest_files">Cele mai mari fișiere</string>
     <string name="analysis_largest_folders">Cele mai mari dosare</string>
     <string name="analysis_no_duplicates">Nu s-au găsit duplicate printre fișierele de peste 4 KB. Se compară amprenta SHA-256, deci fișierele de aceeași mărime, dar cu alt conținut nu sunt numărate.</string>

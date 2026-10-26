@@ -32,6 +32,7 @@
     <string name="analysis_counting">Po numëroj…</string>
     <string name="analysis_duplicate_detail">%1$s · %2$s secila · %3$s për t’u liruar</string>
     <string name="analysis_duplicates">Dublikatat</string>
+    <string name="duplicates_hint">Kopjet e shënuara shkojnë në kosh. Si parazgjedhje janë shënuar të gjitha përveç më së vjetrës.</string>
     <string name="analysis_largest_files">Skedarët më të mëdhenj</string>
     <string name="analysis_largest_folders">Dosjet më të mëdha</string>
     <string name="analysis_no_duplicates">Nuk u gjetën dublikata mes skedarëve mbi 4 KB. Krahasohet hash-i SHA-256, prandaj skedarët me të njëjtën madhësi, por me përmbajtje tjetër nuk numërohen.</string>

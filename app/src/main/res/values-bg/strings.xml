@@ -32,6 +32,7 @@
     <string name="analysis_counting">Преброяване…</string>
     <string name="analysis_duplicate_detail">%1$s · по %2$s · %3$s за освобождаване</string>
     <string name="analysis_duplicates">Дубликати</string>
+    <string name="duplicates_hint">Отметнатите копия отиват в кошчето. По подразбиране са отметнати всички освен най-старото.</string>
     <string name="analysis_largest_files">Най-големи файлове</string>
     <string name="analysis_largest_folders">Най-големи папки</string>
     <string name="analysis_no_duplicates">Не са открити дубликати сред файловете над 4 KB. Сравнява се SHA-256 хешът, затова файлове с еднакъв размер, но различно съдържание не се броят.</string>
