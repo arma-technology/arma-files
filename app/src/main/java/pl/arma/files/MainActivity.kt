@@ -215,7 +215,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
     val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
     val remoteAccounts by vm.remoteAccounts.collectAsStateWithLifecycle()
-    val pinnedStats by vm.pinnedStats.collectAsStateWithLifecycle()
     val indexProgress by vm.indexProgress.collectAsStateWithLifecycle()
     val searchResults by vm.searchResults.collectAsStateWithLifecycle()
     val globalSearch by vm.globalSearch.collectAsStateWithLifecycle()
@@ -696,7 +695,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         },
                         onUnpin = vm::unpinFolder,
                         onMovePinned = vm::movePinned,
-                        pinnedStats = pinnedStats,
                         onOpenPinnedInNewTab = { folder ->
                             vm.openTab(); openLocal(folder.rootUri)
                         },
@@ -1273,7 +1271,6 @@ private fun ComputerHome(
     onCategory: (pl.arma.files.index.IndexCategory) -> Unit,
     onUnpin: (String) -> Unit,
     onMovePinned: (Int, Int) -> Unit,
-    pinnedStats: Map<String, Pair<Int, Long>>,
     onOpenPinnedInNewTab: (PinnedFolder) -> Unit,
     searchResults: List<FileItem>,
     onOpenResult: (FileItem) -> Unit,
@@ -1333,7 +1330,6 @@ private fun ComputerHome(
         item {
             PinnedFolderRow(
                 pinned = pinned,
-                stats = pinnedStats,
                 onOpen = onOpenPinned,
                 onOpenInNewTab = onOpenPinnedInNewTab,
                 onUnpin = onUnpin,

@@ -1741,24 +1741,6 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         super.onCleared()
     }
 
-    private val _pinnedStats = MutableStateFlow<Map<String, Pair<Int, Long>>>(emptyMap())
-    /** Liczba plików i zajętość przypiętych folderów, prosto z indeksu. */
-    val pinnedStats: StateFlow<Map<String, Pair<Int, Long>>> = _pinnedStats.asStateFlow()
-
-    private fun loadPinnedStats() {
-        viewModelScope.launch {
-            val stats = withContext(Dispatchers.IO) {
-                // Zero przy braku indeksu wyglądało jak pusty folder; wtedy
-                // karta pokazuje ścieżkę.
-                _pinnedFolders.value.associate { folder ->
-                    val uri = folder.rootUri.toString()
-                    uri to (index.countUnder(uri) to index.bytesUnder(uri))
-                }.filterValues { (count, _) -> count > 0 }
-            }
-            _pinnedStats.value = stats
-        }
-    }
-
     private fun loadPinned() {
         val stored = migratePicturesToCamera(
             prefs.pinned() ?: defaultPinned().also { defaults ->
@@ -1778,7 +1760,6 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 } else parsed.path ?: label
             )
         }
-        loadPinnedStats()
     }
 
     /**

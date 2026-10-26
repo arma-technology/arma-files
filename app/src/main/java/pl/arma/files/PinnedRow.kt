@@ -3,13 +3,12 @@ package pl.arma.files
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -42,17 +41,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
 import pl.arma.files.ui.theme.LocalFileTypeColors
 
-private val CARD_WIDTH = 140.dp
+// Niskie kafelki w jednej linii: ikona, nazwa, menu — bez liczby plików i rozmiaru.
+private val CARD_WIDTH = 150.dp
 private val CARD_SPACING = 8.dp
+private val CARD_HEIGHT = 48.dp
 
 /**
  * Rząd przypiętych folderów z przeciąganiem kolejności.
@@ -64,7 +63,6 @@ private val CARD_SPACING = 8.dp
 @Composable
 fun PinnedFolderRow(
     pinned: List<PinnedFolder>,
-    stats: Map<String, Pair<Int, Long>>,
     onOpen: (PinnedFolder) -> Unit,
     onOpenInNewTab: (PinnedFolder) -> Unit,
     onUnpin: (String) -> Unit,
@@ -124,7 +122,6 @@ fun PinnedFolderRow(
             ) {
                 PinnedCard(
                     folder = folder,
-                    stat = stats[folder.id],
                     onClick = { onOpen(folder) },
                     onOpenInNewTab = { onOpenInNewTab(folder) },
                     onUnpin = { onUnpin(folder.id) }
@@ -136,25 +133,17 @@ fun PinnedFolderRow(
             OutlinedCard(
                 onClick = onAddFolder,
                 modifier = Modifier.width(CARD_WIDTH),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(
-                        Icons.Default.AddLink,
-                        null,
-                        Modifier.size(26.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                Row(Modifier.height(CARD_HEIGHT).padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.AddLink, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.pinned_add_folder),
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Column {
-                        Text(stringResource(R.string.pinned_add_folder), fontWeight = FontWeight.SemiBold)
-                        Text(
-                            stringResource(R.string.pinned_add_folder_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
                 }
             }
         }
@@ -164,7 +153,6 @@ fun PinnedFolderRow(
 @Composable
 private fun PinnedCard(
     folder: PinnedFolder,
-    stat: Pair<Int, Long>?,
     onClick: () -> Unit,
     onOpenInNewTab: () -> Unit,
     onUnpin: () -> Unit
@@ -176,18 +164,24 @@ private fun PinnedCard(
     Card(
         onClick = onClick,
         modifier = Modifier.width(CARD_WIDTH),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, Modifier.size(26.dp), tint = tint)
-                Spacer(Modifier.weight(1f))
-                Box {
+        Row(Modifier.height(CARD_HEIGHT).padding(start = 10.dp, end = 0.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, Modifier.size(20.dp), tint = tint)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                folder.label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Box {
                     // Krzyżyk na kaflu folderu czytał się jak „usuń folder";
                     // menu jest jednoznaczne i mieści resztę akcji.
-                    IconButton(onClick = { menu = true }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.MoreVert, stringResource(R.string.common_more), Modifier.size(18.dp))
+                    IconButton(onClick = { menu = true }, modifier = Modifier.size(width = 26.dp, height = CARD_HEIGHT)) {
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.common_more), Modifier.size(16.dp))
                     }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
@@ -204,18 +198,6 @@ private fun PinnedCard(
                             onClick = { menu = false; onUnpin() }
                         )
                     }
-                }
-            }
-            Column(Modifier.fillMaxWidth()) {
-                Text(folder.label, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    stat?.let { (count, bytes) -> pluralStringResource(R.plurals.n_files, count, count) + " · " + formatSize(bytes) }
-                        ?: folder.subtitle.substringAfterLast('/').ifBlank { folder.subtitle },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
             }
         }
     }
