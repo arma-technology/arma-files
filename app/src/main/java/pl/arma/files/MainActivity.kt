@@ -529,7 +529,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 }
                 if (!selectionMode) {
                     ArmaNavBar {
-                    NavItem(Tab.FILES, tab, Icons.Default.Computer, stringResource(R.string.nav_home)) {
+                    NavItem(Tab.FILES, tab, Icons.Default.PhoneAndroid, stringResource(R.string.nav_home)) {
                         tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
                     }
                     NavItem(Tab.RECENT, tab, Icons.Default.Schedule, stringResource(R.string.nav_recent)) {

@@ -209,8 +209,8 @@
     <string name="history_trash">Во корпа</string>
     <string name="home_connected">Поврзани ресурси</string>
     <string name="home_pinned">Закачени папки</string>
-    <string name="home_this_computer">Овој компјутер</string>
-    <string name="home_title">Мој компјутер</string>
+    <string name="home_this_computer">Овој уред</string>
+    <string name="home_title">Мој уред</string>
     <string name="identity_new">Нов отпечаток</string>
     <string name="identity_old">Запомнет отпечаток</string>
     <string name="identity_reject">Не поврзувај</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Пребарај ги сите датотеки</string>
     <string name="index_stop">Прекини</string>
     <string name="nav_favorites">Омилени</string>
-    <string name="nav_home">Компјутер</string>
+    <string name="nav_home">Уред</string>
     <string name="nav_recent">Неодамнешни</string>
     <string name="nav_settings">Поставки</string>
     <string name="new_file">Нова датотека</string>
@@ -328,7 +328,7 @@
     <string name="panes_move_here">Премести тука</string>
     <string name="panes_root">Коренска папка</string>
     <string name="panes_swap">Замени ги панелите</string>
-    <string name="pin_to_home">Закачи во „Мој компјутер“</string>
+    <string name="pin_to_home">Закачи во „Мој уред“</string>
     <string name="pinned_add_folder">Додај папка</string>
     <string name="pinned_add_folder_hint">SAF / давател на датотеки</string>
     <string name="pinned_downloads">Преземања</string>
@@ -360,7 +360,7 @@
     <string name="settings_file_sources">Извори на датотеки</string>
     <string name="settings_full_access">Целосен пристап</string>
     <string name="settings_full_access_on">Целосниот пристап е активен</string>
-    <string name="settings_full_access_text">Целосниот пристап овозможува користење на екранот „Мој компјутер“ со внатрешната меморија и SD-картичката. SAF останува алтернатива за поврзување одделни папки.</string>
+    <string name="settings_full_access_text">Целосниот пристап овозможува користење на екранот „Мој уред“ со внатрешната меморија и SD-картичката. SAF останува алтернатива за поврзување одделни папки.</string>
     <string name="settings_hero_subtitle">Вклучувајте ги само местата што ги користите</string>
     <string name="settings_hero_title">Извори и врски</string>
     <string name="settings_hide_libraries">Скриј ги библиотеките</string>

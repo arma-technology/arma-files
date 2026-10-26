@@ -209,8 +209,8 @@
     <string name="history_trash">În coș</string>
     <string name="home_connected">Resurse conectate</string>
     <string name="home_pinned">Dosare fixate</string>
-    <string name="home_this_computer">Acest computer</string>
-    <string name="home_title">Computerul meu</string>
+    <string name="home_this_computer">Acest dispozitiv</string>
+    <string name="home_title">Dispozitivul meu</string>
     <string name="identity_new">Amprentă nouă</string>
     <string name="identity_old">Amprentă memorată</string>
     <string name="identity_reject">Nu conecta</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Caută în toate fișierele</string>
     <string name="index_stop">Oprește</string>
     <string name="nav_favorites">Favorite</string>
-    <string name="nav_home">Computer</string>
+    <string name="nav_home">Dispozitiv</string>
     <string name="nav_recent">Recente</string>
     <string name="nav_settings">Setări</string>
     <string name="new_file">Fișier nou</string>
@@ -328,7 +328,7 @@ alegând o filă din bara de sus.</string>
     <string name="panes_move_here">Mută aici</string>
     <string name="panes_root">Dosar rădăcină</string>
     <string name="panes_swap">Inversează panourile</string>
-    <string name="pin_to_home">Fixează în „Computerul meu”</string>
+    <string name="pin_to_home">Fixează în „Dispozitivul meu”</string>
     <string name="pinned_add_folder">Adaugă dosar</string>
     <string name="pinned_add_folder_hint">SAF / furnizor de fișiere</string>
     <string name="pinned_downloads">Descărcări</string>
@@ -360,7 +360,7 @@ alegând o filă din bara de sus.</string>
     <string name="settings_file_sources">Surse de fișiere</string>
     <string name="settings_full_access">Acces complet</string>
     <string name="settings_full_access_on">Acces complet activ</string>
-    <string name="settings_full_access_text">Accesul complet îți permite să folosești ecranul „Computerul meu” cu memoria internă și cardul SD. SAF rămâne o alternativă pentru conectarea unor dosare individuale.</string>
+    <string name="settings_full_access_text">Accesul complet îți permite să folosești ecranul „Dispozitivul meu” cu memoria internă și cardul SD. SAF rămâne o alternativă pentru conectarea unor dosare individuale.</string>
     <string name="settings_hero_subtitle">Activează doar locurile pe care le folosești</string>
     <string name="settings_hero_title">Surse și conexiuni</string>
     <string name="settings_hide_libraries">Ascunde bibliotecile</string>

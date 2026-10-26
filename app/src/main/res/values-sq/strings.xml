@@ -209,8 +209,8 @@
     <string name="history_trash">Në kosh</string>
     <string name="home_connected">Burime të lidhura</string>
     <string name="home_pinned">Dosje të fiksuara</string>
-    <string name="home_this_computer">Ky kompjuter</string>
-    <string name="home_title">Kompjuteri im</string>
+    <string name="home_this_computer">Kjo pajisje</string>
+    <string name="home_title">Pajisja ime</string>
     <string name="identity_new">Gjurma e re</string>
     <string name="identity_old">Gjurma e ruajtur</string>
     <string name="identity_reject">Mos lidh</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Kërko në të gjithë skedarët</string>
     <string name="index_stop">Ndalo</string>
     <string name="nav_favorites">Të preferuarat</string>
-    <string name="nav_home">Kompjuteri</string>
+    <string name="nav_home">Pajisja</string>
     <string name="nav_recent">Së fundi</string>
     <string name="nav_settings">Cilësimet</string>
     <string name="new_file">Skedar i ri</string>
@@ -328,7 +328,7 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="panes_move_here">Zhvendos këtu</string>
     <string name="panes_root">Dosja rrënjë</string>
     <string name="panes_swap">Ndërro panelet</string>
-    <string name="pin_to_home">Fikso te „Kompjuteri im”</string>
+    <string name="pin_to_home">Fikso te „Pajisja ime”</string>
     <string name="pinned_add_folder">Shto dosje</string>
     <string name="pinned_add_folder_hint">SAF / ofrues skedarësh</string>
     <string name="pinned_downloads">Shkarkimet</string>
@@ -360,7 +360,7 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="settings_file_sources">Burimet e skedarëve</string>
     <string name="settings_full_access">Qasje e plotë</string>
     <string name="settings_full_access_on">Qasja e plotë është aktive</string>
-    <string name="settings_full_access_text">Qasja e plotë të lejon të përdorësh ekranin „Kompjuteri im” me hapësirën e brendshme dhe kartën SD. SAF mbetet alternativë për lidhjen e dosjeve të veçanta.</string>
+    <string name="settings_full_access_text">Qasja e plotë të lejon të përdorësh ekranin „Pajisja ime” me hapësirën e brendshme dhe kartën SD. SAF mbetet alternativë për lidhjen e dosjeve të veçanta.</string>
     <string name="settings_hero_subtitle">Aktivizo vetëm vendet që përdor</string>
     <string name="settings_hero_title">Burime dhe lidhje</string>
     <string name="settings_hide_libraries">Fshih libraritë</string>

@@ -209,8 +209,8 @@
     <string name="history_trash">У сметніцу</string>
     <string name="home_connected">Падключаныя рэсурсы</string>
     <string name="home_pinned">Замацаваныя папкі</string>
-    <string name="home_this_computer">Гэты камп’ютар</string>
-    <string name="home_title">Мой камп’ютар</string>
+    <string name="home_this_computer">Гэта прылада</string>
+    <string name="home_title">Мая прылада</string>
     <string name="identity_new">Новы адбітак</string>
     <string name="identity_old">Захаваны адбітак</string>
     <string name="identity_reject">Не злучацца</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Шукаць ва ўсіх файлах</string>
     <string name="index_stop">Перапыніць</string>
     <string name="nav_favorites">Абранае</string>
-    <string name="nav_home">Камп’ютар</string>
+    <string name="nav_home">Прылада</string>
     <string name="nav_recent">Нядаўнія</string>
     <string name="nav_settings">Налады</string>
     <string name="new_file">Новы файл</string>
@@ -328,7 +328,7 @@
     <string name="panes_move_here">Перамясціць сюды</string>
     <string name="panes_root">Каранёвая папка</string>
     <string name="panes_swap">Памяняць панэлі</string>
-    <string name="pin_to_home">Замацаваць у «Мой камп’ютар»</string>
+    <string name="pin_to_home">Замацаваць у «Мая прылада»</string>
     <string name="pinned_add_folder">Дадаць папку</string>
     <string name="pinned_add_folder_hint">SAF / пастаўшчык файлаў</string>
     <string name="pinned_downloads">Спампоўкі</string>
@@ -360,7 +360,7 @@
     <string name="settings_file_sources">Крыніцы файлаў</string>
     <string name="settings_full_access">Поўны доступ</string>
     <string name="settings_full_access_on">Поўны доступ уключаны</string>
-    <string name="settings_full_access_text">Поўны доступ дазваляе карыстацца экранам «Мой камп’ютар» з унутранай памяццю і SD-картай. SAF застаецца альтэрнатывай для падключэння асобных папак.</string>
+    <string name="settings_full_access_text">Поўны доступ дазваляе карыстацца экранам «Мая прылада» з унутранай памяццю і SD-картай. SAF застаецца альтэрнатывай для падключэння асобных папак.</string>
     <string name="settings_hero_subtitle">Уключайце толькі тыя месцы, якімі карыстаецеся</string>
     <string name="settings_hero_title">Крыніцы і злучэнні</string>
     <string name="settings_hide_libraries">Схаваць бібліятэкі</string>

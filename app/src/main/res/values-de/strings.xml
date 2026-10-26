@@ -209,8 +209,8 @@
     <string name="history_trash">In den Papierkorb</string>
     <string name="home_connected">Verbundene Ressourcen</string>
     <string name="home_pinned">Angeheftete Ordner</string>
-    <string name="home_this_computer">Dieser Computer</string>
-    <string name="home_title">Mein Computer</string>
+    <string name="home_this_computer">Dieses Gerät</string>
+    <string name="home_title">Mein Gerät</string>
     <string name="identity_new">Neuer Fingerabdruck</string>
     <string name="identity_old">Gespeicherter Fingerabdruck</string>
     <string name="identity_reject">Nicht verbinden</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Alle Dateien durchsuchen</string>
     <string name="index_stop">Abbrechen</string>
     <string name="nav_favorites">Favoriten</string>
-    <string name="nav_home">Mein Computer</string>
+    <string name="nav_home">Mein Gerät</string>
     <string name="nav_recent">Zuletzt</string>
     <string name="nav_settings">Einstellungen</string>
     <string name="new_file">Neue Datei</string>
@@ -328,7 +328,7 @@ indem du oben einen Tab auswählst.</string>
     <string name="panes_move_here">Hierher verschieben</string>
     <string name="panes_root">Stammordner</string>
     <string name="panes_swap">Bereiche tauschen</string>
-    <string name="pin_to_home">An „Mein Computer“ anheften</string>
+    <string name="pin_to_home">An „Mein Gerät“ anheften</string>
     <string name="pinned_add_folder">Ordner hinzufügen</string>
     <string name="pinned_add_folder_hint">SAF / Dateianbieter</string>
     <string name="pinned_downloads">Downloads</string>
@@ -360,7 +360,7 @@ indem du oben einen Tab auswählst.</string>
     <string name="settings_file_sources">Dateiquellen</string>
     <string name="settings_full_access">Vollzugriff</string>
     <string name="settings_full_access_on">Vollzugriff aktiv</string>
-    <string name="settings_full_access_text">Mit Vollzugriff kannst du den Bildschirm „Mein Computer“ mit internem Speicher und SD-Karte nutzen. SAF bleibt eine Alternative, um einzelne Ordner zu verbinden.</string>
+    <string name="settings_full_access_text">Mit Vollzugriff kannst du den Bildschirm „Mein Gerät“ mit internem Speicher und SD-Karte nutzen. SAF bleibt eine Alternative, um einzelne Ordner zu verbinden.</string>
     <string name="settings_hero_subtitle">Aktiviere nur die Orte, die du nutzt</string>
     <string name="settings_hero_title">Quellen und Verbindungen</string>
     <string name="settings_hide_libraries">Bibliotheken ausblenden</string>

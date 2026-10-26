@@ -10,7 +10,7 @@ Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md) �
 ## Co potrafi
 
 **Pliki**
-- ekran „Mój komputer”: przypięte foldery, pamięć wbudowana, karty SD,
+- ekran „Moje urządzenie”: przypięte foldery, pamięć wbudowana, karty SD,
   podłączone zasoby sieciowe i chmurowe
 - kopiowanie i przenoszenie między dowolnymi źródłami w tle, kosz,
   zmiana nazwy, SHA-256, Ostatnie i Ulubione

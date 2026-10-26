@@ -209,8 +209,8 @@
     <string name="history_trash">В кошчето</string>
     <string name="home_connected">Свързани ресурси</string>
     <string name="home_pinned">Закачени папки</string>
-    <string name="home_this_computer">Този компютър</string>
-    <string name="home_title">Моят компютър</string>
+    <string name="home_this_computer">Това устройство</string>
+    <string name="home_title">Моето устройство</string>
     <string name="identity_new">Нов отпечатък</string>
     <string name="identity_old">Запомнен отпечатък</string>
     <string name="identity_reject">Без свързване</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Търсене във всички файлове</string>
     <string name="index_stop">Прекъсване</string>
     <string name="nav_favorites">Любими</string>
-    <string name="nav_home">Компютър</string>
+    <string name="nav_home">Устройство</string>
     <string name="nav_recent">Скорошни</string>
     <string name="nav_settings">Настройки</string>
     <string name="new_file">Нов файл</string>
@@ -328,7 +328,7 @@
     <string name="panes_move_here">Преместване тук</string>
     <string name="panes_root">Основна папка</string>
     <string name="panes_swap">Размяна на панелите</string>
-    <string name="pin_to_home">Закачане в „Моят компютър“</string>
+    <string name="pin_to_home">Закачане в „Моето устройство“</string>
     <string name="pinned_add_folder">Добавяне на папка</string>
     <string name="pinned_add_folder_hint">SAF / доставчик на файлове</string>
     <string name="pinned_downloads">Изтегляния</string>
@@ -360,7 +360,7 @@
     <string name="settings_file_sources">Източници на файлове</string>
     <string name="settings_full_access">Пълен достъп</string>
     <string name="settings_full_access_on">Пълният достъп е активен</string>
-    <string name="settings_full_access_text">Пълният достъп позволява да използвате екрана „Моят компютър“ с вътрешната памет и SD картата. SAF остава алтернатива за свързване на отделни папки.</string>
+    <string name="settings_full_access_text">Пълният достъп позволява да използвате екрана „Моето устройство“ с вътрешната памет и SD картата. SAF остава алтернатива за свързване на отделни папки.</string>
     <string name="settings_hero_subtitle">Включвайте само местата, които използвате</string>
     <string name="settings_hero_title">Източници и връзки</string>
     <string name="settings_hide_libraries">Скриване на библиотеките</string>

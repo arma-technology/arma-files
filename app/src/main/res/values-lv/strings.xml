@@ -209,8 +209,8 @@
     <string name="history_trash">Uz miskasti</string>
     <string name="home_connected">Pievienotie resursi</string>
     <string name="home_pinned">Piespraustās mapes</string>
-    <string name="home_this_computer">Šis dators</string>
-    <string name="home_title">Mans dators</string>
+    <string name="home_this_computer">Šī ierīce</string>
+    <string name="home_title">Mana ierīce</string>
     <string name="identity_new">Jaunais nospiedums</string>
     <string name="identity_old">Saglabātais nospiedums</string>
     <string name="identity_reject">Neveidot savienojumu</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Meklēt visos failos</string>
     <string name="index_stop">Pārtraukt</string>
     <string name="nav_favorites">Izlase</string>
-    <string name="nav_home">Mans dators</string>
+    <string name="nav_home">Mana ierīce</string>
     <string name="nav_recent">Nesenie</string>
     <string name="nav_settings">Iestatījumi</string>
     <string name="new_file">Jauns fails</string>
@@ -328,7 +328,7 @@ izvēloties cilni joslā augšā.</string>
     <string name="panes_move_here">Pārvietot šeit</string>
     <string name="panes_root">Saknes mape</string>
     <string name="panes_swap">Samainīt paneļus</string>
-    <string name="pin_to_home">Piespraust pie “Mans dators”</string>
+    <string name="pin_to_home">Piespraust pie “Mana ierīce”</string>
     <string name="pinned_add_folder">Pievienot mapi</string>
     <string name="pinned_add_folder_hint">SAF / failu nodrošinātājs</string>
     <string name="pinned_downloads">Lejupielādes</string>
@@ -360,7 +360,7 @@ izvēloties cilni joslā augšā.</string>
     <string name="settings_file_sources">Failu avoti</string>
     <string name="settings_full_access">Pilna piekļuve</string>
     <string name="settings_full_access_on">Pilna piekļuve ir aktīva</string>
-    <string name="settings_full_access_text">Pilna piekļuve ļauj izmantot ekrānu “Mans dators” ar iekšējo atmiņu un SD karti. SAF paliek alternatīva atsevišķu mapju pievienošanai.</string>
+    <string name="settings_full_access_text">Pilna piekļuve ļauj izmantot ekrānu “Mana ierīce” ar iekšējo atmiņu un SD karti. SAF paliek alternatīva atsevišķu mapju pievienošanai.</string>
     <string name="settings_hero_subtitle">Ieslēdziet tikai tās vietas, kuras izmantojat</string>
     <string name="settings_hero_title">Avoti un savienojumi</string>
     <string name="settings_hide_libraries">Slēpt bibliotēkas</string>

@@ -209,8 +209,8 @@
     <string name="history_trash">U koš</string>
     <string name="home_connected">Povezani resursi</string>
     <string name="home_pinned">Zakačene mape</string>
-    <string name="home_this_computer">Ovaj računar</string>
-    <string name="home_title">Moj računar</string>
+    <string name="home_this_computer">Ovaj uređaj</string>
+    <string name="home_title">Moj uređaj</string>
     <string name="identity_new">Novi otisak</string>
     <string name="identity_old">Zapamćeni otisak</string>
     <string name="identity_reject">Ne povezuj</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Pretraži sve datoteke</string>
     <string name="index_stop">Prekini</string>
     <string name="nav_favorites">Favoriti</string>
-    <string name="nav_home">Moj računar</string>
+    <string name="nav_home">Moj uređaj</string>
     <string name="nav_recent">Nedavno</string>
     <string name="nav_settings">Postavke</string>
     <string name="new_file">Nova datoteka</string>
@@ -328,7 +328,7 @@ odabirom kartice na traci iznad.</string>
     <string name="panes_move_here">Premjesti ovdje</string>
     <string name="panes_root">Korijenska mapa</string>
     <string name="panes_swap">Zamijeni ploče</string>
-    <string name="pin_to_home">Zakači na „Moj računar”</string>
+    <string name="pin_to_home">Zakači na „Moj uređaj”</string>
     <string name="pinned_add_folder">Dodaj mapu</string>
     <string name="pinned_add_folder_hint">SAF / pružatelj datoteka</string>
     <string name="pinned_downloads">Preuzimanja</string>
@@ -360,7 +360,7 @@ odabirom kartice na traci iznad.</string>
     <string name="settings_file_sources">Izvori datoteka</string>
     <string name="settings_full_access">Puni pristup</string>
     <string name="settings_full_access_on">Puni pristup aktivan</string>
-    <string name="settings_full_access_text">Puni pristup omogućuje korištenje ekrana „Moj računar” s internom pohranom i SD karticom. SAF ostaje alternativa za povezivanje pojedinačnih mapa.</string>
+    <string name="settings_full_access_text">Puni pristup omogućuje korištenje ekrana „Moj uređaj” s internom pohranom i SD karticom. SAF ostaje alternativa za povezivanje pojedinačnih mapa.</string>
     <string name="settings_hero_subtitle">Uključite samo mjesta koja koristite</string>
     <string name="settings_hero_title">Izvori i veze</string>
     <string name="settings_hide_libraries">Sakrij biblioteke</string>

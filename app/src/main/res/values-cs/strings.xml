@@ -209,8 +209,8 @@
     <string name="history_trash">Do koše</string>
     <string name="home_connected">Připojené zdroje</string>
     <string name="home_pinned">Připnuté složky</string>
-    <string name="home_this_computer">Tento počítač</string>
-    <string name="home_title">Můj počítač</string>
+    <string name="home_this_computer">Toto zařízení</string>
+    <string name="home_title">Moje zařízení</string>
     <string name="identity_new">Nový otisk</string>
     <string name="identity_old">Uložený otisk</string>
     <string name="identity_reject">Nepřipojovat</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Hledat ve všech souborech</string>
     <string name="index_stop">Přerušit</string>
     <string name="nav_favorites">Oblíbené</string>
-    <string name="nav_home">Můj počítač</string>
+    <string name="nav_home">Moje zařízení</string>
     <string name="nav_recent">Nedávné</string>
     <string name="nav_settings">Nastavení</string>
     <string name="new_file">Nový soubor</string>
@@ -328,7 +328,7 @@ výběrem karty v liště nahoře.</string>
     <string name="panes_move_here">Přesunout sem</string>
     <string name="panes_root">Kořenová složka</string>
     <string name="panes_swap">Prohodit panely</string>
-    <string name="pin_to_home">Připnout do „Můj počítač“</string>
+    <string name="pin_to_home">Připnout do „Moje zařízení“</string>
     <string name="pinned_add_folder">Přidat složku</string>
     <string name="pinned_add_folder_hint">SAF / poskytovatel souborů</string>
     <string name="pinned_downloads">Stažené</string>
@@ -360,7 +360,7 @@ výběrem karty v liště nahoře.</string>
     <string name="settings_file_sources">Zdroje souborů</string>
     <string name="settings_full_access">Plný přístup</string>
     <string name="settings_full_access_on">Plný přístup aktivní</string>
-    <string name="settings_full_access_text">Plný přístup umožňuje používat obrazovku „Můj počítač“ s interním úložištěm a SD kartou. SAF zůstává alternativou pro připojení jednotlivých složek.</string>
+    <string name="settings_full_access_text">Plný přístup umožňuje používat obrazovku „Moje zařízení“ s interním úložištěm a SD kartou. SAF zůstává alternativou pro připojení jednotlivých složek.</string>
     <string name="settings_hero_subtitle">Zapínejte jen místa, která používáte</string>
     <string name="settings_hero_title">Zdroje a připojení</string>
     <string name="settings_hide_libraries">Skrýt knihovny</string>

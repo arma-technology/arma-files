@@ -209,8 +209,8 @@
     <string name="history_trash">Į šiukšlinę</string>
     <string name="home_connected">Prijungti ištekliai</string>
     <string name="home_pinned">Prisegti aplankai</string>
-    <string name="home_this_computer">Šis kompiuteris</string>
-    <string name="home_title">Mano kompiuteris</string>
+    <string name="home_this_computer">Šis įrenginys</string>
+    <string name="home_title">Mano įrenginys</string>
     <string name="identity_new">Naujas kontrolinis kodas</string>
     <string name="identity_old">Įsimintas kontrolinis kodas</string>
     <string name="identity_reject">Nesijungti</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Ieškoti visuose failuose</string>
     <string name="index_stop">Nutraukti</string>
     <string name="nav_favorites">Mėgstami</string>
-    <string name="nav_home">Kompiuteris</string>
+    <string name="nav_home">Įrenginys</string>
     <string name="nav_recent">Naujausi</string>
     <string name="nav_settings">Nustatymai</string>
     <string name="new_file">Naujas failas</string>
@@ -328,7 +328,7 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="panes_move_here">Perkelti čia</string>
     <string name="panes_root">Šakninis aplankas</string>
     <string name="panes_swap">Sukeisti skydelius</string>
-    <string name="pin_to_home">Prisegti prie „Mano kompiuteris“</string>
+    <string name="pin_to_home">Prisegti prie „Mano įrenginys“</string>
     <string name="pinned_add_folder">Pridėti aplanką</string>
     <string name="pinned_add_folder_hint">SAF / failų teikėjas</string>
     <string name="pinned_downloads">Atsisiuntimai</string>
@@ -360,7 +360,7 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="settings_file_sources">Failų šaltiniai</string>
     <string name="settings_full_access">Visa prieiga</string>
     <string name="settings_full_access_on">Visa prieiga įjungta</string>
-    <string name="settings_full_access_text">Visa prieiga leidžia naudoti ekraną „Mano kompiuteris“ su vidine atmintimi ir SD kortele. SAF lieka alternatyva atskiriems aplankams prijungti.</string>
+    <string name="settings_full_access_text">Visa prieiga leidžia naudoti ekraną „Mano įrenginys“ su vidine atmintimi ir SD kortele. SAF lieka alternatyva atskiriems aplankams prijungti.</string>
     <string name="settings_hero_subtitle">Įjunkite tik tas vietas, kuriomis naudojatės</string>
     <string name="settings_hero_title">Šaltiniai ir ryšiai</string>
     <string name="settings_hide_libraries">Slėpti bibliotekas</string>

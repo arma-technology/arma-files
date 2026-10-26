@@ -209,8 +209,8 @@
     <string name="history_trash">У отпад</string>
     <string name="home_connected">Повезани ресурси</string>
     <string name="home_pinned">Закачене фасцикле</string>
-    <string name="home_this_computer">Овај рачунар</string>
-    <string name="home_title">Мој рачунар</string>
+    <string name="home_this_computer">Овај уређај</string>
+    <string name="home_title">Мој уређај</string>
     <string name="identity_new">Нови отисак</string>
     <string name="identity_old">Запамћени отисак</string>
     <string name="identity_reject">Не повезуј</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Претражи све датотеке</string>
     <string name="index_stop">Прекини</string>
     <string name="nav_favorites">Омиљено</string>
-    <string name="nav_home">Мој рачунар</string>
+    <string name="nav_home">Мој уређај</string>
     <string name="nav_recent">Недавно</string>
     <string name="nav_settings">Подешавања</string>
     <string name="new_file">Нова датотека</string>
@@ -328,7 +328,7 @@
     <string name="panes_move_here">Премести овде</string>
     <string name="panes_root">Основна фасцикла</string>
     <string name="panes_swap">Замени панеле</string>
-    <string name="pin_to_home">Закачи на „Мој рачунар“</string>
+    <string name="pin_to_home">Закачи на „Мој уређај“</string>
     <string name="pinned_add_folder">Додај фасциклу</string>
     <string name="pinned_add_folder_hint">SAF / добављач датотека</string>
     <string name="pinned_downloads">Преузимања</string>
@@ -360,7 +360,7 @@
     <string name="settings_file_sources">Извори датотека</string>
     <string name="settings_full_access">Пун приступ</string>
     <string name="settings_full_access_on">Пун приступ је активан</string>
-    <string name="settings_full_access_text">Пун приступ омогућава коришћење екрана „Мој рачунар“ са унутрашњом меморијом и SD картицом. SAF остаје алтернатива за повезивање појединачних фасцикли.</string>
+    <string name="settings_full_access_text">Пун приступ омогућава коришћење екрана „Мој уређај“ са унутрашњом меморијом и SD картицом. SAF остаје алтернатива за повезивање појединачних фасцикли.</string>
     <string name="settings_hero_subtitle">Укључите само места која користите</string>
     <string name="settings_hero_title">Извори и везе</string>
     <string name="settings_hide_libraries">Сакриј библиотеке</string>

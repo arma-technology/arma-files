@@ -209,8 +209,8 @@
     <string name="history_trash">В корзину</string>
     <string name="home_connected">Подключённые ресурсы</string>
     <string name="home_pinned">Закреплённые папки</string>
-    <string name="home_this_computer">Этот компьютер</string>
-    <string name="home_title">Мой компьютер</string>
+    <string name="home_this_computer">Это устройство</string>
+    <string name="home_title">Моё устройство</string>
     <string name="identity_new">Новый отпечаток</string>
     <string name="identity_old">Сохранённый отпечаток</string>
     <string name="identity_reject">Не подключаться</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Искать во всех файлах</string>
     <string name="index_stop">Прервать</string>
     <string name="nav_favorites">Избранное</string>
-    <string name="nav_home">Компьютер</string>
+    <string name="nav_home">Устройство</string>
     <string name="nav_recent">Недавние</string>
     <string name="nav_settings">Настройки</string>
     <string name="new_file">Новый файл</string>
@@ -328,7 +328,7 @@
     <string name="panes_move_here">Переместить сюда</string>
     <string name="panes_root">Корневая папка</string>
     <string name="panes_swap">Поменять панели</string>
-    <string name="pin_to_home">Закрепить в «Мой компьютер»</string>
+    <string name="pin_to_home">Закрепить в «Моё устройство»</string>
     <string name="pinned_add_folder">Добавить папку</string>
     <string name="pinned_add_folder_hint">SAF / поставщик файлов</string>
     <string name="pinned_downloads">Загрузки</string>
@@ -360,7 +360,7 @@
     <string name="settings_file_sources">Источники файлов</string>
     <string name="settings_full_access">Полный доступ</string>
     <string name="settings_full_access_on">Полный доступ включён</string>
-    <string name="settings_full_access_text">Полный доступ позволяет использовать экран «Мой компьютер» с внутренней памятью и SD-картой. SAF остаётся альтернативой для подключения отдельных папок.</string>
+    <string name="settings_full_access_text">Полный доступ позволяет использовать экран «Моё устройство» с внутренней памятью и SD-картой. SAF остаётся альтернативой для подключения отдельных папок.</string>
     <string name="settings_hero_subtitle">Включайте только те места, которыми пользуетесь</string>
     <string name="settings_hero_title">Источники и подключения</string>
     <string name="settings_hide_libraries">Скрыть библиотеки</string>

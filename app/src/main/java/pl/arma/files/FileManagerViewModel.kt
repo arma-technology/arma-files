@@ -398,7 +398,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Otwiera nową kartę na ekranie „Mój komputer" i przełącza się na nią. */
+    /** Otwiera nową kartę na ekranie „Moje urządzenie" i przełącza się na nią. */
     fun openTab() {
         val pane = Pane(java.util.UUID.randomUUID().toString())
         panes += pane
@@ -441,7 +441,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         refreshPane(copy)
     }
 
-    /** Przypina katalog otwarty w karcie do ekranu „Mój komputer". */
+    /** Przypina katalog otwarty w karcie do ekranu „Moje urządzenie". */
     fun pinTabFolder(id: String) {
         val pane = panes.firstOrNull { it.id == id } ?: return
         val dir = pane.currentDir ?: run {
@@ -1674,7 +1674,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    /** Przypina bieżący katalog albo wskazany folder do ekranu „Mój komputer". */
+    /** Przypina bieżący katalog albo wskazany folder do ekranu „Moje urządzenie". */
     fun pinFolder(item: FileItem) {
         val current = prefs.pinned().orEmpty()
         val uri = item.uri.toString()

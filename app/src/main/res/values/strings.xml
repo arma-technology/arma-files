@@ -210,8 +210,8 @@
     <string name="history_trash">To trash</string>
     <string name="home_connected">Connected resources</string>
     <string name="home_pinned">Pinned folders</string>
-    <string name="home_this_computer">This computer</string>
-    <string name="home_title">My computer</string>
+    <string name="home_this_computer">This device</string>
+    <string name="home_title">My device</string>
     <string name="identity_new">New fingerprint</string>
     <string name="identity_old">Remembered fingerprint</string>
     <string name="identity_reject">Don’t connect</string>
@@ -238,7 +238,7 @@
     <string name="index_search_all">Search all files</string>
     <string name="index_stop">Stop</string>
     <string name="nav_favorites">Favorites</string>
-    <string name="nav_home">My computer</string>
+    <string name="nav_home">My device</string>
     <string name="nav_recent">Recent</string>
     <string name="nav_settings">Settings</string>
     <string name="new_file">New file</string>
@@ -329,7 +329,7 @@ by picking a tab in the bar above.</string>
     <string name="panes_move_here">Move here</string>
     <string name="panes_root">Root folder</string>
     <string name="panes_swap">Swap panes</string>
-    <string name="pin_to_home">Pin to “My computer”</string>
+    <string name="pin_to_home">Pin to “My device”</string>
     <string name="pinned_add_folder">Add folder</string>
     <string name="pinned_add_folder_hint">SAF / file provider</string>
     <string name="pinned_downloads">Downloads</string>
@@ -361,7 +361,7 @@ by picking a tab in the bar above.</string>
     <string name="settings_file_sources">File sources</string>
     <string name="settings_full_access">Full access</string>
     <string name="settings_full_access_on">Full access active</string>
-    <string name="settings_full_access_text">Full access lets you use the “My computer” screen with internal storage and the SD card. SAF remains an alternative for attaching individual folders.</string>
+    <string name="settings_full_access_text">Full access lets you use the “My device” screen with internal storage and the SD card. SAF remains an alternative for attaching individual folders.</string>
     <string name="settings_hero_subtitle">Turn on only the places you use</string>
     <string name="settings_hero_title">Sources and connections</string>
     <string name="settings_hide_libraries">Hide libraries</string>

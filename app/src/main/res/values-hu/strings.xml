@@ -209,8 +209,8 @@
     <string name="history_trash">Lomtárba</string>
     <string name="home_connected">Csatlakoztatott erőforrások</string>
     <string name="home_pinned">Rögzített mappák</string>
-    <string name="home_this_computer">Ez a számítógép</string>
-    <string name="home_title">Sajátgép</string>
+    <string name="home_this_computer">Ez az eszköz</string>
+    <string name="home_title">Saját eszköz</string>
     <string name="identity_new">Új ujjlenyomat</string>
     <string name="identity_old">Megjegyzett ujjlenyomat</string>
     <string name="identity_reject">Ne csatlakozzon</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Keresés minden fájlban</string>
     <string name="index_stop">Leállítás</string>
     <string name="nav_favorites">Kedvencek</string>
-    <string name="nav_home">Sajátgép</string>
+    <string name="nav_home">Saját eszköz</string>
     <string name="nav_recent">Legutóbbi</string>
     <string name="nav_settings">Beállítások</string>
     <string name="new_file">Új fájl</string>
@@ -328,7 +328,7 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="panes_move_here">Áthelyezés ide</string>
     <string name="panes_root">Gyökérmappa</string>
     <string name="panes_swap">Panelek cseréje</string>
-    <string name="pin_to_home">Rögzítés a „Sajátgép” képernyőre</string>
+    <string name="pin_to_home">Rögzítés a „Saját eszköz” képernyőre</string>
     <string name="pinned_add_folder">Mappa hozzáadása</string>
     <string name="pinned_add_folder_hint">SAF / fájlszolgáltató</string>
     <string name="pinned_downloads">Letöltések</string>
@@ -360,7 +360,7 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="settings_file_sources">Fájlforrások</string>
     <string name="settings_full_access">Teljes hozzáférés</string>
     <string name="settings_full_access_on">Teljes hozzáférés aktív</string>
-    <string name="settings_full_access_text">A teljes hozzáféréssel használhatod a „Sajátgép” képernyőt a belső tárhellyel és az SD-kártyával. A SAF továbbra is alternatíva egyes mappák csatlakoztatására.</string>
+    <string name="settings_full_access_text">A teljes hozzáféréssel használhatod a „Saját eszköz” képernyőt a belső tárhellyel és az SD-kártyával. A SAF továbbra is alternatíva egyes mappák csatlakoztatására.</string>
     <string name="settings_hero_subtitle">Csak azokat a helyeket kapcsold be, amelyeket használsz</string>
     <string name="settings_hero_title">Források és kapcsolatok</string>
     <string name="settings_hide_libraries">Könyvtárak elrejtése</string>

@@ -27,7 +27,7 @@ data class TabInfo(
     val secondary: Boolean = false,
     /** Źródło otwarte w karcie — decyduje o ikonie na pasku. */
     val source: SourceType = SourceType.LOCAL,
-    /** Karta stoi na ekranie „Mój komputer", bez otwartego katalogu. */
+    /** Karta stoi na ekranie „Moje urządzenie", bez otwartego katalogu. */
     val atHome: Boolean = false
 )
 

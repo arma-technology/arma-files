@@ -209,8 +209,8 @@
     <string name="history_trash">Naar prullenbak</string>
     <string name="home_connected">Gekoppelde bronnen</string>
     <string name="home_pinned">Vastgezette mappen</string>
-    <string name="home_this_computer">Deze computer</string>
-    <string name="home_title">Mijn computer</string>
+    <string name="home_this_computer">Dit apparaat</string>
+    <string name="home_title">Mijn apparaat</string>
     <string name="identity_new">Nieuwe vingerafdruk</string>
     <string name="identity_old">Opgeslagen vingerafdruk</string>
     <string name="identity_reject">Niet verbinden</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Alle bestanden doorzoeken</string>
     <string name="index_stop">Stoppen</string>
     <string name="nav_favorites">Favorieten</string>
-    <string name="nav_home">Mijn computer</string>
+    <string name="nav_home">Mijn apparaat</string>
     <string name="nav_recent">Recent</string>
     <string name="nav_settings">Instellingen</string>
     <string name="new_file">Nieuw bestand</string>
@@ -328,7 +328,7 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="panes_move_here">Hierheen verplaatsen</string>
     <string name="panes_root">Hoofdmap</string>
     <string name="panes_swap">Panelen wisselen</string>
-    <string name="pin_to_home">Vastzetten op ‘Mijn computer’</string>
+    <string name="pin_to_home">Vastzetten op ‘Mijn apparaat’</string>
     <string name="pinned_add_folder">Map toevoegen</string>
     <string name="pinned_add_folder_hint">SAF / bestandsprovider</string>
     <string name="pinned_downloads">Downloads</string>
@@ -360,7 +360,7 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="settings_file_sources">Bestandsbronnen</string>
     <string name="settings_full_access">Volledige toegang</string>
     <string name="settings_full_access_on">Volledige toegang actief</string>
-    <string name="settings_full_access_text">Met volledige toegang kun je het scherm ‘Mijn computer’ gebruiken met interne opslag en SD-kaart. SAF blijft een alternatief om afzonderlijke mappen te koppelen.</string>
+    <string name="settings_full_access_text">Met volledige toegang kun je het scherm ‘Mijn apparaat’ gebruiken met interne opslag en SD-kaart. SAF blijft een alternatief om afzonderlijke mappen te koppelen.</string>
     <string name="settings_hero_subtitle">Zet alleen de plekken aan die je gebruikt</string>
     <string name="settings_hero_title">Bronnen en verbindingen</string>
     <string name="settings_hide_libraries">Bibliotheken verbergen</string>

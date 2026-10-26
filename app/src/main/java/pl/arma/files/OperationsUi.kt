@@ -414,7 +414,7 @@ private fun recordDetails(record: OperationRecord): String {
 private fun formatClock(timestamp: Long): String =
     java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
 
-/** Ikona kosza z licznikiem — wpinana w ekran „Mój komputer". */
+/** Ikona kosza z licznikiem — wpinana w ekran „Moje urządzenie". */
 @Composable
 fun TrashButton(count: Int, onClick: () -> Unit) {
     IconButton(onClick = onClick) {

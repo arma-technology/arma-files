@@ -209,8 +209,8 @@
     <string name="history_trash">Prügikasti</string>
     <string name="home_connected">Ühendatud ressursid</string>
     <string name="home_pinned">Kinnitatud kaustad</string>
-    <string name="home_this_computer">See arvuti</string>
-    <string name="home_title">Minu arvuti</string>
+    <string name="home_this_computer">See seade</string>
+    <string name="home_title">Minu seade</string>
     <string name="identity_new">Uus sõrmejälg</string>
     <string name="identity_old">Salvestatud sõrmejälg</string>
     <string name="identity_reject">Ära ühenda</string>
@@ -237,7 +237,7 @@
     <string name="index_search_all">Otsi kõigist failidest</string>
     <string name="index_stop">Katkesta</string>
     <string name="nav_favorites">Lemmikud</string>
-    <string name="nav_home">Minu arvuti</string>
+    <string name="nav_home">Minu seade</string>
     <string name="nav_recent">Hiljutised</string>
     <string name="nav_settings">Seaded</string>
     <string name="new_file">Uus fail</string>
@@ -328,7 +328,7 @@ valides ülal ribal vahelehe.</string>
     <string name="panes_move_here">Teisalda siia</string>
     <string name="panes_root">Juurkaust</string>
     <string name="panes_swap">Vaheta paneelid</string>
-    <string name="pin_to_home">Kinnita jaotisesse „Minu arvuti”</string>
+    <string name="pin_to_home">Kinnita jaotisesse „Minu seade”</string>
     <string name="pinned_add_folder">Lisa kaust</string>
     <string name="pinned_add_folder_hint">SAF / failide pakkuja</string>
     <string name="pinned_downloads">Allalaadimised</string>
@@ -360,7 +360,7 @@ valides ülal ribal vahelehe.</string>
     <string name="settings_file_sources">Failide allikad</string>
     <string name="settings_full_access">Täielik juurdepääs</string>
     <string name="settings_full_access_on">Täielik juurdepääs on aktiivne</string>
-    <string name="settings_full_access_text">Täielik juurdepääs võimaldab kasutada kuva „Minu arvuti” koos sisemälu ja SD-kaardiga. SAF jääb alternatiiviks üksikute kaustade ühendamiseks.</string>
+    <string name="settings_full_access_text">Täielik juurdepääs võimaldab kasutada kuva „Minu seade” koos sisemälu ja SD-kaardiga. SAF jääb alternatiiviks üksikute kaustade ühendamiseks.</string>
     <string name="settings_hero_subtitle">Lülitage sisse ainult kohad, mida kasutate</string>
     <string name="settings_hero_title">Allikad ja ühendused</string>
     <string name="settings_hide_libraries">Peida teegid</string>
