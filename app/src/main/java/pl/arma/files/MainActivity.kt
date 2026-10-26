@@ -2576,7 +2576,8 @@ private fun PreviewSheet(
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             onNavigate = step,
                             canNavigate = siblings.size > 1,
-                            positionLabel = if (position >= 0) "${position + 1} / ${siblings.size}" else ""
+                            positionLabel = if (position >= 0) "${position + 1} / ${siblings.size}" else "",
+                            hasNeighbor = { delta -> position >= 0 && siblings.getOrNull(position + delta) != null }
                         )
                     }
                 }
@@ -2679,7 +2680,8 @@ private fun LandscapeImageViewer(
         onDismiss = onDismiss,
         onNavigate = step,
         canNavigate = siblings.size > 1 && position >= 0,
-        position = label
+        position = label,
+        hasNeighbor = { delta -> position >= 0 && siblings.getOrNull(position + delta) != null }
     )
 }
 
