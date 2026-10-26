@@ -1,6 +1,11 @@
 package pl.arma.files
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import pl.arma.files.ui.theme.LocalArmaStyle
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -106,12 +111,20 @@ class OrbitController {
     var overShelf by mutableStateOf(false)
         private set
 
+    /** Plik w drodze do szuflady — nakładka rysuje jego lot od palca do paska. */
+    var flight by mutableStateOf<Flight?>(null)
+        internal set
+
     /**
      * Miejsce przytrzymania. Kierunek i „bez ruchu” liczymy od niego, nie od
      * środka koła — przy krawędzi ekranu koło jest przesunięte do środka,
      * a puszczenie palca w miejscu ma dalej znaczyć podgląd.
      */
     var start by mutableStateOf(Offset.Zero)
+        private set
+
+    /** To samo miejsce we współrzędnych ekranu — szybki podgląd to osobne okno. */
+    var startOnScreen: Offset? = null
         private set
 
     /** Akcje dostępne dla bieżącego elementu (folderu nie udostępniamy). */
@@ -125,8 +138,9 @@ class OrbitController {
     internal var screen = Offset.Zero
     internal var margin = 0f
 
-    fun begin(item: FileItem, at: Offset) {
+    fun begin(item: FileItem, at: Offset, onScreen: Offset? = null) {
         this.item = item
+        startOnScreen = onScreen
         actions = if (item.isDirectory) OrbitAction.entries.filterNot { it == OrbitAction.SHARE } else OrbitAction.entries.toList()
         // Koło całe na ekranie, także przy krawędzi; palec może być obok środka.
         center = Offset(
@@ -162,6 +176,7 @@ class OrbitController {
             (pointer - start).getDistance() < deadZone -> OrbitResult.Peek(target)
             else -> null
         }
+        if ((result as? OrbitResult.Action)?.action == OrbitAction.SHELF) flight = Flight(target, pointer, System.nanoTime())
         item = null
         selected = null
         overShelf = false
@@ -174,6 +189,9 @@ class OrbitController {
         overShelf = false
     }
 }
+
+/** Lot pliku do szuflady: skąd startuje (piksele okna); [id] odróżnia dwa loty tego samego pliku. */
+class Flight(val item: FileItem, val from: Offset, val id: Long)
 
 /** Jeden kontroler orbity na okno — gest w liście, nakładka nad całością. */
 val LocalOrbit = androidx.compose.runtime.staticCompositionLocalOf { OrbitController() }
@@ -240,7 +258,7 @@ fun Modifier.orbitGestures(
                         }
                         val origin = coordinates
                         val toWindow = { local: Offset -> origin?.localToWindow(local) ?: local }
-                        controller.begin(item, toWindow(down.position))
+                        controller.begin(item, toWindow(down.position), origin?.takeIf { it.isAttached }?.localToScreen(down.position))
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id }
@@ -284,9 +302,9 @@ fun OrbitOverlay(controller: OrbitController) {
             controller.screen = Offset(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
             controller.shelfTop = constraints.maxHeight - 88.dp.toPx() - navigationBar
         }
+        controller.flight?.let { ShelfFlight(it, controller, navigationBar) }
         if (appear <= 0.01f) return@BoxWithConstraints
         val center = controller.center
-        val radius = controller.radius * appear
         val primary = MaterialTheme.colorScheme.primary
         Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = appear }) {
             drawRect(Color.Black.copy(alpha = .42f))
@@ -297,9 +315,15 @@ fun OrbitOverlay(controller: OrbitController) {
                 drawLine(primary.copy(alpha = .8f), center, center + (controller.pointer - controller.start), strokeWidth = 3.dp.toPx())
             }
         }
+        val calm = LocalArmaStyle.current.calm
+        val count = controller.actions.size
         controller.actions.forEachIndexed { index, action ->
-            val angle = -PI / 2 + index * 2 * PI / controller.actions.size
-            val position = center + Offset((cos(angle) * radius).toFloat(), (sin(angle) * radius).toFloat())
+            // Akcje rozchodzą się po kolei, zgodnie z ruchem wskazówek zegara — oko
+            // od razu dostaje kierunek koła. „Spokojny ruch”: wszystkie naraz.
+            val lag = if (calm) 0f else .05f * index
+            val t = ((appear - lag) / (1f - .05f * (count - 1))).coerceIn(0f, 1.15f)
+            val angle = -PI / 2 + index * 2 * PI / count
+            val position = center + Offset((cos(angle) * controller.radius * t).toFloat(), (sin(angle) * controller.radius * t).toFloat())
             val chosen = controller.selected == action
             val scale by animateFloatAsState(if (chosen) 1.25f else 1f, label = "orbitItem")
             val size = 52.dp
@@ -310,7 +334,7 @@ fun OrbitOverlay(controller: OrbitController) {
                 modifier = Modifier
                     .offset { IntOffset((position.x - size.toPx() / 2).roundToInt(), (position.y - size.toPx() / 2).roundToInt()) }
                     .size(size)
-                    .graphicsLayer { scaleX = scale; scaleY = scale; alpha = appear }
+                    .graphicsLayer { scaleX = scale * t.coerceAtMost(1f); scaleY = scale * t.coerceAtMost(1f); alpha = t.coerceIn(0f, 1f) }
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -322,11 +346,13 @@ fun OrbitOverlay(controller: OrbitController) {
                 }
             }
         }
-        // Podpis: nazwa pliku albo wybranej akcji, nad kołem.
+        // Podpis: nazwa pliku albo wybranej akcji, nad kołem. Przy wygaszaniu pliku
+        // już nie ma — zostaje ostatnia nazwa, a nie pusta pigułka.
+        val lastName = remember { arrayOf("") }.also { if (item != null) it[0] = item.name }
         val label = when {
             controller.overShelf -> stringResource(R.string.shelf_add)
             controller.selected != null -> controller.selected!!.label()
-            else -> item?.name.orEmpty()
+            else -> lastName[0]
         }
         Surface(
             shape = RoundedCornerShape(12.dp),
@@ -357,6 +383,46 @@ fun OrbitOverlay(controller: OrbitController) {
                     fontWeight = FontWeight.SemiBold
                 )
             }
+        }
+    }
+}
+
+/**
+ * Plik wrzucony do szuflady leci od palca do paska nad nawigacją i maleje —
+ * widać, dokąd trafił, zanim pasek szuflady się pojawi.
+ */
+@Composable
+private fun ShelfFlight(flight: Flight, controller: OrbitController, navigationBar: Float) {
+    val calm = LocalArmaStyle.current.calm
+    val density = LocalDensity.current
+    val progress = remember(flight.id) { Animatable(0f) }
+    LaunchedEffect(flight.id) {
+        if (!calm) progress.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
+        if (controller.flight?.id == flight.id) controller.flight = null
+    }
+    if (calm) return
+    val target = with(density) { Offset(controller.screen.x / 2f, controller.screen.y - navigationBar - 92.dp.toPx()) }
+    val t = progress.value
+    // Lekki łuk w górę — prosta linia wyglądałaby jak przesunięcie, nie rzut.
+    val lift = with(density) { 60.dp.toPx() } * 4f * t * (1f - t)
+    val position = Offset(flight.from.x + (target.x - flight.from.x) * t, flight.from.y + (target.y - flight.from.y) * t - lift)
+    val size = 48.dp
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primary,
+        shadowElevation = 8.dp,
+        modifier = Modifier
+            .offset { IntOffset((position.x - size.toPx() / 2).roundToInt(), (position.y - size.toPx() / 2).roundToInt()) }
+            .size(size)
+            .graphicsLayer {
+                val scale = 1f - .45f * t
+                scaleX = scale
+                scaleY = scale
+                alpha = if (t < .85f) 1f else (1f - t) / .15f
+            }
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(fileIcon(flight.item), null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
         }
     }
 }

@@ -14,6 +14,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -253,6 +264,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var preview by remember { mutableStateOf<FileItem?>(null) }
     // Szybki podgląd po przytrzymaniu i puszczeniu pliku.
     var peekItem by remember { mutableStateOf<FileItem?>(null) }
+    // Miejsce przytrzymania na ekranie — stamtąd wyrasta panel podglądu.
+    var peekOrigin by remember { mutableStateOf<Offset?>(null) }
     val orbit = LocalOrbit.current
     val shelfItems by vm.shelf.collectAsStateWithLifecycle()
     var details by remember { mutableStateOf<FileItem?>(null) }
@@ -446,7 +459,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     // Wynik gestu orbity: puszczenie bez ruchu = szybki podgląd, ruch = akcja z koła.
     val onOrbit: (OrbitResult) -> Unit = { result ->
         when (result) {
-            is OrbitResult.Peek -> peekItem = result.item
+            is OrbitResult.Peek -> {
+                peekOrigin = orbit.startOnScreen
+                peekItem = result.item
+            }
             is OrbitResult.Action -> {
                 val item = result.item
                 when (result.action) {
@@ -493,9 +509,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (selectionMode) {
+            // Przy chowaniu pasek jeszcze chwilę widać — liczba ma zostać ostatnią niezerową.
+            val shownCount = remember { intArrayOf(0) }.also { if (selectedItems.isNotEmpty()) it[0] = selectedItems.size }
+            AnimatedVisibility(
+                selectionMode,
+                enter = slideInVertically { -it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut()
+            ) {
                 MultiSelectionTopBar(
-                    count = selectedItems.size,
+                    count = shownCount[0],
                     canRename = selectedItems.size == 1,
                     canExtract = inArchive || (selectedItems.size == 1 && !selectedItems.first().isDirectory &&
                         ArchiveFormats.canOpenAsArchive(selectedItems.first().name)),
@@ -570,8 +592,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onClear = vm::clearShelf
                     )
                 }
-                if (!selectionMode) {
-                    ArmaNavBar {
+                AnimatedVisibility(
+                    !selectionMode,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut()
+                ) {
+                    ArmaNavBar(selected = tab.ordinal, count = Tab.entries.size) {
                     NavItem(Tab.FILES, tab, Icons.Default.PhoneAndroid, stringResource(R.string.nav_home)) {
                         tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.showHome()
                     }
@@ -984,7 +1010,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 rename = { target -> renameItem = target },
                 delete = { target -> deleteItems = listOf(target) }
             ),
-            onDismiss = { peekItem = null }
+            onDismiss = { peekItem = null },
+            origin = peekOrigin
         )
     }
 
@@ -2200,10 +2227,11 @@ private fun FileRow(
 ) {
     // Płaski wiersz bez karty: obramowanie każdego pliku zabierało miejsce
     // i męczyło wzrok, a podział niosą teraz kolorowe ikony typów.
+    val background by animateColorAsState(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, label = "rowSelected")
     Row(
         Modifier
             .fillMaxWidth()
-            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+            .background(background)
             .then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -2233,11 +2261,18 @@ private fun FileRow(
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Default.Star, null, Modifier.size(16.dp), tint = LocalFileTypeColors.current.folder)
         }
-        if (selectionMode) {
-            Checkbox(checked = selected, onCheckedChange = { onClick() })
-        } else {
-            IconButton(onClick = onMenu) {
-                Icon(Icons.Default.MoreVert, stringResource(R.string.common_options), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Menu wiersza zamienia się w pole wyboru — z małym zoomem, a nie skokiem.
+        AnimatedContent(
+            selectionMode,
+            transitionSpec = { (fadeIn(tween(150)) + scaleIn(tween(150), initialScale = .6f)).togetherWith(fadeOut(tween(90))) },
+            label = "rowTrailing"
+        ) { selecting ->
+            if (selecting) {
+                Checkbox(checked = selected, onCheckedChange = { onClick() })
+            } else {
+                IconButton(onClick = onMenu) {
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.common_options), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }
@@ -2257,11 +2292,14 @@ private fun FileTile(
     columns: Int,
     interaction: Modifier? = null
 ) {
+    val color by animateColorAsState(if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow, label = "tileSelected")
+    // Zaznaczony kafelek lekko się cofa — widać zaznaczenie także na samym zdjęciu.
+    val scale by animateFloatAsState(if (selected) .94f else 1f, spring(dampingRatio = .7f, stiffness = 600f), label = "tileScale")
     Surface(
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = color,
         shape = RoundedCornerShape(14.dp),
         border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .5f)) else null,
-        modifier = Modifier.aspectRatio(.9f).then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
+        modifier = Modifier.aspectRatio(.9f).graphicsLayer { scaleX = scale; scaleY = scale }.then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
     ) {
         Column(Modifier.padding(6.dp)) {
             Box(Modifier.fillMaxWidth().weight(1f)) {
@@ -2279,9 +2317,7 @@ private fun FileTile(
                         }
                     }
                 }
-                if (selectionMode) {
-                    Checkbox(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.align(Alignment.TopStart))
-                }
+                TileCheckbox(selectionMode, selected, onClick, Modifier.align(Alignment.TopStart))
             }
             Spacer(Modifier.height(6.dp))
             // Przy szerokich kafelkach (2–3 kolumny) dwie linie — długie nazwy
@@ -2304,6 +2340,19 @@ private fun FileTile(
                 )
             }
         }
+    }
+}
+
+/** Pole wyboru kafelka — wyskakuje z małego zoomu, gdy zaczyna się zaznaczanie. */
+@Composable
+private fun TileCheckbox(visible: Boolean, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    AnimatedVisibility(
+        visible,
+        enter = fadeIn() + scaleIn(initialScale = .6f),
+        exit = fadeOut() + scaleOut(targetScale = .6f),
+        modifier = modifier
+    ) {
+        Checkbox(checked = selected, onCheckedChange = { onClick() })
     }
 }
 
@@ -2336,20 +2385,17 @@ internal fun FileVisual(
     val video = thumbnail && vm != null && videoThumbnails.supports(item)
 
     if (rasterImage && vm != null) {
-        var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
-        var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
-        LaunchedEffect(item.uri, item.lastModified) {
+        // Ikona wiersza (40 dp) nie potrzebuje 640 px — mniejsza miniatura to
+        // kilka razy więcej zdjęć w tej samej pamięci podręcznej. Duża, jeśli
+        // już jest (z siatki), nadaje się też do wiersza.
+        val full = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+        val key = if (crop) ThumbnailCache.small(full) else full
+        var bitmap by remember(key) { mutableStateOf(ThumbnailCache.get(key) ?: if (crop) ThumbnailCache.get(full) else null) }
+        var failed by remember(key) { mutableStateOf(false) }
+        val appear by rememberAppear(bitmap != null, key)
+        LaunchedEffect(key) {
+            if (bitmap != null) return@LaunchedEffect
             failed = false
-            // Ikona wiersza (40 dp) nie potrzebuje 640 px — mniejsza miniatura to
-            // kilka razy więcej zdjęć w tej samej pamięci podręcznej. Duża, jeśli
-            // już jest (z siatki), nadaje się też do wiersza.
-            val full = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
-            val key = if (crop) ThumbnailCache.small(full) else full
-            val cached = ThumbnailCache.get(key) ?: if (crop) ThumbnailCache.get(full) else null
-            if (cached != null) {
-                bitmap = cached
-                return@LaunchedEffect
-            }
             // Pobranie kilkudziesięciu megabajtów z serwera po to, by pokazać
             // kafelek wielkości paznokcia, kosztuje więcej, niż daje.
             if ((vm.isRemote(item.uri) || vm.isArchive(item.uri)) && item.size > REMOTE_THUMBNAIL_LIMIT) {
@@ -2365,15 +2411,16 @@ internal fun FileVisual(
         }
         Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                if (appear < 1f && !failed) ThumbPlaceholder(tint, if (crop) null else Icons.Default.Image)
                 bitmap?.let {
                     Image(
                         bitmap = it.asImageBitmap(),
                         contentDescription = item.name,
-                        modifier = if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp),
+                        modifier = (if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp))
+                            .graphicsLayer { alpha = appear },
                         contentScale = if (crop) ContentScale.Crop else ContentScale.Fit
                     )
                 }
-                if (bitmap == null && !failed) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 if (failed) Icon(Icons.Default.Image, null, Modifier.fillMaxSize(.5f), tint = tint)
             }
         }
@@ -2381,6 +2428,7 @@ internal fun FileVisual(
         val key = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
         var bitmap by remember(item.uri, item.lastModified) { mutableStateOf(ThumbnailCache.get(key)) }
         var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
+        val appear by rememberAppear(bitmap != null, key)
         LaunchedEffect(item.uri, item.lastModified) {
             if (bitmap != null) return@LaunchedEffect
             bitmap = videoThumbnails.load(item)
@@ -2393,11 +2441,12 @@ internal fun FileVisual(
                     Image(
                         bitmap = shown.asImageBitmap(),
                         contentDescription = item.name,
-                        modifier = if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp),
+                        modifier = (if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp))
+                            .graphicsLayer { alpha = appear },
                         contentScale = if (crop) ContentScale.Crop else ContentScale.Fit
                     )
                     // Znak odtwarzania odróżnia film od zdjęcia.
-                    Surface(shape = CircleShape, color = Color.Black.copy(alpha = .45f), modifier = Modifier.fillMaxSize(.42f).widthIn(max = 36.dp).aspectRatio(1f)) {
+                    Surface(shape = CircleShape, color = Color.Black.copy(alpha = .45f), modifier = Modifier.fillMaxSize(.42f).widthIn(max = 36.dp).aspectRatio(1f).graphicsLayer { alpha = appear }) {
                         Icon(Icons.Default.PlayArrow, null, Modifier.padding(2.dp), tint = Color.White)
                     }
                 } else {
@@ -3000,8 +3049,9 @@ private fun EmptyFolder(filtered: Boolean, tab: Tab) {
 private fun RowScope.NavItem(value: Tab, selected: Tab, icon: ImageVector, label: String, onClick: () -> Unit) {
     val style = LocalArmaStyle.current
     val active = value == selected
-    val underline by androidx.compose.animation.core.animateDpAsState(if (active) 28.dp else 0.dp, label = "navUnderline")
+    val color by androidx.compose.animation.animateColorAsState(if (active) style.text else style.muted, label = "navText")
     // Napis z podkreśleniem akcentem, jak w makiecie „Wspólny język”; ikona tylko dla czytnika ekranu.
+    // Samo podkreślenie rysuje pasek — jedna kreska przesuwa się między zakładkami.
     Column(
         Modifier
             .weight(1f)
@@ -3014,21 +3064,44 @@ private fun RowScope.NavItem(value: Tab, selected: Tab, icon: ImageVector, label
             label,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (active) style.text else style.muted,
+            color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        Box(Modifier.padding(top = 6.dp).width(underline).height(2.dp).background(style.accent))
+        Spacer(Modifier.padding(top = 6.dp).height(2.dp))
     }
 }
 
-/** Dolna nawigacja: cienka kreska u góry i cztery napisy — bez pigułek Material. */
+/**
+ * Dolna nawigacja: cienka kreska u góry i cztery napisy — bez pigułek Material.
+ * Podkreślenie akcentem jedzie do wybranej zakładki ze sprężyną, zamiast
+ * znikać w jednej i rosnąć w drugiej.
+ */
 @Composable
-private fun ArmaNavBar(content: @Composable RowScope.() -> Unit) {
+private fun ArmaNavBar(selected: Int, count: Int, content: @Composable RowScope.() -> Unit) {
     val style = LocalArmaStyle.current
+    val position by androidx.compose.animation.core.animateFloatAsState(
+        selected.toFloat(),
+        if (style.calm) tween(120) else spring(dampingRatio = .78f, stiffness = 420f),
+        label = "navIndicator"
+    )
     Column(Modifier.background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
         HorizontalDivider(color = style.hairline)
-        Row(Modifier.fillMaxWidth().height(60.dp), verticalAlignment = Alignment.CenterVertically, content = content)
+        Box(Modifier.fillMaxWidth().height(60.dp)) {
+            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, content = content)
+            val line = 28.dp
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                val cell = size.width / count
+                val width = line.toPx()
+                // Pod napisem: środek komórki, 6 dp pod tekstem — tam, gdzie stał dawny odstęp.
+                val y = size.height / 2 + 12.dp.toPx()
+                drawRect(
+                    style.accent,
+                    topLeft = Offset(cell * position + (cell - width) / 2, y),
+                    size = Size(width, 2.dp.toPx())
+                )
+            }
+        }
     }
 }
 

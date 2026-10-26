@@ -10,6 +10,12 @@ import android.media.MediaFormat
 import android.net.Uri
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
+import androidx.compose.ui.unit.toSize
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -114,12 +120,26 @@ class PeekActions(
  * pierwsza strona PDF, początek tekstu. Pod spodem pasek akcji.
  */
 @Composable
-fun QuickPeek(item: FileItem, vm: FileManagerViewModel, actions: PeekActions, onDismiss: () -> Unit) {
+fun QuickPeek(item: FileItem, vm: FileManagerViewModel, actions: PeekActions, onDismiss: () -> Unit, origin: Offset? = null) {
     val appear = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
     LaunchedEffect(item.uri) { appear.animateTo(1f, spring(dampingRatio = .72f, stiffness = 420f)) }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    // Zamknięcie dotknięciem obok albo Wstecz: panel wraca pod palec, zamiast zniknąć w jednej klatce.
+    var closing by remember { mutableStateOf(false) }
+    val close: () -> Unit = {
+        if (!closing) {
+            closing = true
+            scope.launch {
+                appear.animateTo(0f, tween(140))
+                onDismiss()
+            }
+        }
+    }
+    // Środek skalowania w miejscu przytrzymania, przeliczony na układ panelu.
+    var bounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
-            Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onDismiss() } },
+            Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
         ) {
             Surface(
@@ -132,11 +152,21 @@ fun QuickPeek(item: FileItem, vm: FileManagerViewModel, actions: PeekActions, on
                     .fillMaxWidth()
                     .heightIn(max = 640.dp)
                     // Panel „wyrasta” spod palca: skala i przezroczystość ze sprężyną.
+                    .onGloballyPositioned { bounds = androidx.compose.ui.geometry.Rect(it.positionOnScreen(), it.size.toSize()) }
                     .graphicsLayer {
                         val t = appear.value
-                        scaleX = .86f + .14f * t
-                        scaleY = .86f + .14f * t
+                        // Z miejsca palca panel rośnie wyraźniej niż od środka.
+                        val start = if (origin != null) .3f else .86f
+                        scaleX = start + (1f - start) * t
+                        scaleY = start + (1f - start) * t
                         alpha = t.coerceIn(0f, 1f)
+                        val frame = bounds
+                        if (origin != null && frame != null && frame.width > 0f && frame.height > 0f) {
+                            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(
+                                ((origin.x - frame.left) / frame.width).coerceIn(-.5f, 1.5f),
+                                ((origin.y - frame.top) / frame.height).coerceIn(-.5f, 1.5f)
+                            )
+                        }
                     }
                     .pointerInput(Unit) { detectTapGestures { } }
             ) {

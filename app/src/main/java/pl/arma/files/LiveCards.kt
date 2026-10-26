@@ -283,10 +283,13 @@ private fun NoteIcon() {
 
 @Composable
 private fun ThumbImage(bitmap: Bitmap?, modifier: Modifier, fallback: @Composable () -> Unit) {
+    // Ikona zostaje pod spodem, aż strona PDF albo okładka się wyłoni.
+    val appear by rememberAppear(bitmap != null, Unit)
     Box(modifier.clip(RoundedCornerShape(10.dp))) {
+        if (appear < 1f) fallback()
         if (bitmap != null) {
-            Image(bitmap.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else fallback()
+            Image(bitmap.asImageBitmap(), null, Modifier.fillMaxSize().graphicsLayer { alpha = appear }, contentScale = ContentScale.Crop)
+        }
     }
 }
 

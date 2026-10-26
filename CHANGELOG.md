@@ -131,6 +131,28 @@ Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
   folder podłączony na dole ma w menu „Przypnij do „Moje urządzenie””
 - plik usunięty na serwerze (np. z Ulubionych) nie zamyka aplikacji —
   pokazuje komunikat „Tego elementu nie ma już na serwerze.”
+- zmiana nazwy na nazwę istniejącego pliku nie nadpisuje go już bez śladu
+  (komunikat „już istnieje”); nazwy z serwerów („..”, ukośniki) nie mogą
+  wyprowadzić kopii ani plików offline poza folder docelowy
+- kategoria na ekranie głównym („Zdjęcia”, „Dokumenty”…) pokazuje swoje
+  pliki; wcześniej nic się nie działo, a następny otwarty folder pokazywał
+  listę kategorii zamiast swojej zawartości
+- wyszukiwanie globalne z folderu nie gubi wyników z polskimi znakami ani
+  ze słowami w innej kolejności; szukanie w folderze też bez polskich znaków;
+  wyniki da się zaznaczać; folder otwarty z wyników otwiera się jako folder
+- WebDAV: pliki z „+” w nazwie otwierają się (wcześniej 404), nazwa z adresu
+  zamiast etykiety serwera
+- po zmianie nazwy w folderze SAF Ulubione i Ostatnie pokazują nazwę, nie adres
+- pasek zajętości nośnika z kolorowymi odcinkami kategorii, osobno dla
+  każdego nośnika (wcześniej karta SD pokazywała rozbicie całej pamięci)
+- okno usuwania: „Do kosza” jako główny przycisk, „Usuń na zawsze” osobno
+  i w kolorze błędu; kafelki mają znak offline i nazwę w dwóch liniach
+- animacje: podkreślenie w dolnej nawigacji przesuwa się między zakładkami,
+  pasek zaznaczenia wsuwa się z góry, miniatury wyłaniają się z pulsującego
+  podkładu zamiast kółek ładowania, akcje orbity rozchodzą się po kolei,
+  plik wrzucony do szuflady leci do niej, szybki podgląd wyrasta spod palca
+  i znika płynnie, uchwyt arkusza Głębi zamyka poziom szybkim machnięciem;
+  „Spokojny ruch” skraca albo wyłącza każdą z nich
 
 ## 0.10.0
 

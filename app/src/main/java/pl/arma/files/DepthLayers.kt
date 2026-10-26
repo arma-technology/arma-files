@@ -13,7 +13,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -42,11 +45,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import pl.arma.files.ui.theme.ArmaStyle
 import pl.arma.files.ui.theme.LocalArmaStyle
@@ -113,9 +116,14 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
     var drag by remember(layer.dir) { mutableFloatStateOf(0f) }
     val progress = (drag / threshold).coerceIn(0f, 1f)
 
+    // Powrót arkusza na miejsce; nowe złapanie go przerywa, zamiast walczyć z palcem.
+    var settling by remember(layer.dir) { mutableStateOf<Job?>(null) }
     fun settle(velocity: Float) {
+        settling?.cancel()
         if (drag > threshold || (drag > threshold / 4 && velocity > 1800f)) onBack()
-        else scope.launch { animate(drag, 0f, animationSpec = spring(stiffness = 500f)) { value, _ -> drag = value } }
+        else settling = scope.launch {
+            animate(drag, 0f, initialVelocity = velocity, animationSpec = spring(stiffness = 500f)) { value, _ -> drag = value }
+        }
     }
 
     val connection = remember(layer.dir) {
@@ -133,6 +141,7 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 // Lista na samej górze, palec dalej w dół: ciągnie arkusz.
                 if (available.y > 0f && source == NestedScrollSource.UserInput) {
+                    settling?.cancel()
                     drag += available.y * .55f
                     return Offset(0f, available.y)
                 }
@@ -185,16 +194,14 @@ private fun DepthSheet(layer: DepthLayer, behind: List<FileItem>?, vm: FileManag
                     Modifier
                         .fillMaxWidth()
                         .height(18.dp)
-                        .pointerInput(layer.dir) {
-                            detectVerticalDragGestures(
-                                onDragEnd = { settle(0f) },
-                                onDragCancel = { settle(0f) },
-                                onVerticalDrag = { change, amount ->
-                                    change.consume()
-                                    drag = (drag + amount).coerceAtLeast(0f)
-                                }
-                            )
-                        },
+                        // draggable zamiast surowego gestu: puszczenie podaje prędkość,
+                        // więc szybkie machnięcie w dół zamyka poziom jak na liście.
+                        .draggable(
+                            state = rememberDraggableState { amount -> drag = (drag + amount).coerceAtLeast(0f) },
+                            orientation = Orientation.Vertical,
+                            onDragStarted = { settling?.cancel() },
+                            onDragStopped = { velocity -> settle(velocity) }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(shape = RoundedCornerShape(2.dp), color = style.hairline, modifier = Modifier.width(36.dp).height(4.dp)) {}
