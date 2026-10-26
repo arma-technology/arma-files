@@ -60,6 +60,8 @@ import pl.arma.viewer.text.TextReader
 /** Nazwy domyślnych kafelków zapisane w ustawieniach od pierwszych wersji. */
 private const val DOWNLOADS_KEY = "Pobrane"
 private const val PHOTOS_KEY = "Zdjęcia"
+/** Ile miejsc pamięta Wstecz w jednej karcie. */
+private const val NAV_HISTORY = 50
 
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as ArmaFilesApp).repository
@@ -205,10 +207,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun openRemoteFolder(uri: Uri) {
         val source = _sources.value.firstOrNull { it.rootUri?.scheme == uri.scheme && it.rootUri?.authority == uri.authority }
         val pane = active()
+        if (pane.currentDir == uri) return
+        pane.rememberPlace()
         pane.source = source?.type ?: SourceType.SMB
         pane.root = source?.rootUri ?: uri.buildUpon().path("/").build()
         pane.currentDir = uri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -249,9 +252,30 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         var currentDir: Uri? = null
         var source: SourceType = SourceType.LOCAL
         var files: List<FileItem> = emptyList()
-        val navStack = ArrayDeque<Uri>()
+        /** Historia „wstecz”: poprzednie miejsca razem ze źródłem, także ekran główny. */
+        val navStack = ArrayDeque<NavEntry>()
         /** Czas synchronizacji kopii offline, gdy lista pochodzi z niej, a nie z serwera. */
         var offlineSince: Long? = null
+    }
+
+    /** Miejsce w historii karty; [dir] == null to ekran „Moje urządzenie”. */
+    private data class NavEntry(val root: Uri?, val source: SourceType, val dir: Uri?)
+
+    /**
+     * Zapamiętuje bieżące miejsce przed przejściem gdzie indziej — Wstecz ma
+     * wracać tam, skąd się przyszło (do wyników, przypiętego folderu, ekranu
+     * głównego), a nie do folderu nadrzędnego.
+     */
+    private fun Pane.rememberPlace() {
+        val here = NavEntry(root, source, currentDir)
+        if (navStack.lastOrNull() == here) return
+        navStack.addLast(here)
+        while (navStack.size > NAV_HISTORY) navStack.removeFirst()
+    }
+
+    /** Usuwa z historii wszystkich kart miejsca, które przestały istnieć. */
+    private fun forgetPlaces(gone: (Uri) -> Boolean) {
+        panes.forEach { pane -> pane.navStack.removeAll { entry -> listOfNotNull(entry.root, entry.dir).any(gone) } }
     }
 
     private val panes = mutableListOf(Pane(java.util.UUID.randomUUID().toString()))
@@ -530,7 +554,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openDirectoryInSecondary(item: FileItem) {
         val pane = secondary() ?: return
-        pane.currentDir?.let(pane.navStack::addLast)
+        pane.rememberPlace()
         pane.currentDir = item.uri
         refreshPane(pane)
     }
@@ -538,8 +562,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun secondaryGoBack() {
         val pane = secondary() ?: return
         val previous = pane.navStack.removeLastOrNull() ?: return
-        pane.currentDir = previous
-        refreshPane(pane)
+        restorePlace(pane, previous)
     }
 
     init {
@@ -611,6 +634,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (!stillUsed) repo.releaseTreePermission(tree)
         updateSources()
         loadSavedCollections()
+        if (leaving != null) forgetPlaces { it.toString().startsWith(leaving.toString()) }
         if (leaving != null && _root.value == leaving) goComputerHome()
         // Chmura po nazwie usługi; folder lokalny po nazwie folderu, o ile
         // dostawca ją podał (Dropbox jej nie podaje — zostaje „Podłączony”).
@@ -637,6 +661,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (enabled) return
         val current = _root.value
         val leaving = _sources.value.firstOrNull(matches)?.rootUri
+        if (leaving != null) forgetPlaces { it.toString().startsWith(leaving.toString()) }
         if (current == null || leaving == null || current != leaving) return
 
         val fallback = _sources.value.firstOrNull { it.type == SourceType.LOCAL && it.configured }
@@ -700,6 +725,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteAccount(id: String) {
         accounts.get(id)?.let(repo::disconnectRemote)
         accounts.delete(id)
+        forgetPlaces { it.authority == id && RemoteRepository.isRemoteScheme(it.scheme) }
         // Usunięte konto może być otwarte w kilku kartach naraz.
         panes.filter { it.root?.authority == id }.forEach { pane ->
             pane.navStack.clear()
@@ -721,10 +747,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val pane = active()
+        if (pane.currentDir != rootUri) pane.rememberPlace()
         pane.source = source.type
         pane.root = rootUri
         pane.currentDir = rootUri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -755,10 +781,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val pane = active()
+        if (pane.currentDir != rootUri) pane.rememberPlace()
         pane.source = type
         pane.root = rootUri
         pane.currentDir = rootUri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -789,7 +815,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openDirectory(item: FileItem) {
         val pane = active()
-        pane.currentDir?.let(pane.navStack::addLast)
+        pane.rememberPlace()
         pane.currentDir = item.uri
         refreshPane(pane)
     }
@@ -798,8 +824,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val pane = active()
         val previous = pane.navStack.removeLastOrNull()
         if (previous != null) {
-            pane.currentDir = previous
-            refreshPane(pane)
+            restorePlace(pane, previous)
             return true
         }
         if (pane.currentDir != null) {
@@ -807,6 +832,36 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return true
         }
         return false
+    }
+
+    /** Czy Wstecz ma dokąd wrócić w bieżącej karcie. */
+    fun canGoBack(): Boolean = active().let { it.navStack.isNotEmpty() || it.currentDir != null }
+
+    private fun restorePlace(pane: Pane, place: NavEntry) {
+        pane.root = place.root
+        pane.source = place.source
+        pane.currentDir = place.dir
+        if (place.dir == null) {
+            pane.files = emptyList()
+            pane.offlineSince = null
+            syncPanes()
+            refreshDeviceLocations()
+        } else {
+            refreshPane(pane)
+        }
+    }
+
+    /** Ekran „Moje urządzenie” z paska nawigacji — Wstecz wraca potem do folderu. */
+    fun showHome() {
+        val pane = active()
+        if (pane.currentDir == null) return
+        pane.rememberPlace()
+        pane.files = emptyList()
+        pane.currentDir = null
+        pane.root = null
+        pane.source = SourceType.LOCAL
+        syncPanes()
+        refreshDeviceLocations()
     }
 
     fun goComputerHome() {
@@ -826,10 +881,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val pane = active()
+        if (pane.currentDir == uri) return
+        pane.rememberPlace()
         pane.source = SourceType.LOCAL
         pane.root = uri
         pane.currentDir = uri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -837,7 +893,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun openPath(uri: Uri) {
         val pane = active()
         if (pane.currentDir == uri) return
-        pane.currentDir?.let(pane.navStack::addLast)
+        pane.rememberPlace()
         pane.currentDir = uri
         refreshPane(pane)
     }
@@ -845,8 +901,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun goRoot() {
         val pane = active()
         pane.root?.let {
+            if (pane.currentDir == it) return
+            pane.rememberPlace()
             pane.currentDir = it
-            pane.navStack.clear()
             refreshPane(pane)
         }
     }
@@ -1134,7 +1191,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Folder, do którego prowadzi „wstecz” — warstwa pod bieżącą w widoku głębi. */
-    fun backTarget(): Uri? = active().navStack.lastOrNull()
+    fun backTarget(): Uri? = active().navStack.lastOrNull()?.dir
 
     /** Ile poziomów „wstecz” ma bieżący folder — głębokość warstwy. */
     fun navDepth(): Int = active().navStack.size
@@ -1237,7 +1294,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             secondary()?.currentDir ?: run { _error.value = text(R.string.err_pane_no_folder); return }
         } else {
             val pane = active()
-            (listOfNotNull(pane.currentDir) + pane.navStack.reversed())
+            (listOfNotNull(pane.currentDir) + pane.navStack.reversed().mapNotNull { it.dir })
                 .firstOrNull { !ArchiveRepository.isArchive(it) }
                 ?: run { _error.value = text(R.string.err_archive_read_only); return }
         }
@@ -1271,7 +1328,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val target = if (toOtherPane) {
             secondary()?.currentDir ?: run { _error.value = text(R.string.err_pane_no_folder); return }
         } else {
-            active().navStack.reversed().firstOrNull { !ArchiveRepository.isArchive(it) }
+            active().navStack.reversed().mapNotNull { it.dir }.firstOrNull { !ArchiveRepository.isArchive(it) }
                 ?: run { _error.value = text(R.string.err_archive_read_only); return }
         }
         if (ArchiveRepository.isArchive(target)) {
@@ -1526,6 +1583,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 pane.files = emptyList()
             }
         }
+        forgetPlaces(::onRemoved)
         if (onRemoved(_clipboard.value?.items?.firstOrNull()?.uri)) _clipboard.value = null
         _searchResults.value = _searchResults.value.filterNot { onRemoved(it.uri) }
         syncPanes()

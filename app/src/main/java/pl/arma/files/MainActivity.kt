@@ -424,7 +424,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val computerHome = tab == Tab.FILES && currentDir == null
 
     BackHandler(
-        enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || currentDir != null ||
+        enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || vm.canGoBack() ||
             (!computerHome && (searchOpen || query.isNotBlank()))
     ) {
         when {
@@ -530,7 +530,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 if (!selectionMode) {
                     ArmaNavBar {
                     NavItem(Tab.FILES, tab, Icons.Default.PhoneAndroid, stringResource(R.string.nav_home)) {
-                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
+                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.showHome()
                     }
                     NavItem(Tab.RECENT, tab, Icons.Default.Schedule, stringResource(R.string.nav_recent)) {
                         tab = Tab.RECENT; query = ""; category = FileCategory.ALL
