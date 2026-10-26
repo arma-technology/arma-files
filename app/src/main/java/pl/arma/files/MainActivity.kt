@@ -799,7 +799,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             files = baseFiles
                         )
 
-                        CategoryRow(selected = category, source = baseFiles, onSelected = { category = it })
+                        // Przy wyszukiwaniu globalnym kategorie liczą wyniki, a nie folder pod nimi.
+                        CategoryRow(selected = category, source = selectionSource, onSelected = { category = it })
 
                         AnimatedVisibility(clipboard != null && tab == Tab.FILES) {
                             ClipboardCard(payload = clipboard, onPaste = vm::paste, onCancel = vm::clearClipboard)
@@ -2322,9 +2323,15 @@ private fun FileTile(
             Spacer(Modifier.height(6.dp))
             // Przy szerokich kafelkach (2–3 kolumny) dwie linie — długie nazwy
             // zdjęć i dokumentów różnią się zwykle dopiero na końcu.
+            // Nazwy plików nie mają spacji, więc tekst łamał się gdziekolwiek
+            // („Zdjęcie_urlop_06.jp” / „g”). Miejsca łamania po „_” i „-” oraz
+            // przed rozszerzeniem; dwie linie zawsze zarezerwowane, żeby zdjęcia
+            // w rzędzie miały tę samą wysokość.
+            val twoLines = columns <= 3
             Text(
-                item.name,
-                maxLines = if (columns <= 3) 2 else 1,
+                if (twoLines) breakableName(item.name) else item.name,
+                maxLines = if (twoLines) 2 else 1,
+                minLines = if (twoLines) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodySmall,
@@ -2341,6 +2348,13 @@ private fun FileTile(
             }
         }
     }
+}
+
+/** Nazwa z miejscami łamania (znak zerowej szerokości) po „_”, „-” i przed rozszerzeniem. */
+internal fun breakableName(name: String): String {
+    val dot = name.lastIndexOf('.').takeIf { it > 0 } ?: name.length
+    val base = name.substring(0, dot).replace("_", "_\u200B").replace("-", "-\u200B")
+    return if (dot < name.length) base + "\u200B" + name.substring(dot) else base
 }
 
 /** Pole wyboru kafelka — wyskakuje z małego zoomu, gdy zaczyna się zaznaczanie. */
