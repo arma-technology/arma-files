@@ -53,11 +53,11 @@ class FileRepository(private val context: Context) : FileOps {
         context.getSystemService(android.net.ConnectivityManager::class.java)?.activeNetwork == null
 
     /**
-     * Serwer, a gdy nie odpowiada — kopia offline. Bez żadnej sieci od razu
-     * kopia: nie ma sensu czekać na limit czasu połączenia. Gdy kopia jest,
-     * a serwer milczy dłużej niż [OFFLINE_PATIENCE_MS], też pokazujemy kopię —
-     * zawieszony serwer potrafi nie odpowiadać przez minutę. Odpytywanie
-     * folderu wróci do serwera, gdy ten się odezwie.
+     * Kopia offline, gdy jest — od razu, bez czekania na serwer; serwer
+     * sprawdza w tle [OfflineStore.refreshSoon] i nowsza zawartość pojawia się
+     * po synchronizacji. Bez kopii — serwer. Gdy kopii nie da się odczytać
+     * (np. pliku jeszcze nie pobrano), a serwer milczy dłużej niż
+     * [OFFLINE_PATIENCE_MS], zostaje to, co jest w kopii.
      */
     private fun <T> remoteOrOffline(
         uri: Uri,
@@ -69,8 +69,12 @@ class FileRepository(private val context: Context) : FileOps {
         val store = offline
         val hasCopy = store?.localFile(uri) != null
         fun copy(): T? = store?.let { runCatching { fromCopy(it) }.getOrNull() }
-        if (hasCopy && networkDown()) {
-            copy()?.let { servedOffline += uri.toString(); return it }
+        if (hasCopy && (!waitForServer || networkDown())) {
+            copy()?.let {
+                servedOffline += uri.toString()
+                if (!waitForServer) store?.refreshSoon(uri)
+                return it
+            }
         }
         return try {
             val result = if (!hasCopy || waitForServer) online() else {
@@ -156,7 +160,10 @@ class FileRepository(private val context: Context) : FileOps {
         withContext(Dispatchers.IO) {
             when {
                 remote.isRemote(item.uri) && remote.isRemote(targetParent) ->
-                    runCatching { remote.move(item, targetParent, newName) }.getOrNull()
+                    runCatching { remote.move(item, targetParent, newName) }.getOrNull()?.also {
+                        offline?.syncAfterChange(item.uri)
+                        offline?.syncAfterChange(targetParent)
+                    }
 
                 item.uri.scheme == "file" && targetParent.scheme == "file" -> {
                     val source = fileFor(item.uri)
@@ -172,7 +179,7 @@ class FileRepository(private val context: Context) : FileOps {
     suspend fun rename(item: FileItem, newName: String): Uri? = withContext(Dispatchers.IO) {
         when {
             ArchiveRepository.isArchive(item.uri) -> archives.readOnly()
-            remote.isRemote(item.uri) -> remote.rename(item, newName)
+            remote.isRemote(item.uri) -> remote.rename(item, newName).also { offline?.syncAfterChange(item.uri) }
             item.uri.scheme == "file" -> {
                 val source = fileFor(item.uri)
                 val target = File(source.parentFile ?: return@withContext null, newName)
@@ -345,10 +352,17 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     override fun openOutput(uri: Uri): OutputStream = when {
-        // Bez serwera zapis trafia do kopii offline; synchronizacja wyśle go
-        // później albo zgłosi rozbieżność, jeśli plik zmienił się też na serwerze.
-        remote.isRemote(uri) -> remoteOrOffline(uri, { remote.openOutput(uri) }, waitForServer = true) { store ->
-            store.localFile(uri)?.takeIf { it.isFile }?.let { FileOutputStream(it, false) }
+        // Plik z kopią offline zapisujemy w kopii; po zamknięciu synchronizacja
+        // wysyła go na serwer albo zgłasza rozbieżność, jeśli plik zmienił się
+        // też tam. Bez kopii — wprost na serwer.
+        remote.isRemote(uri) -> offline?.writer(uri) ?: object : java.io.FilterOutputStream(remote.openOutput(uri)) {
+            // Nowy plik w folderze z kopią: kopia dogoni serwer dopiero po
+            // zapisaniu całości, nie w trakcie wysyłania.
+            override fun write(b: ByteArray, off: Int, len: Int) = out.write(b, off, len)
+            override fun close() {
+                super.close()
+                offline?.syncAfterChange(uri)
+            }
         }
         ArchiveRepository.isArchive(uri) -> archives.readOnly()
         uri.scheme == "file" -> FileOutputStream(fileFor(uri), false)
@@ -356,7 +370,7 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     private fun deleteBlocking(item: FileItem): Boolean = when {
-        remote.isRemote(item.uri) -> remote.delete(item)
+        remote.isRemote(item.uri) -> remote.delete(item).also { if (it) offline?.deletedOnServer(item.uri) }
         ArchiveRepository.isArchive(item.uri) -> archives.readOnly()
         item.uri.scheme == "file" -> {
             val file = fileFor(item.uri)
@@ -380,7 +394,7 @@ class FileRepository(private val context: Context) : FileOps {
     }
 
     private fun createFolderBlocking(parent: Uri, name: String): Uri? = when {
-        remote.isRemote(parent) -> remote.createFolder(parent, name)
+        remote.isRemote(parent) -> remote.createFolder(parent, name).also { offline?.syncAfterChange(parent) }
         ArchiveRepository.isArchive(parent) -> archives.readOnly()
         parent.scheme == "file" -> {
             val child = uniqueChild(fileFor(parent), name, directory = true)

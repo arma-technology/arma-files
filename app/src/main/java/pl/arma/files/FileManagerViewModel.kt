@@ -160,7 +160,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     val offlineEntries: StateFlow<List<OfflineStore.Entry>> = offlineStore.entries
     val offlineProgress: StateFlow<Map<String, OfflineStore.Progress>> = offlineStore.progress
 
-    /** Folder bieżącej karty pokazany z kopii offline — czas tej kopii; null, gdy z serwera. */
+    /** Nowe rozbieżności znalezione w tle — identyfikator wpisu; aplikacja pyta, którą wersję zachować. */
+    val newOfflineConflicts: kotlinx.coroutines.flow.SharedFlow<String> = offlineStore.newConflicts
+
+    /** Folder bieżącej karty pokazany z kopii offline, bo serwer nie odpowiada — czas tej kopii; null w pozostałych przypadkach. */
     private val _offlineSince = MutableStateFlow<Long?>(null)
     val offlineSince: StateFlow<Long?> = _offlineSince.asStateFlow()
 
@@ -402,7 +405,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val pane = panes.firstOrNull { it.id == paneId } ?: return
         if (pane.currentDir != dir) return
         val fresh = runCatching { repo.listChildren(dir) }.getOrNull() ?: return
-        val since = if (repo.servedOffline(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+        val since = if (repo.servedOffline(dir) && offlineStore.unreachable(dir)) offlineStore.syncedAt(dir) ?: 0L else null
         if (pane.currentDir == dir && (fresh != pane.files || since != pane.offlineSince)) {
             pane.files = fresh
             pane.offlineSince = since
@@ -575,6 +578,19 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         // Same statystyki indeksu to jedno zapytanie agregujące — tanie, a
         // dzięki temu ekran główny od razu wie, czy indeks w ogóle istnieje.
         analyzeStorage()
+        // Foldery z kopii offline pokazują nową zawartość zaraz po synchronizacji
+        // w tle, a pasek „serwer niedostępny” znika, gdy serwer się odezwie.
+        viewModelScope.launch {
+            offlineStore.entries.map { list -> list.map { Triple(it.id, it.lastSync, it.error) } }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    listOfNotNull(active(), secondary()).forEach { pane ->
+                        val dir = pane.currentDir ?: return@forEach
+                        if (repo.servedOffline(dir)) quietRefresh(pane.id, dir)
+                    }
+                }
+        }
         // Statystyki indeksu (liczba plików, analiza) odświeżamy po każdym
         // zakończonym budowaniu — także tym uruchomionym w tle.
         viewModelScope.launch {
@@ -801,7 +817,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { repo.listChildren(dir) }
                 .onSuccess {
                     pane.files = it
-                    pane.offlineSince = if (repo.servedOffline(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+                    pane.offlineSince = if (repo.servedOffline(dir) && offlineStore.unreachable(dir)) offlineStore.syncedAt(dir) ?: 0L else null
                 }
                 .onFailure {
                     if (it is ArchivePasswordException) askPassword(dir, it.wrong) { refreshPane(pane) }

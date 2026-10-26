@@ -362,6 +362,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         if (globalSearch && query.isNotBlank()) vm.searchEverywhere(query)
     }
 
+    // Rozbieżność znaleziona w tle: od razu pytamy, którą wersję zachować.
+    LaunchedEffect(Unit) {
+        vm.newOfflineConflicts.collect { conflictsOf = it }
+    }
+
     LaunchedEffect(notice) {
         notice?.let {
             snackbarHostState.showSnackbar(it)
