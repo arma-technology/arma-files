@@ -581,7 +581,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         // Foldery z kopii offline pokazują nową zawartość zaraz po synchronizacji
         // w tle, a pasek „serwer niedostępny” znika, gdy serwer się odezwie.
         viewModelScope.launch {
-            offlineStore.entries.map { list -> list.map { Triple(it.id, it.lastSync, it.error) } }
+            // Także liczba rozbieżności: po wyborze wersji lista ma pokazać wynik.
+            offlineStore.entries.map { list -> list.map { listOf(it.id, it.lastSync, it.error, it.conflicts.size) } }
                 .distinctUntilChanged()
                 .drop(1)
                 .collect {

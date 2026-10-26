@@ -297,10 +297,14 @@ class OfflineStore(
      * każdym dotknięciu: po udanej synchronizacji najwcześniej po [FRESH_MS],
      * po nieudanej coraz rzadziej (1, 2, 4… do [MAX_BACKOFF_MS]). Powrót sieci
      * zeruje przerwę.
+     *
+     * Przez każdą sieć, także przy „Tylko przez Wi-Fi”: to ustawienie dotyczy
+     * synchronizacji automatycznej w tle, a tu użytkownik właśnie ogląda
+     * folder — bez tego na danych komórkowych kopia nigdy by się nie odświeżyła.
      */
     fun refreshSoon(uri: Uri) {
         val entry = covering(uri)?.first ?: return
-        if (!networkAllowed()) return
+        if (context.getSystemService(ConnectivityManager::class.java)?.activeNetwork == null) return
         val now = System.currentTimeMillis()
         val (last, failures) = attempts[entry.id] ?: (0L to 0)
         val wait = if (failures == 0) FRESH_MS else minOf(BACKOFF_MS shl (failures - 1).coerceAtMost(8), MAX_BACKOFF_MS)
@@ -601,7 +605,11 @@ class OfflineStore(
 
     private fun advance(entry: Entry, bytes: Long) {
         _progress.update { map ->
-            val current = map[entry.id] ?: Progress(0, 0)
+            // Tylko w trwającej synchronizacji. Pobranie przy wyborze wersji
+            // ([resolve]) dopisywało tu wpis, którego nikt potem nie usuwał:
+            // wpis wisiał jako „Synchronizacja…”, a każda następna była
+            // pomijana jako już trwająca.
+            val current = map[entry.id] ?: return@update map
             map + (entry.id to Progress(current.files + 1, current.bytes + bytes))
         }
     }
