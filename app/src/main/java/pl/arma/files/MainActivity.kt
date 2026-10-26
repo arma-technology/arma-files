@@ -839,6 +839,9 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             } else if (viewMode == ViewMode.LIST) {
                                 LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp)) {
                                     items(layerFiles, key = { it.uri.toString() }) { item ->
+                                        // Po sortowaniu, filtrze i zmianach w folderze wiersze przesuwają się
+                                        // na nowe miejsca zamiast przeskakiwać.
+                                        Box(Modifier.animateItem()) {
                                         FileRow(
                                             item = item,
                                             vm = vm,
@@ -850,6 +853,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             onMenu = { selectedUris = setOf(item.uri.toString()) },
                                             interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
                                         )
+                                        }
                                     }
                                 }
                             } else {
@@ -861,6 +865,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                     contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = 88.dp)
                                 ) {
                                     gridItems(layerFiles, key = { it.uri.toString() }) { item ->
+                                        Box(Modifier.animateItem()) {
                                         FileTile(
                                             item = item,
                                             vm = vm,
@@ -871,6 +876,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
                                             interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
                                         )
+                                        }
                                     }
                                 }
                             }
