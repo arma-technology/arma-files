@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Недозвољен назив: %1$s</string>
     <string name="err_name_invalid">Неважећи назив.</string>
     <string name="err_name_slash">Назив не сме да садржи „/“ ни „\“.</string>
+    <string name="err_name_taken">„%1$s“ већ постоји у овој фасцикли.</string>
     <string name="err_needs_all_files">ARMA Files-у је потребан приступ свим датотекама да би отворио меморију уређаја или SD картицу.</string>
     <string name="err_needs_config">Ову везу још треба подесити.</string>
     <string name="err_no_path">Датотека нема путању.</string>

@@ -160,6 +160,7 @@
     <string name="err_name_forbidden">Name not allowed: %1$s</string>
     <string name="err_name_invalid">Invalid name.</string>
     <string name="err_name_slash">The name cannot contain “/” or “\”.</string>
+    <string name="err_name_taken">“%1$s” already exists in this folder.</string>
     <string name="err_needs_all_files">ARMA Files needs access to all files to open device storage or the SD card.</string>
     <string name="err_needs_config">This connection still needs configuring.</string>
     <string name="err_no_path">The file has no path.</string>

@@ -167,7 +167,7 @@ class FileRepository(private val context: Context) : FileOps {
 
                 item.uri.scheme == "file" && targetParent.scheme == "file" -> {
                     val source = fileFor(item.uri)
-                    val target = File(fileFor(targetParent), newName)
+                    val target = LocalNames.child(fileFor(targetParent), newName)
                     if (target.exists()) null
                     else if (source.renameTo(target)) Uri.fromFile(target) else null
                 }
@@ -182,7 +182,13 @@ class FileRepository(private val context: Context) : FileOps {
             remote.isRemote(item.uri) -> remote.rename(item, newName).also { offline?.syncAfterChange(item.uri) }
             item.uri.scheme == "file" -> {
                 val source = fileFor(item.uri)
-                val target = File(source.parentFile ?: return@withContext null, newName)
+                val target = LocalNames.child(source.parentFile ?: return@withContext null, newName)
+                // renameTo nadpisuje istniejący plik bez śladu w koszu. Sama zmiana
+                // wielkości liter jest dozwolona — w pamięci współdzielonej Androida
+                // „a.txt” i „A.txt” to często ten sam plik.
+                if (target.exists() && !newName.equals(source.name, ignoreCase = true)) {
+                    throw IOException(text(R.string.err_name_taken, newName))
+                }
                 if (source.renameTo(target)) Uri.fromFile(target) else null
             }
             else -> DocumentsContract.renameDocument(resolver, item.uri, newName)
@@ -493,7 +499,7 @@ class FileRepository(private val context: Context) : FileOps {
     private fun fileFor(uri: Uri): File = File(uri.path ?: throw IOException(text(R.string.err_local_path)))
 
     private fun uniqueChild(parent: File, requestedName: String, directory: Boolean): File {
-        var candidate = File(parent, requestedName)
+        var candidate = LocalNames.child(parent, requestedName)
         if (!candidate.exists()) return candidate
         val base = if (directory) requestedName else requestedName.substringBeforeLast('.', requestedName)
         val ext = if (directory || !requestedName.contains('.')) "" else ".${requestedName.substringAfterLast('.')}"

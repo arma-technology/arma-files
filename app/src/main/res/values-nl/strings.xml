@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Naam niet toegestaan: %1$s</string>
     <string name="err_name_invalid">Ongeldige naam.</string>
     <string name="err_name_slash">De naam mag geen ‘/’ of ‘\’ bevatten.</string>
+    <string name="err_name_taken">‘%1$s’ bestaat al in deze map.</string>
     <string name="err_needs_all_files">ARMA Files heeft toegang tot alle bestanden nodig om de apparaatopslag of SD-kaart te openen.</string>
     <string name="err_needs_config">Deze verbinding moet nog worden ingesteld.</string>
     <string name="err_no_path">Het bestand heeft geen pad.</string>

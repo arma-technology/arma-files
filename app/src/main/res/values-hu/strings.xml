@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Nem engedélyezett név: %1$s</string>
     <string name="err_name_invalid">Érvénytelen név.</string>
     <string name="err_name_slash">A név nem tartalmazhat „/” vagy „\” karaktert.</string>
+    <string name="err_name_taken">„%1$s” már létezik ebben a mappában.</string>
     <string name="err_needs_all_files">Az ARMA Files-nak hozzáférés kell minden fájlhoz az eszköz tárhelyének vagy az SD-kártyának a megnyitásához.</string>
     <string name="err_needs_config">Ezt a kapcsolatot még be kell állítani.</string>
     <string name="err_no_path">A fájlnak nincs útvonala.</string>

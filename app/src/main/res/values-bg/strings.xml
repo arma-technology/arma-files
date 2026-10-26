@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Непозволено име: %1$s</string>
     <string name="err_name_invalid">Невалидно име.</string>
     <string name="err_name_slash">Името не може да съдържа „/“ или „\“.</string>
+    <string name="err_name_taken">„%1$s“ вече съществува в тази папка.</string>
     <string name="err_needs_all_files">ARMA Files се нуждае от достъп до всички файлове, за да отвори паметта на устройството или SD картата.</string>
     <string name="err_needs_config">Тази връзка все още трябва да се настрои.</string>
     <string name="err_no_path">Файлът няма път.</string>

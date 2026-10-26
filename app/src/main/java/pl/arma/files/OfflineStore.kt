@@ -169,7 +169,7 @@ class OfflineStore(
     }
 
     private fun dirName(entry: Entry, location: Location) =
-        if (location == Location.APP) entry.id else entry.name.replace('/', '_').ifBlank { entry.id }
+        if (location == Location.APP) entry.id else entry.name.replace('/', '_').takeIf(LocalNames::isSafe) ?: entry.id
 
     private fun uniqueDir(root: File, name: String): File {
         var candidate = File(root, name)
@@ -272,8 +272,8 @@ class OfflineStore(
     }
 
     private fun localFor(entry: Entry, relative: String): File {
-        val base = if (entry.isDirectory) File(entry.dir) else File(entry.dir, entry.name)
-        return relative.split('/').filter { it.isNotEmpty() }.fold(base) { dir, name -> File(dir, name) }
+        val base = if (entry.isDirectory) File(entry.dir) else LocalNames.child(File(entry.dir), entry.name)
+        return relative.split('/').filter { it.isNotEmpty() }.fold(base) { dir, name -> LocalNames.child(dir, name) }
     }
 
     /** Czy [uri] jest zapisany offline sam w sobie (nie tylko jako zawartość folderu). */
@@ -502,7 +502,8 @@ class OfflineStore(
 
     private fun mirrorDir(entry: Entry, remoteDir: Uri, relative: String, states: MutableMap<String, Base>, conflicts: MutableList<Conflict>): Long {
         val local = localFor(entry, relative).apply { mkdirs() }
-        val children = repo.remoteList(remoteDir)
+        // Nazwa „..” albo z ukośnikiem z listingu serwera nie trafia do kopii w telefonie.
+        val children = repo.remoteList(remoteDir).filter { LocalNames.isSafe(it.name) }
         val remoteNames = children.map { it.name }.toSet()
         var total = 0L
         children.forEach { child ->

@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Nepovolený název: %1$s</string>
     <string name="err_name_invalid">Neplatný název.</string>
     <string name="err_name_slash">Název nesmí obsahovat „/“ ani „\“.</string>
+    <string name="err_name_taken">„%1$s“ už v této složce existuje.</string>
     <string name="err_needs_all_files">ARMA Files potřebuje přístup ke všem souborům, aby mohl otevřít úložiště zařízení nebo SD kartu.</string>
     <string name="err_needs_config">Toto připojení je ještě třeba nastavit.</string>
     <string name="err_no_path">Soubor nemá cestu.</string>

@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Emër i palejuar: %1$s</string>
     <string name="err_name_invalid">Emër i pavlefshëm.</string>
     <string name="err_name_slash">Emri nuk mund të përmbajë „/” ose „\”.</string>
+    <string name="err_name_taken">“%1$s” ekziston tashmë në këtë dosje.</string>
     <string name="err_needs_all_files">ARMA Files ka nevojë për qasje në të gjithë skedarët që të hapë hapësirën e pajisjes ose kartën SD.</string>
     <string name="err_needs_config">Kjo lidhje duhet ende të konfigurohet.</string>
     <string name="err_no_path">Skedari nuk ka shteg.</string>

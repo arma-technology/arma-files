@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Neleistinas pavadinimas: %1$s</string>
     <string name="err_name_invalid">Netinkamas pavadinimas.</string>
     <string name="err_name_slash">Pavadinime negali būti „/“ ar „\“.</string>
+    <string name="err_name_taken">„%1$s“ šiame aplanke jau yra.</string>
     <string name="err_needs_all_files">ARMA Files reikia prieigos prie visų failų, kad galėtų atidaryti įrenginio atmintį ar SD kortelę.</string>
     <string name="err_needs_config">Šį ryšį dar reikia sukonfigūruoti.</string>
     <string name="err_no_path">Failas neturi kelio.</string>

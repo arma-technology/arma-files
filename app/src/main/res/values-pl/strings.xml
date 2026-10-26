@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Niedozwolona nazwa: %1$s</string>
     <string name="err_name_invalid">Nieprawidłowa nazwa.</string>
     <string name="err_name_slash">Nazwa nie może zawierać „/” ani „\”.</string>
+    <string name="err_name_taken">„%1$s” już istnieje w tym folderze.</string>
     <string name="err_needs_all_files">ARMA Files potrzebuje dostępu do wszystkich plików, aby otworzyć pamięć urządzenia lub kartę SD.</string>
     <string name="err_needs_config">To połączenie wymaga jeszcze konfiguracji.</string>
     <string name="err_no_path">Brak ścieżki pliku.</string>

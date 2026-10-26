@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Nedovoljeno ime: %1$s</string>
     <string name="err_name_invalid">Neveljavno ime.</string>
     <string name="err_name_slash">Ime ne sme vsebovati »/« ali »\«.</string>
+    <string name="err_name_taken">»%1$s« že obstaja v tej mapi.</string>
     <string name="err_needs_all_files">ARMA Files potrebuje dostop do vseh datotek, da odpre pomnilnik naprave ali kartico SD.</string>
     <string name="err_needs_config">To povezavo je treba še nastaviti.</string>
     <string name="err_no_path">Datoteka nima poti.</string>

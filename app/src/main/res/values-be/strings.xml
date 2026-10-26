@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Недапушчальная назва: %1$s</string>
     <string name="err_name_invalid">Няправільная назва.</string>
     <string name="err_name_slash">Назва не можа змяшчаць «/» або «\».</string>
+    <string name="err_name_taken">«%1$s» ужо ёсць у гэтай папцы.</string>
     <string name="err_needs_all_files">ARMA Files патрэбны доступ да ўсіх файлаў, каб адкрыць памяць прылады або SD-карту.</string>
     <string name="err_needs_config">Гэтае злучэнне яшчэ трэба наладзіць.</string>
     <string name="err_no_path">У файла няма шляху.</string>

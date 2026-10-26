@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Neatļauts nosaukums: %1$s</string>
     <string name="err_name_invalid">Nederīgs nosaukums.</string>
     <string name="err_name_slash">Nosaukumā nedrīkst būt “/” vai “\”.</string>
+    <string name="err_name_taken">“%1$s” šajā mapē jau ir.</string>
     <string name="err_needs_all_files">ARMA Files nepieciešama piekļuve visiem failiem, lai atvērtu ierīces atmiņu vai SD karti.</string>
     <string name="err_needs_config">Šis savienojums vēl jākonfigurē.</string>
     <string name="err_no_path">Failam nav ceļa.</string>

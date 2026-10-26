@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Lubamatu nimi: %1$s</string>
     <string name="err_name_invalid">Vigane nimi.</string>
     <string name="err_name_slash">Nimi ei tohi sisaldada märke „/” ega „\”.</string>
+    <string name="err_name_taken">„%1$s” on selles kaustas juba olemas.</string>
     <string name="err_needs_all_files">ARMA Files vajab seadme mälu või SD-kaardi avamiseks juurdepääsu kõigile failidele.</string>
     <string name="err_needs_config">See ühendus tuleb veel seadistada.</string>
     <string name="err_no_path">Failil pole teed.</string>

@@ -159,6 +159,7 @@
     <string name="err_name_forbidden">Nume nepermis: %1$s</string>
     <string name="err_name_invalid">Nume nevalid.</string>
     <string name="err_name_slash">Numele nu poate conține „/” sau „\”.</string>
+    <string name="err_name_taken">„%1$s” există deja în acest dosar.</string>
     <string name="err_needs_all_files">ARMA Files are nevoie de acces la toate fișierele pentru a deschide stocarea dispozitivului sau cardul SD.</string>
     <string name="err_needs_config">Această conexiune trebuie încă configurată.</string>
     <string name="err_no_path">Fișierul nu are cale.</string>
