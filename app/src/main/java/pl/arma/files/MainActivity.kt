@@ -292,6 +292,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             android.content.pm.PackageManager.PERMISSION_GRANTED
         ) notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }
+    // „Dodaj folder” w rzędzie przypiętych: wybrany folder staje obok Pobranych i Zdjęć,
+    // a nie na dole wśród podłączonych źródeł.
+    val pinPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let(vm::pinTree)
+    }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let(vm::setTree)
     }
@@ -647,10 +652,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                 (it.type != SourceType.LOCAL && it.enabled && it.configured)
                         },
                         allFilesAccess = allFilesAccess,
-                        onOpenPinned = { openLocal(it.rootUri) },
+                        // Przypięty przez SAF nie potrzebuje pełnego dostępu.
+                        onOpenPinned = { if (it.rootUri.scheme == "content") vm.openLocalLocation(it.rootUri) else openLocal(it.rootUri) },
                         onOpenStorage = { openLocal(it.rootUri) },
                         onOpenSource = { vm.openSource(it) },
                         onDisconnectSource = vm::disconnectSource,
+                        onPinSource = vm::pinSource,
                         onDisableSource = { source -> source.accountId?.let { vm.setAccountEnabled(it, false) } },
                         onManageSources = { tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL },
                         offlineEntries = offlineEntries,
@@ -663,7 +670,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onConflicts = { conflictsOf = it.id },
                         onSyncOffline = vm::syncOffline,
                         onGrantAccess = ::requestBroadStorageAccess,
-                        onAddFolder = { folderPicker.launch(null) },
+                        onAddFolder = { pinPicker.launch(null) },
                         trashCount = trashEntries.size,
                         onOpenTrash = { showTrash = true },
                         indexProgress = indexProgress,
@@ -1238,6 +1245,7 @@ private fun ComputerHome(
     onOpenStorage: (DeviceStorage) -> Unit,
     onOpenSource: (StorageSource) -> Unit,
     onDisconnectSource: (StorageSource) -> Unit,
+    onPinSource: (StorageSource) -> Unit,
     onDisableSource: (StorageSource) -> Unit,
     onManageSources: () -> Unit,
     offlineEntries: List<OfflineStore.Entry>,
@@ -1390,6 +1398,7 @@ private fun ComputerHome(
                     source = source,
                     onClick = { onOpenSource(source) },
                     onDisconnect = { onDisconnectSource(source) },
+                    onPin = { onPinSource(source) },
                     onDisable = { onDisableSource(source) },
                     onManage = onManageSources
                 )
@@ -1707,6 +1716,7 @@ private fun ConnectedSourceCard(
     source: StorageSource,
     onClick: () -> Unit,
     onDisconnect: () -> Unit,
+    onPin: () -> Unit,
     onDisable: () -> Unit,
     onManage: () -> Unit
 ) {
@@ -1731,6 +1741,13 @@ private fun ConnectedSourceCard(
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_options)) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    if (source.type == SourceType.LOCAL) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.pin_to_home)) },
+                            leadingIcon = { Icon(Icons.Default.PushPin, null) },
+                            onClick = { menu = false; onPin() }
+                        )
+                    }
                     if (source.accountId == null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.source_disconnect)) },

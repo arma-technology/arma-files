@@ -126,6 +126,11 @@ Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
   w tle — nie przy każdym dotknięciu (po błędzie coraz rzadziej, do 15 min);
   zapis trafia do kopii i od razu na serwer; nowa rozbieżność wersji od razu
   pyta w aplikacji, którą wersję zachować
+- „Dodaj folder” w rzędzie przypiętych przypina wybrany folder na górze,
+  obok Pobranych i Zdjęć (wcześniej lądował na dole wśród podłączonych);
+  folder podłączony na dole ma w menu „Przypnij do „Moje urządzenie””
+- plik usunięty na serwerze (np. z Ulubionych) nie zamyka aplikacji —
+  pokazuje komunikat „Tego elementu nie ma już na serwerze.”
 
 ## 0.10.0
 

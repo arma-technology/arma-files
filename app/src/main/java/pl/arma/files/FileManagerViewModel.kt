@@ -1772,7 +1772,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 id = uri,
                 label = displayPinnedLabel(uri, label),
                 rootUri = parsed,
-                subtitle = parsed.path ?: label
+                // Ścieżka dokumentu SAF („/tree/primary:…/document/…”) nic nie mówi — pokazujemy jej część po dwukropku.
+                subtitle = if (parsed.scheme == "content") {
+                    runCatching { DocumentsContract.getDocumentId(parsed).substringAfter(':') }.getOrNull()?.ifBlank { null } ?: label
+                } else parsed.path ?: label
             )
         }
         loadPinnedStats()
@@ -1845,7 +1848,66 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun unpinFolder(id: String) {
         prefs.setPinned(prefs.pinned().orEmpty().filterNot { it.first == id })
         loadPinned()
+        // Folder przypięty przez SAF trzymał trwałe uprawnienie — oddajemy je,
+        // gdy nic innego z niego nie korzysta.
+        val uri = Uri.parse(id)
+        if (uri.scheme == "content") {
+            val tree = runCatching { DocumentsContract.buildTreeDocumentUri(uri.authority, DocumentsContract.getTreeDocumentId(uri)) }.getOrNull()
+            if (tree != null && !treeInUse(tree)) repo.releaseTreePermission(tree)
+        }
     }
+
+    private fun treeInUse(tree: Uri): Boolean =
+        prefs.treeUri == tree ||
+            listOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX).any { networkPrefs.cloudTree(it) == tree } ||
+            prefs.pinned().orEmpty().any { (pinned, _) ->
+                val parsed = Uri.parse(pinned)
+                parsed.scheme == "content" && runCatching { DocumentsContract.getTreeDocumentId(parsed) }.getOrNull() == DocumentsContract.getTreeDocumentId(tree)
+            }
+
+    /**
+     * Folder wybrany w systemowym oknie wyboru, przypięty na górze ekranu
+     * głównego obok Pobranych i Zdjęć. Folder z pamięci telefonu albo karty SD
+     * przypinamy jako zwykłą ścieżkę (działa przy pełnym dostępie, liczy się
+     * w indeksie), inny — np. z aplikacji chmury — przez trwałe uprawnienie SAF.
+     */
+    fun pinTree(tree: Uri) {
+        val local = localFolderForTree(tree)
+        if (local != null && hasBroadStorageAccess()) {
+            val name = _deviceStorages.value.firstOrNull { it.rootUri == Uri.fromFile(local) }?.label ?: local.name
+            pinFolder(FileItem(Uri.fromFile(local), name, DIRECTORY_MIME, 0, local.lastModified(), true))
+            return
+        }
+        runCatching {
+            repo.persistTreePermission(tree)
+            pinFolder(FileItem(repo.treeToDocumentUri(tree), treeName(tree), DIRECTORY_MIME, 0, 0, true))
+        }.onFailure { _error.value = it.message ?: text(R.string.err_access_failed) }
+    }
+
+    /** Folder podłączony na dole („Podłączone”) przenosi się do przypiętych na górze. */
+    fun pinSource(source: StorageSource) {
+        if (source.type != SourceType.LOCAL) return
+        val tree = prefs.treeUri ?: return
+        pinTree(tree)
+        prefs.treeUri = null
+        if (!treeInUse(tree)) repo.releaseTreePermission(tree)
+        updateSources()
+        loadSavedCollections()
+    }
+
+    /** Ścieżka folderu z pamięci telefonu lub karty SD wskazanego przez SAF; null dla innych dostawców. */
+    private fun localFolderForTree(tree: Uri): java.io.File? {
+        if (tree.authority != "com.android.externalstorage.documents") return null
+        val id = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull() ?: return null
+        val volume = id.substringBefore(':')
+        val base = if (volume == "primary") Environment.getExternalStorageDirectory() else java.io.File("/storage/$volume")
+        return java.io.File(base, id.substringAfter(':', "")).takeIf { it.isDirectory }
+    }
+
+    private fun treeName(tree: Uri): String =
+        runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+            ?.substringAfter(':')?.trimEnd('/')?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+            ?: attachedLabel(tree)
 
     /** Zmiana kolejności przypiętych kafelków po przeciągnięciu. */
     fun movePinned(fromIndex: Int, toIndex: Int) {
