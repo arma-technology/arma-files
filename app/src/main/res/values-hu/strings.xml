@@ -238,7 +238,7 @@
     <string name="index_search_all">Keresés minden fájlban</string>
     <string name="index_stop">Leállítás</string>
     <string name="nav_favorites">Kedvencek</string>
-    <string name="nav_home">Saját eszköz</string>
+    <string name="nav_home">Eszköz</string>
     <string name="nav_recent">Legutóbbi</string>
     <string name="nav_settings">Beállítások</string>
     <string name="new_file">Új fájl</string>

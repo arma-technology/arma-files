@@ -238,7 +238,7 @@
     <string name="index_search_all">Otsi kõigist failidest</string>
     <string name="index_stop">Katkesta</string>
     <string name="nav_favorites">Lemmikud</string>
-    <string name="nav_home">Minu seade</string>
+    <string name="nav_home">Seade</string>
     <string name="nav_recent">Hiljutised</string>
     <string name="nav_settings">Seaded</string>
     <string name="new_file">Uus fail</string>

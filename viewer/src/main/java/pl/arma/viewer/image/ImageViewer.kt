@@ -116,6 +116,7 @@ fun ImageViewer(
     var bitmap by remember(key) { mutableStateOf<Bitmap?>(null) }
     var error by remember(key) { mutableStateOf<String?>(null) }
     val zoom = remember(key) { ZoomState() }
+    val swipe = remember { SwipeState() }
     val scope = rememberCoroutineScope()
     var fullscreen by remember(key) { mutableStateOf(false) }
     val openFailed = stringResource(R.string.viewer_image_open_failed)
@@ -146,7 +147,8 @@ fun ImageViewer(
                         hasNeighbor = hasNeighbor,
                         onNavigate = onNavigate,
                         modifier = Modifier.fillMaxSize().clipToBounds(),
-                        imageModifier = Modifier.padding(4.dp)
+                        imageModifier = Modifier.padding(4.dp),
+                        swipe = swipe
                     )
                 }
                 if (bitmap == null && error == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -254,6 +256,7 @@ fun FullscreenImageViewer(
     hasNeighbor: (Int) -> Boolean = { canNavigate }
 ) {
     val zoom = remember(name) { ZoomState() }
+    val swipe = remember { SwipeState() }
     val scope = rememberCoroutineScope()
 
     Dialog(
@@ -275,7 +278,8 @@ fun FullscreenImageViewer(
                     canNavigate = canNavigate,
                     hasNeighbor = hasNeighbor,
                     onNavigate = onNavigate,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    swipe = swipe
                 )
 
                 Surface(

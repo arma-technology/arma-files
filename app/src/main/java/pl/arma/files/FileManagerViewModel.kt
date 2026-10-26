@@ -1438,7 +1438,38 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /**
+     * Ostatnio zdekodowane zdjęcia, do ćwierci pamięci aplikacji. Dzięki temu
+     * sąsiednie zdjęcie, wczytane zawczasu przez [prefetchImages], pokazuje
+     * się od razu po przesunięciu zamiast po chwili pustego pola.
+     */
+    private val imageCache = object : android.util.LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 4).toInt()) {
+        override fun sizeOf(key: String, value: Bitmap) = value.byteCount
+    }
+    private val prefetching = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
+    private fun imageKey(item: FileItem, targetMaxSide: Int) = "${item.uri}|${item.lastModified}|$targetMaxSide"
+
+    /** Dekoduje w tle zdjęcia, do których prawdopodobnie zaraz przejdziemy. */
+    fun prefetchImages(items: List<FileItem>, targetMaxSide: Int) {
+        items.filterNot { pl.arma.viewer.image.ImageDecoding.isSvg(it.name, it.mimeType) }.forEach { item ->
+            val key = imageKey(item, targetMaxSide)
+            if (imageCache.get(key) != null || !prefetching.add(key)) return@forEach
+            viewModelScope.launch {
+                try { runCatching { decodeImage(item, targetMaxSide) } } finally { prefetching.remove(key) }
+            }
+        }
+    }
+
     suspend fun decodeImage(item: FileItem, targetMaxSide: Int = 2400): Bitmap = withContext(Dispatchers.IO) {
+        // Miniatury mają własną pamięć podręczną; tu tylko pełne podglądy.
+        if (targetMaxSide < 2400) return@withContext decodeImageUncached(item, targetMaxSide)
+        val key = imageKey(item, targetMaxSide)
+        imageCache.get(key)?.let { return@withContext it }
+        decodeImageUncached(item, targetMaxSide).also { imageCache.put(key, it) }
+    }
+
+    private suspend fun decodeImageUncached(item: FileItem, targetMaxSide: Int): Bitmap = withContext(Dispatchers.IO) {
         val file = preparePreviewFile(item, "image_preview")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val source = ImageDecoder.createSource(file)

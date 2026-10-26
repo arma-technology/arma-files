@@ -2564,6 +2564,9 @@ private fun PreviewSheet(
                 }
                 item.mimeType.startsWith("image/") -> {
                     val position = siblings.indexOfFirst { it.uri == item.uri }
+                    LaunchedEffect(item.uri) {
+                        vm.prefetchImages(listOfNotNull(siblings.getOrNull(position + 1), siblings.getOrNull(position - 1)).takeIf { position >= 0 }.orEmpty(), 4096)
+                    }
                     val step: (Int) -> Unit = { delta ->
                         val next = siblings.getOrNull(position + delta)
                         if (next != null) onNavigate(next)
@@ -2669,6 +2672,9 @@ private fun LandscapeImageViewer(
 ) {
     val position = siblings.indexOfFirst { it.uri == item.uri }
     val step: (Int) -> Unit = { delta -> siblings.getOrNull(position + delta)?.let(onNavigate) }
+    LaunchedEffect(item.uri) {
+        vm.prefetchImages(listOfNotNull(siblings.getOrNull(position + 1), siblings.getOrNull(position - 1)).takeIf { position >= 0 }.orEmpty(), 4096)
+    }
     val label = if (siblings.size > 1 && position >= 0) "${item.name} · ${position + 1} / ${siblings.size}" else item.name
     if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
         var uri by remember(item.uri) { mutableStateOf<Uri?>(null) }

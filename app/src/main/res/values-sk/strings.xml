@@ -238,7 +238,7 @@
     <string name="index_search_all">Hľadať vo všetkých súboroch</string>
     <string name="index_stop">Prerušiť</string>
     <string name="nav_favorites">Obľúbené</string>
-    <string name="nav_home">Moje zariadenie</string>
+    <string name="nav_home">Zariadenie</string>
     <string name="nav_recent">Nedávne</string>
     <string name="nav_settings">Nastavenia</string>
     <string name="new_file">Nový súbor</string>

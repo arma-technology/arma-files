@@ -238,7 +238,7 @@
     <string name="index_search_all">Pretraži sve datoteke</string>
     <string name="index_stop">Prekini</string>
     <string name="nav_favorites">Favoriti</string>
-    <string name="nav_home">Moj uređaj</string>
+    <string name="nav_home">Uređaj</string>
     <string name="nav_recent">Nedavno</string>
     <string name="nav_settings">Postavke</string>
     <string name="new_file">Nova datoteka</string>

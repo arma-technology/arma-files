@@ -238,7 +238,7 @@
     <string name="index_search_all">Alle Dateien durchsuchen</string>
     <string name="index_stop">Abbrechen</string>
     <string name="nav_favorites">Favoriten</string>
-    <string name="nav_home">Mein Gerät</string>
+    <string name="nav_home">Gerät</string>
     <string name="nav_recent">Zuletzt</string>
     <string name="nav_settings">Einstellungen</string>
     <string name="new_file">Neue Datei</string>

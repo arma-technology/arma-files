@@ -238,7 +238,7 @@
     <string name="index_search_all">Претражи све датотеке</string>
     <string name="index_stop">Прекини</string>
     <string name="nav_favorites">Омиљено</string>
-    <string name="nav_home">Мој уређај</string>
+    <string name="nav_home">Уређај</string>
     <string name="nav_recent">Недавно</string>
     <string name="nav_settings">Подешавања</string>
     <string name="new_file">Нова датотека</string>

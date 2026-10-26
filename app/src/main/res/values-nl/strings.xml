@@ -238,7 +238,7 @@
     <string name="index_search_all">Alle bestanden doorzoeken</string>
     <string name="index_stop">Stoppen</string>
     <string name="nav_favorites">Favorieten</string>
-    <string name="nav_home">Mijn apparaat</string>
+    <string name="nav_home">Apparaat</string>
     <string name="nav_recent">Recent</string>
     <string name="nav_settings">Instellingen</string>
     <string name="new_file">Nieuw bestand</string>

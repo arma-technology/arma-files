@@ -112,6 +112,17 @@ class ZoomState {
 }
 
 /**
+ * Przesunięcie przy przewijaniu zdjęć. Trzymane poziom wyżej niż obraz: na
+ * czas wczytywania następnego zdjęcia obrazu nie ma, a nowe musi wiedzieć,
+ * z której strony wjechać.
+ */
+@Stable
+class SwipeState {
+    internal var slide by mutableFloatStateOf(0f)
+    internal var enterFrom by mutableFloatStateOf(0f)
+}
+
+/**
  * Obraz z powiększaniem i przewijaniem do sąsiednich zdjęć.
  *
  * Gest jest liczony w polu, a nie na powiększonej warstwie: na warstwie ruch
@@ -129,12 +140,12 @@ internal fun ZoomableImage(
     hasNeighbor: (Int) -> Boolean,
     onNavigate: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    imageModifier: Modifier = Modifier
+    imageModifier: Modifier = Modifier,
+    swipe: SwipeState = remember { SwipeState() }
 ) {
     val scope = rememberCoroutineScope()
-    // Bez klucza: przeżywa zmianę zdjęcia, żeby nowe wjechało z właściwej strony.
-    var slide by remember { mutableFloatStateOf(0f) }
-    var enterFrom by remember { mutableFloatStateOf(0f) }
+    var slide by swipe::slide
+    var enterFrom by swipe::enterFrom
     var motion by remember { mutableStateOf<Job?>(null) }
 
     state.content = Size(image.width.toFloat(), image.height.toFloat())
