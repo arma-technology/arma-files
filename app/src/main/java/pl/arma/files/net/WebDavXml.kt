@@ -3,6 +3,8 @@ package pl.arma.files.net
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 import java.io.ByteArrayInputStream
+import java.net.URI
+import java.net.URLDecoder
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -26,6 +28,23 @@ object WebDavXml {
         val modified: Long,
         val displayName: String?
     )
+
+    /**
+     * Dekodowanie procentowe ścieżki. URLDecoder dekoduje formularze i robi
+     * z „+” spację — „a+b.pdf” stawało się „a b.pdf” i kończyło 404.
+     */
+    fun decodePath(value: String): String =
+        runCatching { URLDecoder.decode(value.replace("+", "%2B"), Charsets.UTF_8.name()) }.getOrDefault(value)
+
+    /**
+     * Nazwa zasobu z [Response.href] — to ona jest w ścieżce, z której potem
+     * budujemy adresy. `displayname` bywa tylko etykietą (SharePoint, IIS)
+     * i adres zbudowany z niej prowadził do nieistniejącego pliku.
+     */
+    fun nameOf(response: Response): String? {
+        val path = runCatching { URI(response.href).rawPath }.getOrNull() ?: response.href
+        return decodePath(path.trimEnd('/').substringAfterLast('/')).takeIf { it.isNotBlank() }
+    }
 
     fun parse(xml: String): List<Response> {
         val factory = DocumentBuilderFactory.newInstance().apply {

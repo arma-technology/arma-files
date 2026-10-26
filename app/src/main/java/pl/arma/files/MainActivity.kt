@@ -227,6 +227,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
     val offlineProgress by vm.offlineProgress.collectAsStateWithLifecycle()
     val offlineSince by vm.offlineSince.collectAsStateWithLifecycle()
+    // Raz na listę, a nie osobna subskrypcja i przeszukanie w każdym wierszu.
+    val offlineSources = remember(offlineEntries) { offlineEntries.mapTo(HashSet()) { it.source } }
     val searchRemote by vm.searchRemote.collectAsStateWithLifecycle()
     val searchStatus by vm.searchStatus.collectAsStateWithLifecycle()
     var conflictsOf by remember { mutableStateOf<String?>(null) }
@@ -245,6 +247,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var viewMode by rememberSaveable { mutableStateOf(ViewMode.LIST) }
     var gridColumns by rememberSaveable { mutableIntStateOf(2) }
     var category by remember { mutableStateOf(FileCategory.ALL) }
+    // Kategoria z ekranu głównego („Zdjęcia”, „Dokumenty”) — jej pliki stoją pod paskiem wyszukiwania.
+    var homeCategory by remember { mutableStateOf<pl.arma.files.index.IndexCategory?>(null) }
     var selectedUris by remember { mutableStateOf<Set<String>>(emptySet()) }
     var preview by remember { mutableStateOf<FileItem?>(null) }
     // Szybki podgląd po przytrzymaniu i puszczeniu pliku.
@@ -358,7 +362,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     }
 
     // Pole wyszukiwania zostaje w folderze, w którym je otwarto.
-    LaunchedEffect(currentDir, tab) { if (query.isBlank()) searchOpen = false }
+    // Wejście do innego folderu kończy też wyszukiwanie globalne i przegląd kategorii —
+    // inaczej nowy folder pokazywał stare wyniki zamiast swojej zawartości.
+    LaunchedEffect(currentDir, tab) {
+        if (query.isBlank()) {
+            searchOpen = false
+            homeCategory = null
+            if (globalSearch) vm.setGlobalSearch(false)
+        }
+    }
 
     LaunchedEffect(query, globalSearch) {
         // Tylko przy wpisanej frazie. Puste zapytanie wyczyściłoby wyniki
@@ -407,9 +419,13 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     }
 
     val visibleFiles = remember(baseFiles, query, sort, category, globalSearch, searchResults) {
+        // Wyniki globalne są już dopasowane (bez polskich znaków, słowa w dowolnej
+        // kolejności) — drugi filtr „zawiera frazę” odrzucał część z nich.
+        // W folderze dopasowanie jest takie samo jak w wyszukiwaniu globalnym.
+        val matcher = NameMatcher(query).takeUnless { globalSearch || it.isEmpty }
         (if (globalSearch) searchResults else baseFiles)
             .asSequence()
-            .filter { it.name.contains(query, ignoreCase = true) }
+            .filter { matcher == null || matcher.matches(it.name) }
             .filter { matchesCategory(it, category) }
             .sortedWith(fileComparator(sort))
             .toList()
@@ -420,8 +436,10 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         context.armaApp.videoThumbnails.prefetch(visibleFiles)
     }
 
-    val selectedItems = remember(baseFiles, selectedUris) {
-        baseFiles.filter { it.uri.toString() in selectedUris }
+    // Zaznaczać można też wyniki wyszukiwania globalnego — nie leżą w bieżącym folderze.
+    val selectionSource = if (globalSearch) searchResults else baseFiles
+    val selectedItems = remember(selectionSource, selectedUris) {
+        selectionSource.filter { it.uri.toString() in selectedUris }
     }
     val selectionMode = selectedUris.isNotEmpty()
 
@@ -446,12 +464,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
     BackHandler(
         enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || vm.canGoBack() ||
-            (!computerHome && (searchOpen || query.isNotBlank()))
+            (!computerHome && (searchOpen || query.isNotBlank())) || (computerHome && homeCategory != null)
     ) {
         when {
             preview != null -> preview = null
             details != null -> details = null
             selectionMode -> selectedUris = emptySet()
+            computerHome && homeCategory != null -> {
+                homeCategory = null
+                vm.setGlobalSearch(false)
+            }
             (searchOpen || query.isNotBlank()) && !computerHome -> {
                 searchOpen = false
                 query = ""
@@ -475,8 +497,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 MultiSelectionTopBar(
                     count = selectedItems.size,
                     canRename = selectedItems.size == 1,
-                    canExtract = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
-                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name) || inArchive,
+                    canExtract = inArchive || (selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name)),
                     canBrowse = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
                         ArchiveFormats.canOpenAsArchive(selectedItems.first().name),
                     canExtractToOther = dualPane,
@@ -684,6 +706,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             // Wpisanie frazy tutaj włącza wyszukiwanie globalne
                             // i przenosi na listę wyników.
                             query = value
+                            homeCategory = null
                             vm.setGlobalSearch(value.isNotBlank())
                             if (value.isNotBlank()) tab = Tab.FILES
                         },
@@ -691,6 +714,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onCancelIndex = vm::cancelIndexing,
                         onAnalyze = { showAnalysis = true; vm.analyzeStorage() },
                         onCategory = { category ->
+                            homeCategory = category
                             vm.browseCategory(category); tab = Tab.FILES; query = ""
                         },
                         onUnpin = vm::unpinFolder,
@@ -698,8 +722,16 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onOpenPinnedInNewTab = { folder ->
                             vm.openTab(); openLocal(folder.rootUri)
                         },
-                        searchResults = if (globalSearch && query.isNotBlank()) searchResults else emptyList(),
+                        searchResults = if (globalSearch && (query.isNotBlank() || homeCategory != null)) searchResults else emptyList(),
+                        resultsTitle = homeCategory?.let(::categoryShortLabel),
+                        onCloseResults = { homeCategory = null; vm.setGlobalSearch(false) },
                         onOpenResult = { item ->
+                            // Folder z wyników otwiera się jako folder, a nie jako dalsze wyniki.
+                            if (item.isDirectory || ArchiveFormats.canBrowse(item.name)) {
+                                query = ""
+                                homeCategory = null
+                                vm.setGlobalSearch(false)
+                            }
                             when {
                                 item.isDirectory -> vm.openDirectory(item)
                                 ArchiveFormats.canBrowse(item.name) -> vm.openArchive(item)
@@ -856,6 +888,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             item = item,
                                             vm = vm,
                                             favorite = item.uri.toString() in favoriteUris,
+                                            offline = item.uri.toString() in offlineSources,
                                             selected = item.uri.toString() in selectedUris,
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
@@ -880,6 +913,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             item = item,
                                             vm = vm,
                                             favorite = item.uri.toString() in favoriteUris,
+                                            offline = item.uri.toString() in offlineSources,
                                             selected = item.uri.toString() in selectedUris,
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
@@ -1040,7 +1074,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     error?.let {
         AlertDialog(
             onDismissRequest = vm::clearError,
-            confirmButton = { TextButton(onClick = vm::clearError) { Text("OK") } },
+            confirmButton = { TextButton(onClick = vm::clearError) { Text(stringResource(android.R.string.ok)) } },
             icon = { Icon(Icons.Default.ErrorOutline, null) },
             title = { Text(stringResource(R.string.err_operation_title)) },
             text = { Text(it) }
@@ -1119,7 +1153,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
     conflictsOf?.let { id ->
         val entry = offlineEntries.firstOrNull { it.id == id }
-        if (entry == null || entry.conflicts.isEmpty()) conflictsOf = null
+        // Ostatnia rozbieżność rozstrzygnięta — okno zamyka się samo, ale nie w trakcie kompozycji.
+        if (entry == null || entry.conflicts.isEmpty()) LaunchedEffect(id) { conflictsOf = null }
         else ConflictsDialog(entry, onChoice = { conflict, choice -> vm.resolveOfflineConflict(entry, conflict, choice) }, onDismiss = { conflictsOf = null })
     }
 
@@ -1273,6 +1308,8 @@ private fun ComputerHome(
     onMovePinned: (Int, Int) -> Unit,
     onOpenPinnedInNewTab: (PinnedFolder) -> Unit,
     searchResults: List<FileItem>,
+    resultsTitle: String?,
+    onCloseResults: () -> Unit,
     onOpenResult: (FileItem) -> Unit,
     onRevealResult: (FileItem) -> Unit,
     storageUsage: List<Pair<String, Long>>,
@@ -1356,14 +1393,19 @@ private fun ComputerHome(
 
         // Wyniki pojawiają się pod paskiem, w miejscu pozostałych sekcji.
         // Zamiana całego ekranu zabierałaby pole, w którym trwa pisanie.
-        if (searchResults.isNotEmpty()) {
+        if (searchResults.isNotEmpty() || resultsTitle != null) {
             item {
-                Text(
-                    stringResource(R.string.search_found, searchResults.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
+                Row(Modifier.padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        listOfNotNull(resultsTitle, stringResource(R.string.search_found, searchResults.size)).joinToString(" · "),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                    )
+                    if (resultsTitle != null) {
+                        IconButton(onClick = onCloseResults) { Icon(Icons.Default.Close, stringResource(R.string.common_close_search)) }
+                    }
+                }
             }
             items(searchResults, key = { it.uri.toString() }) { item ->
                 SearchResultRow(
@@ -1529,7 +1571,7 @@ private fun ConflictsDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } }
     )
 }
 
@@ -1815,45 +1857,6 @@ private fun breadcrumbs(
     return crumbs
 }
 
-@Composable
-private fun LocationStrip(
-    crumbs: List<Pair<String, Uri>>,
-    onCrumb: (Uri) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scroll = rememberScrollState()
-    // Przy głębokiej ścieżce interesuje nas koniec, nie początek.
-    LaunchedEffect(crumbs.size) { scroll.animateScrollTo(scroll.maxValue) }
-
-    Row(modifier.horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
-        crumbs.forEachIndexed { index, (name, uri) ->
-            if (index > 0) {
-                Icon(
-                    Icons.Default.ChevronRight,
-                    null,
-                    Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
-            }
-            val last = index == crumbs.lastIndex
-            Text(
-                name,
-                style = if (last) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
-                fontWeight = if (last) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (last) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !last) { onCrumb(uri) }
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
-            )
-        }
-    }
-}
 
 /**
  * Jeden niski pasek nad listą: ścieżka i akcje folderu. Zastępuje zielony
@@ -2056,9 +2059,10 @@ private fun FolderColorDots(files: List<FileItem>, modifier: Modifier) {
             kotlinx.coroutines.delay(700)
             val found = withContext(Dispatchers.Default) {
                 media.mapNotNull { item ->
-                    ThumbnailCache.get(ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size))?.let { bitmap ->
+                    val full = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+                    (ThumbnailCache.get(full) ?: ThumbnailCache.get(ThumbnailCache.small(full)))?.let { bitmap ->
                         val one = Bitmap.createScaledBitmap(bitmap, 1, 1, true)
-                        Color(one.getPixel(0, 0))
+                        Color(one.getPixel(0, 0)).also { if (one !== bitmap) one.recycle() }
                     }
                 }
             }
@@ -2112,19 +2116,6 @@ private fun CategoryRow(selected: FileCategory, source: List<FileItem>, onSelect
     }
 }
 
-@Composable
-private fun categoryColor(category: FileCategory): Color {
-    val colors = LocalFileTypeColors.current
-    return when (category) {
-        FileCategory.ALL -> MaterialTheme.colorScheme.primary
-        FileCategory.FOLDERS -> colors.folder
-        FileCategory.IMAGES -> colors.image
-        FileCategory.VIDEO -> colors.video
-        FileCategory.AUDIO -> colors.audio
-        FileCategory.DOCUMENTS -> colors.document
-        FileCategory.ARCHIVES -> colors.archive
-    }
-}
 
 @Composable
 private fun ClipboardCard(payload: ClipboardPayload?, onPaste: () -> Unit, onCancel: () -> Unit) {
@@ -2154,6 +2145,7 @@ private fun FileRow(
     item: FileItem,
     vm: FileManagerViewModel,
     favorite: Boolean,
+    offline: Boolean,
     selected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
@@ -2188,8 +2180,7 @@ private fun FileRow(
                 maxLines = 1
             )
         }
-        val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
-        if (offlineEntries.any { it.source == item.uri.toString() }) {
+        if (offline) {
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Default.OfflinePin, stringResource(R.string.offline_make), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
         }
@@ -2213,6 +2204,7 @@ private fun FileTile(
     item: FileItem,
     vm: FileManagerViewModel,
     favorite: Boolean,
+    offline: Boolean,
     selected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
@@ -2228,13 +2220,17 @@ private fun FileTile(
         Column(Modifier.padding(6.dp)) {
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 FileVisual(item, Modifier.fillMaxSize(), thumbnail = true, vm = vm)
-                if (favorite) {
+                if (favorite || offline) {
+                    // Te same znaki co w wierszu listy — kafelek nie może wiedzieć mniej.
                     Surface(
                         modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface.copy(alpha = .88f)
                     ) {
-                        Icon(Icons.Default.Star, null, Modifier.padding(4.dp).size(14.dp), tint = LocalFileTypeColors.current.folder)
+                        Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            if (offline) Icon(Icons.Default.OfflinePin, stringResource(R.string.offline_make), Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                            if (favorite) Icon(Icons.Default.Star, null, Modifier.size(14.dp), tint = LocalFileTypeColors.current.folder)
+                        }
                     }
                 }
                 if (selectionMode) {
@@ -2295,8 +2291,12 @@ internal fun FileVisual(
         var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
         LaunchedEffect(item.uri, item.lastModified) {
             failed = false
-            val key = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
-            val cached = ThumbnailCache.get(key)
+            // Ikona wiersza (40 dp) nie potrzebuje 640 px — mniejsza miniatura to
+            // kilka razy więcej zdjęć w tej samej pamięci podręcznej. Duża, jeśli
+            // już jest (z siatki), nadaje się też do wiersza.
+            val full = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+            val key = if (crop) ThumbnailCache.small(full) else full
+            val cached = ThumbnailCache.get(key) ?: if (crop) ThumbnailCache.get(full) else null
             if (cached != null) {
                 bitmap = cached
                 return@LaunchedEffect
@@ -2308,7 +2308,7 @@ internal fun FileVisual(
                 return@LaunchedEffect
             }
             bitmap = runCatching {
-                ThumbnailCache.throttled { vm.decodeImage(item, targetMaxSide = 640) }
+                ThumbnailCache.throttled { vm.decodeImage(item, targetMaxSide = if (crop) 256 else 640) }
             }
                 .onSuccess { decoded -> ThumbnailCache.put(key, decoded) }
                 .onFailure { failed = true }
@@ -2811,7 +2811,7 @@ private fun NameDialog(
                 shape = RoundedCornerShape(16.dp)
             )
         },
-        confirmButton = { TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text("OK") } },
+        confirmButton = { TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text(stringResource(android.R.string.ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
     )
 }
@@ -2917,47 +2917,11 @@ private fun ArchivePasswordDialog(name: String, wrong: Boolean, onDismiss: () ->
                 )
             }
         },
-        confirmButton = { TextButton(enabled = password.isNotEmpty(), onClick = { onConfirm(password) }) { Text("OK") } },
+        confirmButton = { TextButton(enabled = password.isNotEmpty(), onClick = { onConfirm(password) }) { Text(stringResource(android.R.string.ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
     )
 }
 
-@Composable
-private fun EmptyStorage(onPick: () -> Unit) {
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.background))
-        ),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
-            shape = RoundedCornerShape(30.dp),
-            tonalElevation = 2.dp
-        ) {
-            Column(
-                Modifier.padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                    Icon(Icons.Default.FolderOpen, null, Modifier.padding(18.dp).size(58.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-                Text(stringResource(R.string.welcome_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(
-                    stringResource(R.string.welcome_text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Button(onClick = onPick, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.FolderOpen, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.welcome_pick))
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun EmptyFolder(filtered: Boolean, tab: Tab) {

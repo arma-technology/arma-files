@@ -29,6 +29,9 @@ object ThumbnailCache {
 
     fun key(uri: String, modified: Long, size: Long): String = "$uri|$modified|$size"
 
+    /** Klucz mniejszej miniatury tego samego pliku — do ikon w wierszach listy. */
+    fun small(key: String): String = "$key|s"
+
     fun get(key: String): Bitmap? = cache.get(key)?.takeIf { !it.isRecycled }
 
     fun put(key: String, bitmap: Bitmap) {

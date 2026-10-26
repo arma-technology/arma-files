@@ -963,10 +963,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun rename(item: FileItem, name: String) {
         launchOperation(success = text(R.string.notice_renamed)) {
-            val newUri = repo.rename(item, validatedName(name))
+            val newName = validatedName(name)
+            val newUri = repo.rename(item, newName)
             if (newUri != null) {
                 prefs.replaceUri(item.uri, newUri)
-                prefs.saveMeta(item.copy(uri = newUri, name = newUri.lastPathSegment ?: item.name))
+                // Nie lastPathSegment: w adresie SAF to „primary:Download/nowy.txt”.
+                prefs.saveMeta(item.copy(uri = newUri, name = newName))
             }
             refresh()
             loadSavedCollections()
