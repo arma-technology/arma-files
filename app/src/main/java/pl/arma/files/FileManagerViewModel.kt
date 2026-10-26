@@ -219,7 +219,25 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         refreshPane(pane)
     }
 
-    suspend fun offlineItem(entry: OfflineStore.Entry): FileItem? = withContext(Dispatchers.IO) { repo.itemInfo(entry.uri) }
+    suspend fun offlineItem(entry: OfflineStore.Entry): FileItem? = withContext(Dispatchers.IO) {
+        try {
+            repo.itemInfo(entry.uri)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            showError(e)
+            null
+        }
+    }
+
+    /**
+     * Błąd z akcji wywołanej w interfejsie (udostępnij, otwórz) jako komunikat.
+     * Wyjątek wypuszczony z korutyny interfejsu zamykał całą aplikację — np.
+     * przy pliku z Ulubionych usuniętym w międzyczasie na serwerze.
+     */
+    fun showError(e: Throwable) {
+        _error.value = e.message?.takeIf { it.isNotBlank() } ?: text(R.string.err_open_read)
+    }
 
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
@@ -1414,7 +1432,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         loadSavedCollections()
     }
 
-    suspend fun readText(uri: Uri) = repo.readText(uri)
+    /**
+     * Tekst do edycji albo null, gdy pliku nie da się przeczytać (np. usunięty
+     * na serwerze). Komunikat pokazuje wtedy czytnik — wyjątek z efektu
+     * w interfejsie zamykał całą aplikację.
+     */
+    suspend fun readText(uri: Uri): String? = try {
+        repo.readText(uri)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
 
     /** Wczytuje plik do czytnika: kodowanie, obcięcie i spis treści. */
     suspend fun readDocument(item: FileItem): TextDocument = withContext(Dispatchers.IO) {
@@ -1422,7 +1451,16 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (TextReader.looksBinary(bytes)) throw pl.arma.viewer.text.NotTextException()
         TextReader.read(bytes, totalBytes = item.size, limit = TextReader.DEFAULT_LIMIT)
     }
-    suspend fun writeText(uri: Uri, text: String) = repo.writeText(uri, text)
+    /** Zapisuje tekst; przy błędzie pokazuje komunikat i zwraca false. */
+    suspend fun writeText(uri: Uri, text: String): Boolean = try {
+        repo.writeText(uri, text)
+        true
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        _error.value = e.message ?: text(R.string.err_open_write)
+        false
+    }
     suspend fun sha256(uri: Uri) = repo.sha256(uri)
 
     suspend fun materializeUri(item: FileItem): Uri = withContext(Dispatchers.IO) {

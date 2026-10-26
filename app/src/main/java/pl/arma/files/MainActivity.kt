@@ -2619,9 +2619,10 @@ private fun PreviewSheet(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    vm.writeText(item.uri, draft)
-                                    text = draft
-                                    editing = false
+                                    if (vm.writeText(item.uri, draft)) {
+                                        text = draft
+                                        editing = false
+                                    }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -2637,8 +2638,9 @@ private fun PreviewSheet(
                             load = { vm.readDocument(item) },
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         )
-                        // Plik w archiwum można tylko czytać.
-                        if (!vm.isArchive(item.uri)) FilledTonalButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
+                        // Plik w archiwum można tylko czytać. Bez wczytanego tekstu
+                        // edycja zaczęłaby się od pustego pola i zapis by go wyczyścił.
+                        if (!vm.isArchive(item.uri)) FilledTonalButton(onClick = { editing = true }, enabled = text != null, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Default.Edit, null)
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.accounts_edit))
@@ -3122,7 +3124,14 @@ private fun isText(item: FileItem): Boolean =
 private suspend fun shareItems(context: Context, items: List<FileItem>, vm: FileManagerViewModel) {
     val files = items.filterNot { it.isDirectory }
     if (files.isEmpty()) return
-    val uris = files.map { vm.materializeUri(it) }
+    val uris = try {
+        files.map { vm.materializeUri(it) }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        vm.showError(e)
+        return
+    }
     val intent = if (files.size == 1) {
         Intent(Intent.ACTION_SEND).apply {
             type = files.first().mimeType
@@ -3141,7 +3150,14 @@ private suspend fun shareItems(context: Context, items: List<FileItem>, vm: File
 
 private suspend fun openExternal(context: Context, item: FileItem, vm: FileManagerViewModel) {
     if (item.isDirectory) return
-    val uri = vm.materializeUri(item)
+    val uri = try {
+        vm.materializeUri(item)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        vm.showError(e)
+        return
+    }
     val intent = Intent(Intent.ACTION_VIEW).apply {
         setDataAndType(uri, item.mimeType)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
