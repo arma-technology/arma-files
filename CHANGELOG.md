@@ -108,6 +108,24 @@ Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
   Google i audytu przy publikacji); Google Drive działa przez aplikację Dysk
   w Ustawieniach → Źródła plików
 - edytor połączenia: błąd testu na czerwono, arkusz nie opada do połowy
+- ekran „Mój komputer” nazywa się teraz „Moje urządzenie” (we wszystkich
+  językach), z ikoną telefonu
+- Wstecz wraca tam, skąd się przyszło: z zasobu, przypiętego folderu albo
+  folderu z wyników wyszukiwania do poprzedniego miejsca, także na ekran
+  główny (wcześniej otwarcie zasobu kasowało historię)
+- duplikaty: przy każdej kopii nośnik i folder, data i miniatura; dotknięcie
+  miniatury otwiera podgląd; kopie poza najstarszą zaznaczone do kosza,
+  usuwane jednym przyciskiem (z cofnięciem)
+- powiększony obraz przesuwa się razem z palcem (wcześniej przy 4× cztery
+  razy wolniej), powiększa się wokół palców, ma rzut z bezwładnością
+  i podwójne stuknięcie; przejście do sąsiedniego zdjęcia animowane, obraz
+  idzie za palcem
+- lista plików: wiersze i kafelki przesuwają się płynnie po sortowaniu
+  i zmianach w folderze
+- pliki offline otwierają się od razu z kopii, a serwer jest sprawdzany
+  w tle — nie przy każdym dotknięciu (po błędzie coraz rzadziej, do 15 min);
+  zapis trafia do kopii i od razu na serwer; nowa rozbieżność wersji od razu
+  pyta w aplikacji, którą wersję zachować
 
 ## 0.10.0
 
