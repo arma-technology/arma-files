@@ -35,6 +35,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -187,8 +190,14 @@ fun AccountEditorSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
+        // Przewijany i z odstępem na klawiaturę: bez tego dolne pola (hasło,
+        // katalog startowy) zostawały pod klawiaturą i nie było ich widać
+        // w trakcie pisania. Pole z kursorem samo podjeżdża nad klawiaturę.
         Column(
-            Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp),
+            Modifier
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp).padding(bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(

@@ -2541,8 +2541,10 @@ private fun PreviewSheet(
         sheetMaxWidth = androidx.compose.ui.unit.Dp.Unspecified,
         modifier = Modifier.fillMaxHeight(.96f)
     ) {
+        // Odstęp na klawiaturę: przy edycji tekstu pole się skraca, a „Zapisz”
+        // zostaje nad klawiaturą zamiast pod nią.
         Column(
-            Modifier.fillMaxSize().padding(horizontal = 16.dp).navigationBarsPadding(),
+            Modifier.fillMaxSize().padding(horizontal = 16.dp).navigationBarsPadding().imePadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
