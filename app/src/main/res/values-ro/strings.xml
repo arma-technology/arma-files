@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Nu s-au găsit duplicate printre fișierele de peste 4 KB. Se compară amprenta SHA-256, deci fișierele de aceeași mărime, dar cu alt conținut nu sunt numărate.</string>
     <string name="analysis_old_files">Fișiere vechi</string>
     <string name="analysis_title">Analiza stocării</string>
+    <string name="map_title">Harta spațiului</string>
+    <string name="map_hint">Atingeți un dosar pentru a intra · țineți apăsat pentru a-l deschide</string>
+    <string name="map_open_folder">Deschide ca dosar</string>
+    <string name="map_unindexed">Sistem și aplicații</string>
+    <string name="map_rest">Restul</string>
+    <string name="map_no_index">Harta se construiește din indexul fișierelor. Construiți-l ca să vedeți ce ocupă spațiu.</string>
+    <string name="map_up">Un nivel mai sus</string>
     <string name="apk_allow">Permite aplicației ARMA Files să instaleze aplicații, apoi încearcă din nou.</string>
     <string name="apk_failed">Programul de instalare nu a putut fi pornit.</string>
     <string name="apk_unsupported">Această versiune de Android nu permite instalarea fișierelor APK din aplicații.</string>

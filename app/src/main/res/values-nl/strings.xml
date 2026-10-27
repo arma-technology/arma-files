@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Geen duplicaten gevonden onder bestanden groter dan 4 KB. Er wordt vergeleken op SHA-256-hash, dus bestanden van dezelfde grootte met andere inhoud tellen niet mee.</string>
     <string name="analysis_old_files">Oude bestanden</string>
     <string name="analysis_title">Opslaganalyse</string>
+    <string name="map_title">Opslagkaart</string>
+    <string name="map_hint">Tik op een map om in te zoomen · houd vast om te openen</string>
+    <string name="map_open_folder">Openen als map</string>
+    <string name="map_unindexed">Systeem en apps</string>
+    <string name="map_rest">Overig</string>
+    <string name="map_no_index">De kaart komt uit de bestandsindex. Bouw die op om te zien wat ruimte inneemt.</string>
+    <string name="map_up">Niveau omhoog</string>
     <string name="apk_allow">Sta ARMA Files toe apps te installeren en probeer het opnieuw.</string>
     <string name="apk_failed">Het installatieprogramma kon niet worden gestart.</string>
     <string name="apk_unsupported">Deze Android-versie staat het installeren van APK-bestanden vanuit apps niet toe.</string>

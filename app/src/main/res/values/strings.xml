@@ -39,6 +39,13 @@
     <string name="analysis_no_duplicates">No duplicates found among files over 4 KB. Files are compared by SHA-256, so files of the same size but different content are not counted.</string>
     <string name="analysis_old_files">Old files</string>
     <string name="analysis_title">Storage analysis</string>
+    <string name="map_title">Storage map</string>
+    <string name="map_hint">Tap a folder to go in · hold to open it</string>
+    <string name="map_open_folder">Open as folder</string>
+    <string name="map_unindexed">System and apps</string>
+    <string name="map_rest">Rest</string>
+    <string name="map_no_index">The map is drawn from the file index. Build it to see what takes up space.</string>
+    <string name="map_up">Up one level</string>
     <string name="apk_allow">Allow ARMA Files to install apps, then try again.</string>
     <string name="apk_failed">Could not start the installer.</string>
     <string name="apk_unsupported">This Android version does not allow installing APK files from apps.</string>

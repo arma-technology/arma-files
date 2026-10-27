@@ -2130,6 +2130,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Kafelki mapy pamięci dla folderu [dir] — z indeksu, bez chodzenia po dysku. */
+    suspend fun storageMap(dir: Uri): List<pl.arma.files.index.MapEntry> =
+        withContext(Dispatchers.IO) { runCatching { index.mapChildren(dir.toString()) }.getOrDefault(emptyList()) }
+
     fun analyzeStorage() {
         _analyzing.value = true
         viewModelScope.launch {

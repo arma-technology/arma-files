@@ -258,6 +258,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var viewMode by rememberSaveable { mutableStateOf(ViewMode.LIST) }
     var gridColumns by rememberSaveable { mutableIntStateOf(2) }
     var category by remember { mutableStateOf(FileCategory.ALL) }
+    // Nośnik, którego mapa pamięci jest otwarta na ekranie głównym.
+    var mapStorage by remember { mutableStateOf<DeviceStorage?>(null) }
     // Kategoria z ekranu głównego („Zdjęcia”, „Dokumenty”) — jej pliki stoją pod paskiem wyszukiwania.
     var homeCategory by remember { mutableStateOf<pl.arma.files.index.IndexCategory?>(null) }
     var selectedUris by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -690,6 +692,21 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     )
                 }
 
+                computerHome && mapStorage != null -> {
+                    val storage = mapStorage!!
+                    StorageMapScreen(
+                        storage = storage,
+                        vm = vm,
+                        indexing = indexProgress.running,
+                        // Podgląd i okna nad mapą mają pierwszeństwo przy Wstecz.
+                        backEnabled = preview == null && details == null && peekItem == null && !selectionMode,
+                        onBuildIndex = { vm.buildIndex(); vm.analyzeStorage() },
+                        onOpenFolder = { uri -> mapStorage = null; openLocal(uri) },
+                        onOpenFile = { item -> preview = item; vm.addRecent(item) },
+                        onClose = { mapStorage = null }
+                    )
+                }
+
                 computerHome -> {
                     ComputerHome(
                         storages = deviceStorages,
@@ -766,6 +783,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         },
                         onRevealResult = vm::revealParent,
                         storageUsage = analysis.usageByStorage,
+                        onMapStorage = { storage -> mapStorage = storage; if (analysis.stats == null) vm.analyzeStorage() },
                         onOpenHistory = { showHistory = true }
                     )
                 }
@@ -1345,6 +1363,7 @@ private fun ComputerHome(
     onOpenResult: (FileItem) -> Unit,
     onRevealResult: (FileItem) -> Unit,
     storageUsage: Map<String, Map<pl.arma.files.index.IndexCategory, Long>>,
+    onMapStorage: (DeviceStorage) -> Unit,
     onOpenHistory: () -> Unit
 ) {
     LazyColumn(
@@ -1454,7 +1473,7 @@ private fun ComputerHome(
             SectionTitle(stringResource(R.string.home_this_computer), Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
         }
         items(storages, key = { it.id }) { storage ->
-            DeviceStorageCard(storage = storage, usage = storageUsage[storage.id].orEmpty(), onClick = { onOpenStorage(storage) })
+            DeviceStorageCard(storage = storage, usage = storageUsage[storage.id].orEmpty(), onClick = { onOpenStorage(storage) }, onMap = { onMapStorage(storage) })
         }
 
         if (connectedSources.isNotEmpty()) {
@@ -1716,7 +1735,8 @@ private fun categoryShortLabel(category: pl.arma.files.index.IndexCategory): Str
 private fun DeviceStorageCard(
     storage: DeviceStorage,
     usage: Map<pl.arma.files.index.IndexCategory, Long>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onMap: () -> Unit
 ) {
     val used = (storage.totalBytes - storage.freeBytes).coerceAtLeast(0L)
     val top = usage.filterValues { it > 0 }.toList().sortedByDescending { it.second }
@@ -1783,8 +1803,11 @@ private fun DeviceStorageCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(4.dp))
+            // Dotknięcie karty otwiera nośnik; przycisk obok — jego mapę pamięci.
+            IconButton(onClick = onMap) {
+                Icon(Icons.Default.SpaceDashboard, stringResource(R.string.map_title), tint = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }

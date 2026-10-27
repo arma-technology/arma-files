@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Nie znaleziono duplikatów wśród plików powyżej 4 KB. Porównywany jest skrót SHA-256, więc pliki o tym samym rozmiarze, ale innej zawartości nie są zliczane.</string>
     <string name="analysis_old_files">Stare pliki</string>
     <string name="analysis_title">Analiza pamięci</string>
+    <string name="map_title">Mapa pamięci</string>
+    <string name="map_hint">Dotknij folder, by wejść · przytrzymaj, by go otworzyć</string>
+    <string name="map_open_folder">Otwórz jako folder</string>
+    <string name="map_unindexed">System i aplikacje</string>
+    <string name="map_rest">Reszta</string>
+    <string name="map_no_index">Mapa powstaje z indeksu plików. Zbuduj go, żeby zobaczyć, co zajmuje miejsce.</string>
+    <string name="map_up">Poziom wyżej</string>
     <string name="apk_allow">Zezwól ARMA Files na instalowanie aplikacji, potem spróbuj ponownie.</string>
     <string name="apk_failed">Nie udało się uruchomić instalatora.</string>
     <string name="apk_unsupported">Ta wersja Androida nie pozwala instalować plików APK z aplikacji.</string>

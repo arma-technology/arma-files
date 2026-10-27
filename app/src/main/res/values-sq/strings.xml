@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Nuk u gjetën dublikata mes skedarëve mbi 4 KB. Krahasohet hash-i SHA-256, prandaj skedarët me të njëjtën madhësi, por me përmbajtje tjetër nuk numërohen.</string>
     <string name="analysis_old_files">Skedarë të vjetër</string>
     <string name="analysis_title">Analiza e hapësirës</string>
+    <string name="map_title">Harta e hapësirës</string>
+    <string name="map_hint">Prekni një dosje për të hyrë · mbajeni për ta hapur</string>
+    <string name="map_open_folder">Hape si dosje</string>
+    <string name="map_unindexed">Sistemi dhe aplikacionet</string>
+    <string name="map_rest">Të tjerat</string>
+    <string name="map_no_index">Harta ndërtohet nga indeksi i skedarëve. Ndërtojeni për të parë çfarë zë hapësirë.</string>
+    <string name="map_up">Një nivel lart</string>
     <string name="apk_allow">Lejo ARMA Files të instalojë aplikacione dhe provo përsëri.</string>
     <string name="apk_failed">Instaluesi nuk u nis dot.</string>
     <string name="apk_unsupported">Ky version i Android-it nuk lejon instalimin e skedarëve APK nga aplikacionet.</string>

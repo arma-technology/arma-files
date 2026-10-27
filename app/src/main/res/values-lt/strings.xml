@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Tarp didesnių nei 4 KB failų dublikatų nerasta. Lyginama SHA-256 maiša, todėl to paties dydžio, bet skirtingo turinio failai neskaičiuojami.</string>
     <string name="analysis_old_files">Seni failai</string>
     <string name="analysis_title">Atminties analizė</string>
+    <string name="map_title">Atminties žemėlapis</string>
+    <string name="map_hint">Bakstelėkite aplanką, kad įeitumėte · palaikykite, kad atidarytumėte</string>
+    <string name="map_open_folder">Atidaryti kaip aplanką</string>
+    <string name="map_unindexed">Sistema ir programos</string>
+    <string name="map_rest">Kita</string>
+    <string name="map_no_index">Žemėlapis sudaromas iš failų indekso. Sukurkite jį, kad pamatytumėte, kas užima vietą.</string>
+    <string name="map_up">Lygiu aukščiau</string>
     <string name="apk_allow">Leiskite ARMA Files diegti programas ir bandykite dar kartą.</string>
     <string name="apk_failed">Nepavyko paleisti diegimo programos.</string>
     <string name="apk_unsupported">Ši Android versija neleidžia diegti APK failų iš programų.</string>

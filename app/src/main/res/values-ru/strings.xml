@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Среди файлов больше 4 КБ дубликатов не найдено. Сравнивается хеш SHA-256, поэтому файлы одинакового размера с разным содержимым не учитываются.</string>
     <string name="analysis_old_files">Старые файлы</string>
     <string name="analysis_title">Анализ памяти</string>
+    <string name="map_title">Карта памяти</string>
+    <string name="map_hint">Коснитесь папки, чтобы войти · удерживайте, чтобы открыть</string>
+    <string name="map_open_folder">Открыть как папку</string>
+    <string name="map_unindexed">Система и приложения</string>
+    <string name="map_rest">Остальное</string>
+    <string name="map_no_index">Карта строится по индексу файлов. Постройте его, чтобы увидеть, что занимает место.</string>
+    <string name="map_up">На уровень выше</string>
     <string name="apk_allow">Разрешите ARMA Files устанавливать приложения и повторите попытку.</string>
     <string name="apk_failed">Не удалось запустить установщик.</string>
     <string name="apk_unsupported">Эта версия Android не позволяет устанавливать APK-файлы из приложений.</string>

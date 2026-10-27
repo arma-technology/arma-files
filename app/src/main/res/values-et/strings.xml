@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Üle 4 KB failide seas duplikaate ei leitud. Võrreldakse SHA-256 räsi, seega sama suurusega, kuid erineva sisuga faile ei loeta.</string>
     <string name="analysis_old_files">Vanad failid</string>
     <string name="analysis_title">Mälu analüüs</string>
+    <string name="map_title">Mälukaart</string>
+    <string name="map_hint">Puuduta kausta, et siseneda · hoia, et avada</string>
+    <string name="map_open_folder">Ava kaustana</string>
+    <string name="map_unindexed">Süsteem ja rakendused</string>
+    <string name="map_rest">Ülejäänu</string>
+    <string name="map_no_index">Kaart koostatakse failiindeksist. Koosta see, et näha, mis ruumi võtab.</string>
+    <string name="map_up">Tase üles</string>
     <string name="apk_allow">Lubage ARMA Filesil rakendusi installida ja proovige uuesti.</string>
     <string name="apk_failed">Installerit ei õnnestunud käivitada.</string>
     <string name="apk_unsupported">See Androidi versioon ei luba rakendustest APK-faile installida.</string>

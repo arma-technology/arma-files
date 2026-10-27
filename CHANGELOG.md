@@ -153,6 +153,12 @@ Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
   plik wrzucony do szuflady leci do niej, szybki podgląd wyrasta spod palca
   i znika płynnie, uchwyt arkusza Głębi zamyka poziom szybkim machnięciem;
   „Spokojny ruch” skraca albo wyłącza każdą z nich
+- **mapa pamięci**: przycisk na karcie nośnika pokazuje pamięć jako
+  prostokąty o polu proporcjonalnym do zajętego miejsca, w kolorze kategorii,
+  która w folderze zajmuje najwięcej; dotknięcie folderu płynnie go
+  przybliża, Wstecz oddala, przytrzymanie otwiera folder, dotknięcie pliku —
+  podgląd; to, czego indeks nie widzi (system, dane aplikacji), to jeden
+  szary kafelek
 
 ## 0.10.0
 

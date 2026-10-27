@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">A 4 KB-nál nagyobb fájlok között nincs ismétlődés. Az összehasonlítás SHA-256 kivonat alapján történik, így az azonos méretű, de eltérő tartalmú fájlok nem számítanak.</string>
     <string name="analysis_old_files">Régi fájlok</string>
     <string name="analysis_title">Tárhely elemzése</string>
+    <string name="map_title">Tárhelytérkép</string>
+    <string name="map_hint">Koppintson egy mappára a belépéshez · tartsa nyomva a megnyitáshoz</string>
+    <string name="map_open_folder">Megnyitás mappaként</string>
+    <string name="map_unindexed">Rendszer és alkalmazások</string>
+    <string name="map_rest">Egyéb</string>
+    <string name="map_no_index">A térkép a fájlindexből készül. Építse fel, hogy lássa, mi foglalja a helyet.</string>
+    <string name="map_up">Egy szinttel feljebb</string>
     <string name="apk_allow">Engedélyezd az ARMA Files számára az alkalmazások telepítését, majd próbáld újra.</string>
     <string name="apk_failed">Nem sikerült elindítani a telepítőt.</string>
     <string name="apk_unsupported">Ez az Android-verzió nem engedi APK-fájlok telepítését alkalmazásokból.</string>

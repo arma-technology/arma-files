@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Међу датотекама већим од 4 KB нема дупликата. Упоређује се SHA-256 отисак, па се датотеке исте величине, али различитог садржаја не рачунају.</string>
     <string name="analysis_old_files">Старе датотеке</string>
     <string name="analysis_title">Анализа меморије</string>
+    <string name="map_title">Мапа меморије</string>
+    <string name="map_hint">Додирните фасциклу за улаз · задржите да је отворите</string>
+    <string name="map_open_folder">Отвори као фасциклу</string>
+    <string name="map_unindexed">Систем и апликације</string>
+    <string name="map_rest">Остало</string>
+    <string name="map_no_index">Мапа настаје из индекса датотека. Изградите га да видите шта заузима простор.</string>
+    <string name="map_up">Ниво више</string>
     <string name="apk_allow">Дозволите апликацији ARMA Files да инсталира апликације, па покушајте поново.</string>
     <string name="apk_failed">Инсталациони програм није могао да се покрене.</string>
     <string name="apk_unsupported">Ова верзија Android-а не дозвољава инсталирање APK датотека из апликација.</string>

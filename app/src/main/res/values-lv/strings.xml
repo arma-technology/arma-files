@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Starp failiem, kas lielāki par 4 KB, dublikāti netika atrasti. Tiek salīdzināts SHA-256 jaucējkods, tāpēc vienāda izmēra faili ar atšķirīgu saturu netiek skaitīti.</string>
     <string name="analysis_old_files">Veci faili</string>
     <string name="analysis_title">Atmiņas analīze</string>
+    <string name="map_title">Krātuves karte</string>
+    <string name="map_hint">Pieskarieties mapei, lai ieietu · turiet, lai atvērtu</string>
+    <string name="map_open_folder">Atvērt kā mapi</string>
+    <string name="map_unindexed">Sistēma un lietotnes</string>
+    <string name="map_rest">Pārējais</string>
+    <string name="map_no_index">Karte veidojas no failu indeksa. Izveidojiet to, lai redzētu, kas aizņem vietu.</string>
+    <string name="map_up">Līmeni augstāk</string>
     <string name="apk_allow">Atļaujiet ARMA Files instalēt lietotnes un mēģiniet vēlreiz.</string>
     <string name="apk_failed">Neizdevās palaist instalētāju.</string>
     <string name="apk_unsupported">Šī Android versija neļauj instalēt APK failus no lietotnēm.</string>

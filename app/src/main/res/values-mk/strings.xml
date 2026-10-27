@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Нема дупликати меѓу датотеките поголеми од 4 KB. Се споредува SHA-256 хешот, па датотеките со иста големина, а различна содржина не се бројат.</string>
     <string name="analysis_old_files">Стари датотеки</string>
     <string name="analysis_title">Анализа на меморијата</string>
+    <string name="map_title">Мапа на меморијата</string>
+    <string name="map_hint">Допрете папка за влез · задржете за да ја отворите</string>
+    <string name="map_open_folder">Отвори како папка</string>
+    <string name="map_unindexed">Систем и апликации</string>
+    <string name="map_rest">Останато</string>
+    <string name="map_no_index">Мапата се гради од индексот на датотеки. Изградете го за да видите што зафаќа простор.</string>
+    <string name="map_up">Ниво погоре</string>
     <string name="apk_allow">Дозволете ѝ на ARMA Files да инсталира апликации, па обидете се повторно.</string>
     <string name="apk_failed">Инсталаторот не можеше да се стартува.</string>
     <string name="apk_unsupported">Оваа верзија на Android не дозволува инсталирање APK-датотеки од апликации.</string>

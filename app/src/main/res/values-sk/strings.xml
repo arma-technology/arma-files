@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Medzi súbormi nad 4 KB sa nenašli duplikáty. Porovnáva sa odtlačok SHA-256, takže súbory rovnakej veľkosti s iným obsahom sa nezapočítavajú.</string>
     <string name="analysis_old_files">Staré súbory</string>
     <string name="analysis_title">Analýza úložiska</string>
+    <string name="map_title">Mapa úložiska</string>
+    <string name="map_hint">Ťuknutím na priečinok vstúpite · podržaním ho otvoríte</string>
+    <string name="map_open_folder">Otvoriť ako priečinok</string>
+    <string name="map_unindexed">Systém a aplikácie</string>
+    <string name="map_rest">Zvyšok</string>
+    <string name="map_no_index">Mapa vzniká z indexu súborov. Zostavte ho a uvidíte, čo zaberá miesto.</string>
+    <string name="map_up">O úroveň vyššie</string>
     <string name="apk_allow">Povoľte ARMA Files inštalovať aplikácie a skúste to znova.</string>
     <string name="apk_failed">Inštalátor sa nepodarilo spustiť.</string>
     <string name="apk_unsupported">Táto verzia Androidu nedovoľuje inštalovať súbory APK z aplikácií.</string>

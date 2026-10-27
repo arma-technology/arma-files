@@ -38,6 +38,13 @@
     <string name="analysis_no_duplicates">Med datotekami nad 4 KB ni dvojnikov. Primerja se zgoščena vrednost SHA-256, zato se datoteke enake velikosti z drugačno vsebino ne štejejo.</string>
     <string name="analysis_old_files">Stare datoteke</string>
     <string name="analysis_title">Analiza pomnilnika</string>
+    <string name="map_title">Zemljevid pomnilnika</string>
+    <string name="map_hint">Tapnite mapo za vstop · pridržite, da jo odprete</string>
+    <string name="map_open_folder">Odpri kot mapo</string>
+    <string name="map_unindexed">Sistem in aplikacije</string>
+    <string name="map_rest">Ostalo</string>
+    <string name="map_no_index">Zemljevid nastane iz indeksa datotek. Zgradite ga, da vidite, kaj zaseda prostor.</string>
+    <string name="map_up">Raven višje</string>
     <string name="apk_allow">Aplikaciji ARMA Files dovolite nameščanje aplikacij in poskusite znova.</string>
     <string name="apk_failed">Namestitvenega programa ni bilo mogoče zagnati.</string>
     <string name="apk_unsupported">Ta različica Androida ne dovoli nameščanja datotek APK iz aplikacij.</string>
