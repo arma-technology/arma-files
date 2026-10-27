@@ -42,6 +42,7 @@
     <string name="map_hint">Ťuknutím na priečinok vstúpite · podržaním ho otvoríte</string>
     <string name="map_open_folder">Otvoriť ako priečinok</string>
     <string name="map_unindexed">Systém a aplikácie</string>
+    <string name="map_unindexed_info">Systémové súbory a dáta aplikácií — index súborov ich nevidí.</string>
     <string name="map_rest">Zvyšok</string>
     <string name="map_no_index">Mapa vzniká z indexu súborov. Zostavte ho a uvidíte, čo zaberá miesto.</string>
     <string name="map_up">O úroveň vyššie</string>

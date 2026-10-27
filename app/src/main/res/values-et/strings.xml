@@ -42,6 +42,7 @@
     <string name="map_hint">Puuduta kausta, et siseneda · hoia, et avada</string>
     <string name="map_open_folder">Ava kaustana</string>
     <string name="map_unindexed">Süsteem ja rakendused</string>
+    <string name="map_unindexed_info">Süsteemifailid ja rakenduste andmed — failiindeks neid ei näe.</string>
     <string name="map_rest">Ülejäänu</string>
     <string name="map_no_index">Kaart koostatakse failiindeksist. Koosta see, et näha, mis ruumi võtab.</string>
     <string name="map_up">Tase üles</string>

@@ -42,6 +42,7 @@
     <string name="map_hint">Atingeți un dosar pentru a intra · țineți apăsat pentru a-l deschide</string>
     <string name="map_open_folder">Deschide ca dosar</string>
     <string name="map_unindexed">Sistem și aplicații</string>
+    <string name="map_unindexed_info">Fișiere de sistem și date ale aplicațiilor — indexul nu le vede.</string>
     <string name="map_rest">Restul</string>
     <string name="map_no_index">Harta se construiește din indexul fișierelor. Construiți-l ca să vedeți ce ocupă spațiu.</string>
     <string name="map_up">Un nivel mai sus</string>

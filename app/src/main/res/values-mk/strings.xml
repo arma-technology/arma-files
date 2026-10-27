@@ -42,6 +42,7 @@
     <string name="map_hint">Допрете папка за влез · задржете за да ја отворите</string>
     <string name="map_open_folder">Отвори како папка</string>
     <string name="map_unindexed">Систем и апликации</string>
+    <string name="map_unindexed_info">Системски датотеки и податоци на апликации — индексот не ги гледа.</string>
     <string name="map_rest">Останато</string>
     <string name="map_no_index">Мапата се гради од индексот на датотеки. Изградете го за да видите што зафаќа простор.</string>
     <string name="map_up">Ниво погоре</string>

@@ -42,6 +42,7 @@
     <string name="map_hint">Koppintson egy mappára a belépéshez · tartsa nyomva a megnyitáshoz</string>
     <string name="map_open_folder">Megnyitás mappaként</string>
     <string name="map_unindexed">Rendszer és alkalmazások</string>
+    <string name="map_unindexed_info">Rendszerfájlok és alkalmazásadatok – a fájlindex nem látja őket.</string>
     <string name="map_rest">Egyéb</string>
     <string name="map_no_index">A térkép a fájlindexből készül. Építse fel, hogy lássa, mi foglalja a helyet.</string>
     <string name="map_up">Egy szinttel feljebb</string>

@@ -42,6 +42,7 @@
     <string name="map_hint">Ordner antippen zum Hineinzoomen · halten zum Öffnen</string>
     <string name="map_open_folder">Als Ordner öffnen</string>
     <string name="map_unindexed">System und Apps</string>
+    <string name="map_unindexed_info">Systemdateien und App-Daten – der Dateiindex sieht sie nicht.</string>
     <string name="map_rest">Rest</string>
     <string name="map_no_index">Die Karte entsteht aus dem Dateiindex. Erstellen Sie ihn, um zu sehen, was Platz belegt.</string>
     <string name="map_up">Eine Ebene höher</string>

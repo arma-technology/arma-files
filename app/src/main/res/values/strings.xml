@@ -43,6 +43,7 @@
     <string name="map_hint">Tap a folder to go in · hold to open it</string>
     <string name="map_open_folder">Open as folder</string>
     <string name="map_unindexed">System and apps</string>
+    <string name="map_unindexed_info">System files and app data — the file index can’t see them.</string>
     <string name="map_rest">Rest</string>
     <string name="map_no_index">The map is drawn from the file index. Build it to see what takes up space.</string>
     <string name="map_up">Up one level</string>

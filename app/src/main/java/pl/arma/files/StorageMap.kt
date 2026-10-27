@@ -102,7 +102,12 @@ internal fun StorageMapScreen(
     onBuildIndex: () -> Unit,
     onOpenFolder: (Uri) -> Unit,
     onOpenFile: (FileItem) -> Unit,
-    onClose: () -> Unit
+    onInfo: (String) -> Unit,
+    onClose: () -> Unit,
+    // Poziom mapy żyje u wywołującego: po powrocie z otwartego folderu mapa
+    // czeka tam, gdzie ją zostawiono.
+    path: List<String>,
+    onPath: (List<String>) -> Unit
 ) {
     val style = LocalArmaStyle.current
     val scope = rememberCoroutineScope()
@@ -115,7 +120,7 @@ internal fun StorageMapScreen(
     val unindexedLabel = stringResource(R.string.map_unindexed)
     val restLabel = stringResource(R.string.map_rest)
 
-    var path by remember(storage.id) { mutableStateOf(emptyList<String>()) }
+    val unindexedInfo = stringResource(R.string.map_unindexed_info)
     var current by remember(storage.id) { mutableStateOf<Scene?>(null) }
     var area by remember { mutableStateOf(Cell(0f, 0f, 0f, 0f)) }
     var loading by remember { mutableStateOf(true) }
@@ -156,15 +161,18 @@ internal fun StorageMapScreen(
         loading = false
     }
 
-    fun enter(tile: MapTile, cell: Cell) {
+    fun enter(tile: MapTile, cell: Cell, open: Boolean = false) {
         val from = current ?: return
         scope.launch {
             val next = build(from.path + tile.segment)
+            // Duży folder wczytuje się kilka sekund — przybliżenie daje znać od razu,
+            // że przytrzymanie zadziałało, a lista dochodzi w tym czasie w tle.
+            if (open) onOpenFolder(dirUri(next.path))
             outer = from; inner = next; focus = cell
             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             zoom.snapTo(0f)
             if (!style.calm) zoom.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
-            path = next.path; current = next
+            onPath(next.path); current = next
             outer = null; inner = null; focus = null
         }
     }
@@ -178,7 +186,7 @@ internal fun StorageMapScreen(
             outer = parent; inner = from; focus = parent.cells.getOrNull(index) ?: Cell(area.left + area.width / 2, area.top + area.height / 2, 1f, 1f)
             zoom.snapTo(1f)
             if (!style.calm) zoom.animateTo(0f, tween(360, easing = FastOutSlowInEasing))
-            path = parent.path; current = parent
+            onPath(parent.path); current = parent
             outer = null; inner = null; focus = null
         }
     }
@@ -241,14 +249,17 @@ internal fun StorageMapScreen(
                                     when (tile.kind) {
                                         TileKind.FOLDER -> enter(tile, scene.cells[i])
                                         TileKind.FILE -> onOpenFile(fileItem(dirUri(scene.path), tile))
-                                        else -> Unit
+                                        // „Reszta” to drobne elementy tego folderu — są na zwykłej liście.
+                                        TileKind.REST -> onOpenFolder(dirUri(scene.path))
+                                        // Szary kafelek nie może wyglądać na zepsuty: mówi, czym jest.
+                                        TileKind.SYSTEM -> onInfo(unindexedInfo)
                                     }
                                 },
                                 onLongPress = { at ->
                                     val tile = scene.tiles.getOrNull(hit(at)) ?: return@detectTapGestures
                                     if (tile.kind == TileKind.FOLDER) {
                                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onOpenFolder(dirUri(scene.path + tile.segment))
+                                        enter(tile, scene.cells[hit(at)], open = true)
                                     }
                                 }
                             )

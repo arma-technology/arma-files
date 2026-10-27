@@ -42,6 +42,7 @@
     <string name="map_hint">Prekni një dosje për të hyrë · mbajeni për ta hapur</string>
     <string name="map_open_folder">Hape si dosje</string>
     <string name="map_unindexed">Sistemi dhe aplikacionet</string>
+    <string name="map_unindexed_info">Skedarët e sistemit dhe të dhënat e aplikacioneve — indeksi nuk i sheh.</string>
     <string name="map_rest">Të tjerat</string>
     <string name="map_no_index">Harta ndërtohet nga indeksi i skedarëve. Ndërtojeni për të parë çfarë zë hapësirë.</string>
     <string name="map_up">Një nivel lart</string>

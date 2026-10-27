@@ -42,6 +42,7 @@
     <string name="map_hint">Коснитесь папки, чтобы войти · удерживайте, чтобы открыть</string>
     <string name="map_open_folder">Открыть как папку</string>
     <string name="map_unindexed">Система и приложения</string>
+    <string name="map_unindexed_info">Системные файлы и данные приложений — индекс их не видит.</string>
     <string name="map_rest">Остальное</string>
     <string name="map_no_index">Карта строится по индексу файлов. Постройте его, чтобы увидеть, что занимает место.</string>
     <string name="map_up">На уровень выше</string>

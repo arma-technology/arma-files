@@ -42,6 +42,7 @@
     <string name="map_hint">Klepnutím na složku vstoupíte · podržením ji otevřete</string>
     <string name="map_open_folder">Otevřít jako složku</string>
     <string name="map_unindexed">Systém a aplikace</string>
+    <string name="map_unindexed_info">Systémové soubory a data aplikací — index souborů je nevidí.</string>
     <string name="map_rest">Zbytek</string>
     <string name="map_no_index">Mapa vzniká z indexu souborů. Sestavte ho a uvidíte, co zabírá místo.</string>
     <string name="map_up">O úroveň výš</string>

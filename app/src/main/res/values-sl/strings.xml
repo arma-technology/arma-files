@@ -42,6 +42,7 @@
     <string name="map_hint">Tapnite mapo za vstop · pridržite, da jo odprete</string>
     <string name="map_open_folder">Odpri kot mapo</string>
     <string name="map_unindexed">Sistem in aplikacije</string>
+    <string name="map_unindexed_info">Sistemske datoteke in podatki aplikacij — indeks jih ne vidi.</string>
     <string name="map_rest">Ostalo</string>
     <string name="map_no_index">Zemljevid nastane iz indeksa datotek. Zgradite ga, da vidite, kaj zaseda prostor.</string>
     <string name="map_up">Raven višje</string>

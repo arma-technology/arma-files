@@ -42,6 +42,7 @@
     <string name="map_hint">Докоснете папка, за да влезете · задръжте, за да я отворите</string>
     <string name="map_open_folder">Отвори като папка</string>
     <string name="map_unindexed">Система и приложения</string>
+    <string name="map_unindexed_info">Системни файлове и данни на приложения — индексът не ги вижда.</string>
     <string name="map_rest">Останало</string>
     <string name="map_no_index">Картата се изгражда от индекса на файловете. Изградете го, за да видите какво заема място.</string>
     <string name="map_up">Едно ниво нагоре</string>

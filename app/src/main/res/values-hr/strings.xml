@@ -42,6 +42,7 @@
     <string name="map_hint">Dodirnite mapu za ulaz · zadržite da je otvorite</string>
     <string name="map_open_folder">Otvori kao mapu</string>
     <string name="map_unindexed">Sustav i aplikacije</string>
+    <string name="map_unindexed_info">Sistemske datoteke i podaci aplikacija — indeks ih ne vidi.</string>
     <string name="map_rest">Ostalo</string>
     <string name="map_no_index">Karta nastaje iz indeksa datoteka. Izgradite ga da vidite što zauzima prostor.</string>
     <string name="map_up">Razina više</string>

@@ -42,6 +42,7 @@
     <string name="map_hint">Pieskarieties mapei, lai ieietu · turiet, lai atvērtu</string>
     <string name="map_open_folder">Atvērt kā mapi</string>
     <string name="map_unindexed">Sistēma un lietotnes</string>
+    <string name="map_unindexed_info">Sistēmas faili un lietotņu dati — failu indekss tos neredz.</string>
     <string name="map_rest">Pārējais</string>
     <string name="map_no_index">Karte veidojas no failu indeksa. Izveidojiet to, lai redzētu, kas aizņem vietu.</string>
     <string name="map_up">Līmeni augstāk</string>

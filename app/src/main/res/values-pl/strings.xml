@@ -42,6 +42,7 @@
     <string name="map_hint">Dotknij folder, by wejść · przytrzymaj, by go otworzyć</string>
     <string name="map_open_folder">Otwórz jako folder</string>
     <string name="map_unindexed">System i aplikacje</string>
+    <string name="map_unindexed_info">Pliki systemu i dane aplikacji — indeks plików ich nie widzi.</string>
     <string name="map_rest">Reszta</string>
     <string name="map_no_index">Mapa powstaje z indeksu plików. Zbuduj go, żeby zobaczyć, co zajmuje miejsce.</string>
     <string name="map_up">Poziom wyżej</string>

@@ -42,6 +42,7 @@
     <string name="map_hint">Dodirnite folder za ulaz · zadržite da ga otvorite</string>
     <string name="map_open_folder">Otvori kao folder</string>
     <string name="map_unindexed">Sistem i aplikacije</string>
+    <string name="map_unindexed_info">Sistemske datoteke i podaci aplikacija — indeks ih ne vidi.</string>
     <string name="map_rest">Ostalo</string>
     <string name="map_no_index">Mapa se gradi iz indeksa datoteka. Izgradite ga da vidite šta zauzima prostor.</string>
     <string name="map_up">Nivo više</string>

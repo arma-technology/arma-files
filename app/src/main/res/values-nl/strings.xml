@@ -42,6 +42,7 @@
     <string name="map_hint">Tik op een map om in te zoomen · houd vast om te openen</string>
     <string name="map_open_folder">Openen als map</string>
     <string name="map_unindexed">Systeem en apps</string>
+    <string name="map_unindexed_info">Systeembestanden en app-gegevens — de bestandsindex ziet ze niet.</string>
     <string name="map_rest">Overig</string>
     <string name="map_no_index">De kaart komt uit de bestandsindex. Bouw die op om te zien wat ruimte inneemt.</string>
     <string name="map_up">Niveau omhoog</string>

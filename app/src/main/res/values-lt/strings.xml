@@ -42,6 +42,7 @@
     <string name="map_hint">Bakstelėkite aplanką, kad įeitumėte · palaikykite, kad atidarytumėte</string>
     <string name="map_open_folder">Atidaryti kaip aplanką</string>
     <string name="map_unindexed">Sistema ir programos</string>
+    <string name="map_unindexed_info">Sistemos failai ir programų duomenys — failų indeksas jų nemato.</string>
     <string name="map_rest">Kita</string>
     <string name="map_no_index">Žemėlapis sudaromas iš failų indekso. Sukurkite jį, kad pamatytumėte, kas užima vietą.</string>
     <string name="map_up">Lygiu aukščiau</string>

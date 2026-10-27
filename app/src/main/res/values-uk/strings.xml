@@ -42,6 +42,7 @@
     <string name="map_hint">Торкніться теки, щоб увійти · утримуйте, щоб відкрити</string>
     <string name="map_open_folder">Відкрити як теку</string>
     <string name="map_unindexed">Система і застосунки</string>
+    <string name="map_unindexed_info">Системні файли й дані застосунків — індекс їх не бачить.</string>
     <string name="map_rest">Решта</string>
     <string name="map_no_index">Карта будується з індексу файлів. Побудуйте його, щоб побачити, що займає місце.</string>
     <string name="map_up">На рівень вище</string>

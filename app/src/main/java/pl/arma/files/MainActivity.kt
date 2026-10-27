@@ -260,6 +260,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var category by remember { mutableStateOf(FileCategory.ALL) }
     // Nośnik, którego mapa pamięci jest otwarta na ekranie głównym.
     var mapStorage by remember { mutableStateOf<DeviceStorage?>(null) }
+    var mapPath by remember { mutableStateOf(emptyList<String>()) }
     // Kategoria z ekranu głównego („Zdjęcia”, „Dokumenty”) — jej pliki stoją pod paskiem wyszukiwania.
     var homeCategory by remember { mutableStateOf<pl.arma.files.index.IndexCategory?>(null) }
     var selectedUris by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -601,7 +602,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 ) {
                     ArmaNavBar(selected = tab.ordinal, count = Tab.entries.size) {
                     NavItem(Tab.FILES, tab, Icons.Default.PhoneAndroid, stringResource(R.string.nav_home)) {
-                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.showHome()
+                        // Zakładka zawsze prowadzi na sam ekran główny, także spod mapy.
+                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; mapStorage = null; mapPath = emptyList(); vm.showHome()
                     }
                     NavItem(Tab.RECENT, tab, Icons.Default.Schedule, stringResource(R.string.nav_recent)) {
                         tab = Tab.RECENT; query = ""; category = FileCategory.ALL
@@ -701,9 +703,13 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         // Podgląd i okna nad mapą mają pierwszeństwo przy Wstecz.
                         backEnabled = preview == null && details == null && peekItem == null && !selectionMode,
                         onBuildIndex = { vm.buildIndex(); vm.analyzeStorage() },
-                        onOpenFolder = { uri -> mapStorage = null; openLocal(uri) },
+                        // Mapa zostaje otwarta pod folderem — Wstecz z niego wraca do niej.
+                        onOpenFolder = { uri -> openLocal(uri) },
                         onOpenFile = { item -> preview = item; vm.addRecent(item) },
-                        onClose = { mapStorage = null }
+                        onInfo = { text -> appScope.launch { snackbarHostState.showSnackbar(text) } },
+                        onClose = { mapStorage = null; mapPath = emptyList() },
+                        path = mapPath,
+                        onPath = { mapPath = it }
                     )
                 }
 
@@ -783,7 +789,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         },
                         onRevealResult = vm::revealParent,
                         storageUsage = analysis.usageByStorage,
-                        onMapStorage = { storage -> mapStorage = storage; if (analysis.stats == null) vm.analyzeStorage() },
+                        onMapStorage = { storage -> mapStorage = storage; mapPath = emptyList(); if (analysis.stats == null) vm.analyzeStorage() },
                         onOpenHistory = { showHistory = true }
                     )
                 }

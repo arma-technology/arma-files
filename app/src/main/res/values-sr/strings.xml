@@ -42,6 +42,7 @@
     <string name="map_hint">Додирните фасциклу за улаз · задржите да је отворите</string>
     <string name="map_open_folder">Отвори као фасциклу</string>
     <string name="map_unindexed">Систем и апликације</string>
+    <string name="map_unindexed_info">Системске датотеке и подаци апликација — индекс их не види.</string>
     <string name="map_rest">Остало</string>
     <string name="map_no_index">Мапа настаје из индекса датотека. Изградите га да видите шта заузима простор.</string>
     <string name="map_up">Ниво више</string>
