@@ -152,4 +152,11 @@
         <item quantity="one">%1$d regel</item>
         <item quantity="other">%1$d regels</item>
     </plurals>
+    <string name="viewer_audio_play">Afspelen</string>
+    <string name="viewer_audio_pause">Pauzeren</string>
+    <string name="viewer_audio_next">Volgende</string>
+    <string name="viewer_audio_previous">Vorige</string>
+    <string name="viewer_audio_error">Kan deze opname niet afspelen (%1$s)</string>
+    <string name="viewer_text_formatted">Opgemaakte weergave</string>
+    <string name="viewer_text_source">Bron</string>
 </resources>

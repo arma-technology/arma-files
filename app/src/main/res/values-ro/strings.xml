@@ -544,4 +544,8 @@ alegând o filă din bara de sus.</string>
         <item quantity="few">%1$d conflicte — alegeți versiunile</item>
         <item quantity="other">%1$d de conflicte — alegeți versiunile</item>
     </plurals>
+    <string name="loading_folder">Se încarcă dosarul…</string>
+    <string name="common_stop">Oprește</string>
+    <string name="download_title">Se descarcă</string>
+    <string name="download_progress">%1$s din %2$s</string>
 </resources>

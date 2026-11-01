@@ -154,4 +154,11 @@
         <item quantity="many">%1$d рядків</item>
         <item quantity="other">%1$d рядка</item>
     </plurals>
+    <string name="viewer_audio_play">Відтворити</string>
+    <string name="viewer_audio_pause">Пауза</string>
+    <string name="viewer_audio_next">Наступний</string>
+    <string name="viewer_audio_previous">Попередній</string>
+    <string name="viewer_audio_error">Не вдається відтворити запис (%1$s)</string>
+    <string name="viewer_text_formatted">Форматований вигляд</string>
+    <string name="viewer_text_source">Джерело</string>
 </resources>

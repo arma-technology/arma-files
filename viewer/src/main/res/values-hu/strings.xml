@@ -152,4 +152,11 @@
         <item quantity="one">%1$d sor</item>
         <item quantity="other">%1$d sor</item>
     </plurals>
+    <string name="viewer_audio_play">Lejátszás</string>
+    <string name="viewer_audio_pause">Szünet</string>
+    <string name="viewer_audio_next">Következő</string>
+    <string name="viewer_audio_previous">Előző</string>
+    <string name="viewer_audio_error">A felvétel nem játszható le (%1$s)</string>
+    <string name="viewer_text_formatted">Formázott nézet</string>
+    <string name="viewer_text_source">Forrás</string>
 </resources>

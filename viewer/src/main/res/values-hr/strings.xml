@@ -153,4 +153,11 @@
         <item quantity="few">%1$d retka</item>
         <item quantity="other">%1$d redaka</item>
     </plurals>
+    <string name="viewer_audio_play">Reproduciraj</string>
+    <string name="viewer_audio_pause">Pauza</string>
+    <string name="viewer_audio_next">Sljedeći</string>
+    <string name="viewer_audio_previous">Prethodni</string>
+    <string name="viewer_audio_error">Snimka se ne može reproducirati (%1$s)</string>
+    <string name="viewer_text_formatted">Oblikovani prikaz</string>
+    <string name="viewer_text_source">Izvor</string>
 </resources>

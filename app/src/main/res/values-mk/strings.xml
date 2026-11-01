@@ -537,4 +537,8 @@
         <item quantity="one">%1$d несогласување — изберете верзија</item>
         <item quantity="other">%1$d несогласувања — изберете верзии</item>
     </plurals>
+    <string name="loading_folder">Се вчитува папката…</string>
+    <string name="common_stop">Прекини</string>
+    <string name="download_title">Преземање</string>
+    <string name="download_progress">%1$s од %2$s</string>
 </resources>

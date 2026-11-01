@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -67,6 +69,7 @@ private const val NAV_HISTORY = 50
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as ArmaFilesApp).repository
     private val prefs = StoragePrefs(app)
+    private val paneStore = PaneStore(app)
     private val networkPrefs = NetworkPrefs(app)
     private val engine = (app as ArmaFilesApp).engine
     private val trash = (app as ArmaFilesApp).trash
@@ -273,7 +276,16 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         var root: Uri? = null
         var currentDir: Uri? = null
         var source: SourceType = SourceType.LOCAL
+        /** Katalog, z którego pochodzi [files] — w trakcie wczytywania to jeszcze poprzedni. */
+        var filesDir: Uri? = null
+            private set
         var files: List<FileItem> = emptyList()
+            set(value) {
+                field = value
+                filesDir = currentDir
+            }
+        /** Wczytywanie zawartości [currentDir]; nowe przejście je przerywa. */
+        var loadJob: Job? = null
         /** Historia „wstecz”: poprzednie miejsca razem ze źródłem, także ekran główny. */
         val navStack = ArrayDeque<NavEntry>()
         /** Czas synchronizacji kopii offline, gdy lista pochodzi z niej, a nie z serwera. */
@@ -289,10 +301,65 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
      * głównego), a nie do folderu nadrzędnego.
      */
     private fun Pane.rememberPlace() {
+        abandonLoad()
         val here = NavEntry(root, source, currentDir)
         if (navStack.lastOrNull() == here) return
         navStack.addLast(here)
         while (navStack.size > NAV_HISTORY) navStack.removeFirst()
+    }
+
+    /**
+     * Przerywa wczytywanie folderu (np. wolnego serwera). Gdy na ekranie wciąż
+     * jest poprzedni folder, karta do niego wraca — nowe przejście zaczyna się
+     * wtedy od miejsca, które użytkownik widzi, a Wstecz nie prowadzi do
+     * folderu, który się nigdy nie wczytał.
+     */
+    private fun Pane.abandonLoad() {
+        val job = loadJob ?: return
+        loadJob = null
+        job.cancel()
+        if (filesDir == currentDir) return
+        val previous = navStack.lastOrNull()
+        when {
+            previous != null && previous.dir == filesDir -> {
+                navStack.removeAt(navStack.lastIndex)
+                root = previous.root
+                source = previous.source
+                currentDir = previous.dir
+            }
+            // Folder przywrócony po uruchomieniu, bez historii — zostaje ekran główny.
+            navStack.isEmpty() -> {
+                currentDir = null
+                root = null
+                source = SourceType.LOCAL
+                files = emptyList()
+            }
+        }
+    }
+
+    /** Czy aktywna karta wczytuje folder — ekran pokazuje wtedy „Przerwij”. */
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
+
+    /**
+     * Wczytywanie poza [viewModelScope]: odczyt z serwera blokuje wątek i nie
+     * reaguje na anulowanie, a karta ma przestać czekać od razu po „Przerwij”
+     * albo wejściu do innego folderu. Porzucony odczyt kończy się w tle.
+     */
+    private val listingScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+
+    /** „Przerwij” przy wczytywaniu folderu. */
+    fun cancelLoading() {
+        val pane = active()
+        pane.abandonLoad()
+        // Nic jeszcze nie było wczytane (karta przywrócona po uruchomieniu) —
+        // zamiast pustego folderu krok wstecz.
+        if (pane.filesDir != pane.currentDir) {
+            val previous = pane.navStack.removeLastOrNull()
+            if (previous != null) restorePlace(pane, previous) else goComputerHome()
+            return
+        }
+        syncPanes()
     }
 
     /** Usuwa z historii wszystkich kart miejsca, które przestały istnieć. */
@@ -358,6 +425,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         _currentSource.value = current.source
         _files.value = current.files
         _offlineSince.value = current.offlineSince
+        // Zadanie startuje leniwie — przed startem isActive jest false, więc patrzymy na samo istnienie.
+        _loading.value = current.loadJob != null
 
         val other = secondary()
         _secondaryFiles.value = other?.files.orEmpty()
@@ -375,6 +444,44 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         updateWatchers()
+        savePanes()
+    }
+
+    private fun savePanes() {
+        fun PaneStore.Place.toEntry() = NavEntry(root, source, dir)
+        paneStore.save(
+            PaneStore.Saved(
+                panes.map { pane ->
+                    PaneStore.SavedPane(
+                        pane.id,
+                        PaneStore.Place(pane.root, pane.source, pane.currentDir),
+                        pane.navStack.map { PaneStore.Place(it.root, it.source, it.dir) }
+                    )
+                },
+                activePaneId
+            )
+        )
+    }
+
+    /**
+     * Karty z poprzedniego uruchomienia. Aktywna wczytuje się od razu, pozostałe
+     * przy przełączeniu. Folder, którego nie da się już odczytać (odłączony
+     * pendrive, wyłączone konto), cicho wraca do ekranu głównego.
+     */
+    private fun restorePanes() {
+        val saved = paneStore.load() ?: return
+        panes.clear()
+        saved.panes.forEach { s ->
+            val pane = Pane(s.id)
+            pane.root = s.place.root
+            pane.source = s.place.source
+            pane.currentDir = s.place.dir
+            s.history.forEach { pane.navStack.addLast(NavEntry(it.root, it.source, it.dir)) }
+            panes += pane
+        }
+        activePaneId = saved.activeId.takeIf { id -> panes.any { it.id == id } } ?: panes.first().id
+        val pane = active()
+        if (pane.currentDir != null) refreshPane(pane, restoring = true)
     }
 
     /** Pozycje list (pierwszy widoczny element i przesunięcie) dla folderów w kartach. */
@@ -403,6 +510,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun updateWatchers() {
         val wanted = if (!foreground) emptyMap() else listOfNotNull(active(), secondary())
+            // Folder w trakcie wczytywania nie jest jeszcze obserwowany — odpytywanie
+            // dokładało kolejne równoległe listowania wolnego serwera.
+            .filter { it.loadJob == null }
             .mapNotNull { pane -> pane.currentDir?.let { pane.id to it } }
             .toMap()
         watches.entries.removeAll { (id, watch) ->
@@ -588,6 +698,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        restorePanes()
         syncPanes()
         loadSavedCollections()
         updateSources()
@@ -765,8 +876,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         // Usunięte konto może być otwarte w kilku kartach naraz.
         panes.filter { it.root?.authority == id }.forEach { pane ->
             pane.navStack.clear()
-            pane.files = emptyList()
+            pane.loadJob?.cancel()
             pane.currentDir = null
+            pane.files = emptyList()
             pane.root = null
             pane.source = SourceType.LOCAL
         }
@@ -829,24 +941,48 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         secondary()?.let(::refreshPane)
     }
 
-    private fun refreshPane(pane: Pane) {
+    private fun refreshPane(pane: Pane, restoring: Boolean = false) {
+        pane.loadJob?.cancel()
+        pane.loadJob = null
         val dir = pane.currentDir ?: run { syncPanes(); return }
-        viewModelScope.launch {
-            _busy.value = true
-            runCatching { repo.listChildren(dir) }
-                .onSuccess {
-                    pane.files = it
-                    pane.offlineSince = if (repo.servedOffline(dir) && offlineStore.unreachable(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+        val job = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+            val self = coroutineContext[Job]
+            try {
+                val listed = try {
+                    Result.success(listingScope.async { repo.listChildren(dir) }.await())
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Result.failure(e)
                 }
-                .onFailure {
-                    if (it is ArchivePasswordException) askPassword(dir, it.wrong) { refreshPane(pane) }
-                    else if (!pl.arma.files.net.ServerIdentityAlerts.isIdentityChange(it)) {
-                        _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty())
+                // Karta mogła w międzyczasie przejść gdzie indziej — stara lista nie
+                // może nadpisać nowego folderu.
+                if (pane.currentDir != dir) return@launch
+                listed
+                    .onSuccess {
+                        pane.files = it
+                        pane.offlineSince = if (repo.servedOffline(dir) && offlineStore.unreachable(dir)) offlineStore.syncedAt(dir) ?: 0L else null
                     }
-                }
-            _busy.value = false
-            syncPanes()
+                    .onFailure {
+                        if (restoring) {
+                            pane.navStack.clear()
+                            pane.currentDir = null
+                            pane.files = emptyList()
+                            pane.root = null
+                            pane.source = SourceType.LOCAL
+                        } else if (it is ArchivePasswordException) askPassword(dir, it.wrong) { refreshPane(pane) }
+                        else if (!pl.arma.files.net.ServerIdentityAlerts.isIdentityChange(it)) {
+                            _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty())
+                        }
+                    }
+            } finally {
+                if (pane.loadJob === self) pane.loadJob = null
+                syncPanes()
+            }
         }
+        pane.loadJob = job
+        syncPanes()
+        job.start()
     }
 
     fun openDirectory(item: FileItem) {
@@ -858,6 +994,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun goBack(): Boolean {
         val pane = active()
+        // Wstecz w trakcie wczytywania: przerywa je i zostaje w folderze, który widać.
+        if (pane.loadJob != null && pane.filesDir != pane.currentDir) {
+            pane.abandonLoad()
+            syncPanes()
+            if (pane.filesDir == pane.currentDir) return true
+        }
         val previous = pane.navStack.removeLastOrNull()
         if (previous != null) {
             restorePlace(pane, previous)
@@ -874,6 +1016,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun canGoBack(): Boolean = active().let { it.navStack.isNotEmpty() || it.currentDir != null }
 
     private fun restorePlace(pane: Pane, place: NavEntry) {
+        pane.loadJob?.cancel()
+        pane.loadJob = null
         pane.root = place.root
         pane.source = place.source
         pane.currentDir = place.dir
@@ -892,8 +1036,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val pane = active()
         if (pane.currentDir == null) return
         pane.rememberPlace()
-        pane.files = emptyList()
         pane.currentDir = null
+        pane.files = emptyList()
         pane.root = null
         pane.source = SourceType.LOCAL
         syncPanes()
@@ -903,8 +1047,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun goComputerHome() {
         val pane = active()
         pane.navStack.clear()
-        pane.files = emptyList()
+        pane.loadJob?.cancel()
         pane.currentDir = null
+        pane.files = emptyList()
         pane.root = null
         pane.source = SourceType.LOCAL
         syncPanes()
@@ -1470,8 +1615,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val cache = File(getApplication<Application>().cacheDir, "remote_files").apply { mkdirs() }
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "file" }
         val file = File(cache, "${item.uri.toString().hashCode()}_$safe")
-        repo.openInput(item.uri).use { input -> file.outputStream().use { output -> input.copyTo(output) } }
-        getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
+        // Ten sam plik otwierany drugi raz nie jest pobierany od nowa.
+        val fresh = item.size > 0 && item.lastModified > 0 && file.length() == item.size && file.lastModified() >= item.lastModified
+        if (!fresh) {
+            download(item, file, foreground = true)
+            getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
+        }
         FileProvider.getUriForFile(
             getApplication(),
             "${getApplication<Application>().packageName}.files",
@@ -1502,16 +1651,17 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    suspend fun decodeImage(item: FileItem, targetMaxSide: Int = 2400): Bitmap = withContext(Dispatchers.IO) {
+    /** [foreground]: otwarte przez użytkownika — pobieranie z sieci pokazuje postęp. */
+    suspend fun decodeImage(item: FileItem, targetMaxSide: Int = 2400, foreground: Boolean = false): Bitmap = withContext(Dispatchers.IO) {
         // Miniatury mają własną pamięć podręczną; tu tylko pełne podglądy.
-        if (targetMaxSide < 2400) return@withContext decodeImageUncached(item, targetMaxSide)
+        if (targetMaxSide < 2400) return@withContext decodeImageUncached(item, targetMaxSide, foreground)
         val key = imageKey(item, targetMaxSide)
         imageCache.get(key)?.let { return@withContext it }
-        decodeImageUncached(item, targetMaxSide).also { imageCache.put(key, it) }
+        decodeImageUncached(item, targetMaxSide, foreground).also { imageCache.put(key, it) }
     }
 
-    private suspend fun decodeImageUncached(item: FileItem, targetMaxSide: Int): Bitmap = withContext(Dispatchers.IO) {
-        val file = preparePreviewFile(item, "image_preview")
+    private suspend fun decodeImageUncached(item: FileItem, targetMaxSide: Int, foreground: Boolean): Bitmap = withContext(Dispatchers.IO) {
+        val file = preparePreviewFile(item, "image_preview", foreground)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val source = ImageDecoder.createSource(file)
             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
@@ -1540,11 +1690,84 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun prepareImageUri(item: FileItem): Uri = withContext(Dispatchers.IO) {
         if (item.uri.scheme == "content" || item.uri.scheme == "file") return@withContext item.uri
-        val file = preparePreviewFile(item, "image_preview")
+        val file = preparePreviewFile(item, "image_preview", foreground = true)
         FileProvider.getUriForFile(getApplication(), "${getApplication<Application>().packageName}.files", file)
     }
 
-    private fun preparePreviewFile(item: FileItem, folderName: String): File {
+    /**
+     * Film albo nagranie z serwera jako plik lokalny dla odtwarzacza — ExoPlayer
+     * nie czyta adresów SMB/FTP/SFTP. Pobieranie pokazuje postęp i da się przerwać.
+     */
+    suspend fun prepareMedia(item: FileItem): Uri = withContext(Dispatchers.IO) {
+        if (item.uri.scheme == "file" || item.uri.scheme == "content") return@withContext item.uri
+        Uri.fromFile(preparePreviewFile(item, "media_preview", foreground = true))
+    }
+
+    /** Pobieranie widoczne na ekranie: nazwa, ile już jest i ile ma być (0 = nie wiadomo). */
+    data class Download(val id: Long, val uri: Uri, val name: String, val done: Long, val total: Long)
+
+    private val _downloads = MutableStateFlow<List<Download>>(emptyList())
+    val downloads: StateFlow<List<Download>> = _downloads.asStateFlow()
+    private val downloadJobs = java.util.concurrent.ConcurrentHashMap<Long, Job>()
+    private val downloadIds = java.util.concurrent.atomic.AtomicLong()
+
+    /** Przerywa pobieranie — korutyna, która na nie czeka, kończy się anulowaniem. */
+    fun cancelDownload(id: Long) {
+        downloadJobs.remove(id)?.cancel()
+        _downloads.update { list -> list.filterNot { it.id == id } }
+    }
+
+    /**
+     * Kopiuje plik do [target] przez plik `.part`. [foreground]: użytkownik czeka
+     * na ten plik, więc po krótkiej chwili pojawia się okno z postępem
+     * i przyciskiem „Przerwij” (szybkie pobrania nie mrugają oknem).
+     */
+    private suspend fun download(item: FileItem, target: File, foreground: Boolean) {
+        val context = kotlin.coroutines.coroutineContext
+        val temp = File(target.parentFile, "${target.name}.part")
+        runCatching { temp.delete() }
+        val id = downloadIds.incrementAndGet()
+        val startedAt = System.nanoTime()
+        var shown = false
+        var lastUpdate = 0L
+        if (foreground) context[Job]?.let { downloadJobs[id] = it }
+        try {
+            repo.openInput(item.uri).use { input ->
+                temp.outputStream().buffered(256 * 1024).use { output ->
+                    val buffer = ByteArray(128 * 1024)
+                    var done = 0L
+                    while (true) {
+                        context.ensureActive()
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        output.write(buffer, 0, read)
+                        done += read
+                        if (!foreground) continue
+                        val now = System.nanoTime()
+                        if (!shown && now - startedAt < DOWNLOAD_DIALOG_DELAY_NS) continue
+                        if (shown && now - lastUpdate < 100_000_000L) continue
+                        shown = true
+                        lastUpdate = now
+                        val entry = Download(id, item.uri, item.name, done, item.size.coerceAtLeast(0))
+                        _downloads.update { list -> list.filterNot { it.id == id } + entry }
+                    }
+                }
+            }
+            context.ensureActive()
+            if (!temp.renameTo(target)) {
+                temp.copyTo(target, overwrite = true)
+                temp.delete()
+            }
+        } catch (e: Throwable) {
+            runCatching { temp.delete() }
+            throw e
+        } finally {
+            downloadJobs.remove(id)
+            _downloads.update { list -> list.filterNot { it.id == id } }
+        }
+    }
+
+    private suspend fun preparePreviewFile(item: FileItem, folderName: String, foreground: Boolean = false): File {
         if (item.uri.scheme == "file") return File(item.uri.path ?: error(text(R.string.err_no_path)))
         val cache = File(getApplication<Application>().cacheDir, folderName).apply { mkdirs() }
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "preview.bin" }
@@ -1552,13 +1775,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val file = File(cache, "${signature}_$safe")
         val metadataKnown = item.size > 0 && item.lastModified > 0
         if (!metadataKnown || !file.exists() || file.length() == 0L || (item.size > 0 && file.length() != item.size)) {
-            val temp = File(cache, "${file.name}.part")
-            runCatching { temp.delete() }
-            repo.openInput(item.uri).use { input -> temp.outputStream().buffered().use { output -> input.copyTo(output) } }
-            if (!temp.renameTo(file)) {
-                temp.copyTo(file, overwrite = true)
-                temp.delete()
-            }
+            download(item, file, foreground)
             getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
         } else {
             // Czas użycia, nie pobrania — limit wieku liczy się od ostatniego otwarcia.
@@ -1569,7 +1786,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Plik lokalny dla przeglądarki PDF/CAD; z sieci pobierany do pamięci podręcznej. */
     suspend fun prepareDocument(item: FileItem): File = withContext(Dispatchers.IO) {
-        preparePreviewFile(item, "doc_preview")
+        preparePreviewFile(item, "doc_preview", foreground = true)
     }
 
     /**
@@ -1729,6 +1946,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        listingScope.cancel()
         val context = getApplication<Application>()
         when (val watcher = volumeWatcher) {
             is android.content.BroadcastReceiver -> runCatching { context.unregisterReceiver(watcher) }
@@ -2276,6 +2494,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private companion object {
+        /** Okno postępu pobierania dopiero po tym czasie — krótkie pobrania go nie pokazują. */
+        const val DOWNLOAD_DIALOG_DELAY_NS = 400_000_000L
         const val SEARCH_LIMIT = 500
         const val REMOTE_SEARCH_DIRS = 3_000
         const val REMOTE_SEARCH_MS = 90_000L

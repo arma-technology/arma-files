@@ -537,4 +537,8 @@ valides ülal ribal vahelehe.</string>
         <item quantity="one">%1$d vastuolu — vali versioon</item>
         <item quantity="other">%1$d vastuolu — vali versioonid</item>
     </plurals>
+    <string name="loading_folder">Kausta laadimine…</string>
+    <string name="common_stop">Katkesta</string>
+    <string name="download_title">Allalaadimine</string>
+    <string name="download_progress">%1$s / %2$s</string>
 </resources>

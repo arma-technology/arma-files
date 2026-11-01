@@ -131,6 +131,13 @@ class OrbitController {
     var actions by mutableStateOf(OrbitAction.entries.toList())
         private set
 
+    /**
+     * Ile plików niesie gest: 1 dla zwykłego przytrzymania, w trybie zaznaczania
+     * całe zaznaczenie — wtedy akcje i szuflada dotyczą wszystkich naraz.
+     */
+    var groupSize by mutableStateOf(1)
+        private set
+
     // Ustawiane przez nakładkę: promień koła i strefa szuflady w pikselach okna.
     internal var radius = 0f
     internal var deadZone = 0f
@@ -138,10 +145,16 @@ class OrbitController {
     internal var screen = Offset.Zero
     internal var margin = 0f
 
-    fun begin(item: FileItem, at: Offset, onScreen: Offset? = null) {
+    fun begin(item: FileItem, at: Offset, onScreen: Offset? = null, group: Int = 1) {
         this.item = item
         startOnScreen = onScreen
-        actions = if (item.isDirectory) OrbitAction.entries.filterNot { it == OrbitAction.SHARE } else OrbitAction.entries.toList()
+        groupSize = group
+        actions = when {
+            // Grupa: tylko to, co ma sens dla wielu plików naraz.
+            group > 1 -> listOf(OrbitAction.SHARE, OrbitAction.SHELF, OrbitAction.DELETE)
+            item.isDirectory -> OrbitAction.entries.filterNot { it == OrbitAction.SHARE }
+            else -> OrbitAction.entries.toList()
+        }
         // Koło całe na ekranie, także przy krawędzi; palec może być obok środka.
         center = Offset(
             at.x.coerceIn(margin, (screen.x - margin).coerceAtLeast(margin)),
@@ -212,12 +225,16 @@ fun Modifier.orbitGestures(
     selectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onResult: (OrbitResult) -> Unit
+    onResult: (OrbitResult) -> Unit,
+    /** Liczba plików niesionych w trybie zaznaczania, gdy przytrzymano [item]. */
+    groupSize: (FileItem) -> Int = { 1 }
 ): Modifier = composed {
     val haptics = LocalHapticFeedback.current
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     // Podświetlenie pod palcem jak przy zwykłym kliknięciu.
     val interactions = remember { MutableInteractionSource() }
+    // Najnowsza wersja bez restartu gestu przy każdej zmianie zaznaczenia.
+    val currentGroupSize by androidx.compose.runtime.rememberUpdatedState(groupSize)
     this
         .onGloballyPositioned { coordinates = it }
         .indication(interactions, ripple())
@@ -252,13 +269,13 @@ fun Modifier.orbitGestures(
                     TAP_CANCEL -> Unit
                     else -> {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (selectionMode) {
-                            onLongClick()
-                            return@awaitEachGesture
-                        }
+                        // W trybie zaznaczania przytrzymanie niesie całe zaznaczenie (z tym
+                        // plikiem): przeciągnięcie na dół wrzuca wszystko do szuflady.
+                        // Puszczenie w miejscu zaznacza albo odznacza plik, jak dotąd.
+                        val group = if (selectionMode) currentGroupSize(item) else 1
                         val origin = coordinates
                         val toWindow = { local: Offset -> origin?.localToWindow(local) ?: local }
-                        controller.begin(item, toWindow(down.position), origin?.takeIf { it.isAttached }?.localToScreen(down.position))
+                        controller.begin(item, toWindow(down.position), origin?.takeIf { it.isAttached }?.localToScreen(down.position), group)
                         while (true) {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id }
@@ -269,7 +286,11 @@ fun Modifier.orbitGestures(
                             // Nie changedToUp(): ten pomija zdarzenia już skonsumowane, a ruch
                             // orbity konsumujemy sami — podniesienie palca by przepadło.
                             if (!change.pressed) {
-                                controller.end()?.let(onResult)
+                                when (val result = controller.end()) {
+                                    is OrbitResult.Peek -> if (selectionMode) onLongClick() else onResult(result)
+                                    null -> Unit
+                                    else -> onResult(result)
+                                }
                                 break
                             }
                         }
@@ -348,7 +369,9 @@ fun OrbitOverlay(controller: OrbitController) {
         }
         // Podpis: nazwa pliku albo wybranej akcji, nad kołem. Przy wygaszaniu pliku
         // już nie ma — zostaje ostatnia nazwa, a nie pusta pigułka.
-        val lastName = remember { arrayOf("") }.also { if (item != null) it[0] = item.name }
+        val group = controller.groupSize
+        val groupLabel = if (group > 1) androidx.compose.ui.res.pluralStringResource(R.plurals.n_items, group, group) else null
+        val lastName = remember { arrayOf("") }.also { if (item != null) it[0] = groupLabel ?: item.name }
         val label = when {
             controller.overShelf -> stringResource(R.string.shelf_add)
             controller.selected != null -> controller.selected!!.label()

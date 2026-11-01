@@ -215,6 +215,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val error by vm.error.collectAsStateWithLifecycle()
     val notice by vm.notice.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val loading by vm.loading.collectAsStateWithLifecycle()
+    val downloads by vm.downloads.collectAsStateWithLifecycle()
     val clipboard by vm.clipboard.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val currentSource by vm.currentSource.collectAsStateWithLifecycle()
@@ -468,17 +470,21 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             }
             is OrbitResult.Action -> {
                 val item = result.item
+                // W trybie zaznaczania gest niesie całe zaznaczenie razem z przytrzymanym plikiem.
+                val group = if (selectionMode) (selectedItems + item).distinctBy { it.uri } else listOf(item)
                 when (result.action) {
-                    OrbitAction.SHARE -> appScope.launch { shareItems(context, listOf(item), vm) }
-                    OrbitAction.SHELF -> vm.addToShelf(listOf(item))
+                    OrbitAction.SHARE -> appScope.launch { shareItems(context, group, vm) }
+                    OrbitAction.SHELF -> vm.addToShelf(group)
                     OrbitAction.RENAME -> renameItem = item
-                    OrbitAction.DELETE -> deleteItems = listOf(item)
+                    OrbitAction.DELETE -> deleteItems = group
                     OrbitAction.SELECT -> selectedUris = toggleSelection(selectedUris, item)
                     OrbitAction.DETAILS -> details = item
                 }
+                if (selectionMode && result.action in setOf(OrbitAction.SHARE, OrbitAction.SHELF, OrbitAction.DELETE)) selectedUris = emptySet()
             }
         }
     }
+    val groupSize: (FileItem) -> Int = { item -> (selectedUris + item.uri.toString()).size }
     val computerHome = tab == Tab.FILES && currentDir == null
 
     BackHandler(
@@ -511,70 +517,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            // Przy chowaniu pasek jeszcze chwilę widać — liczba ma zostać ostatnią niezerową.
-            val shownCount = remember { intArrayOf(0) }.also { if (selectedItems.isNotEmpty()) it[0] = selectedItems.size }
-            AnimatedVisibility(
-                selectionMode,
-                enter = slideInVertically { -it } + fadeIn(),
-                exit = slideOutVertically { -it } + fadeOut()
-            ) {
-                MultiSelectionTopBar(
-                    count = shownCount[0],
-                    canRename = selectedItems.size == 1,
-                    canExtract = inArchive || (selectedItems.size == 1 && !selectedItems.first().isDirectory &&
-                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name)),
-                    canBrowse = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
-                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name),
-                    canExtractToOther = dualPane,
-                    readOnly = inArchive,
-                    canOffline = selectedItems.isNotEmpty() && selectedItems.all { vm.isRemote(it.uri) },
-                    allOffline = selectedItems.isNotEmpty() && selectedItems.all { item -> offlineEntries.any { it.source == item.uri.toString() } },
-                    onOffline = { remove ->
-                        if (remove) vm.removeOffline(selectedItems) else {
-                            askForNotifications()
-                            vm.makeOffline(selectedItems)
-                        }
-                        selectedUris = emptySet()
-                    },
-                    onBrowse = { selectedItems.firstOrNull()?.let(vm::openArchive); selectedUris = emptySet() },
-                    onExtractToOther = {
-                        if (inArchive) vm.extractItems(selectedItems, toOtherPane = true)
-                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it, toOtherPane = true) }
-                        selectedUris = emptySet()
-                    },
-                    onClose = { selectedUris = emptySet() },
-                    onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
-                    onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
-                    onShelf = { vm.addToShelf(selectedItems); selectedUris = emptySet() },
-                    onCopy = {
-                        vm.setClipboard(selectedItems, cut = false)
-                        selectedUris = emptySet(); tab = Tab.FILES
-                    },
-                    onCut = {
-                        vm.setClipboard(selectedItems, cut = true)
-                        selectedUris = emptySet(); tab = Tab.FILES
-                    },
-                    onArchive = { archiveItems = selectedItems },
-                    onExtract = {
-                        if (inArchive) vm.extractItems(selectedItems)
-                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it) }
-                        selectedUris = emptySet()
-                    },
-                    onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
-                    onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
-                    onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
-                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() },
-                    canPin = selectedItems.size == 1 && selectedItems.first().isDirectory,
-                    onPin = {
-                        selectedItems.firstOrNull()?.let(vm::pinFolder); selectedUris = emptySet()
-                    },
-                    onOpenInNewTab = {
-                        selectedItems.firstOrNull()?.let(vm::openInNewTab); selectedUris = emptySet()
-                    }
-                )
-            }
-        },
         bottomBar = {
             Column {
                 OperationBar(
@@ -642,9 +584,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             }
         }
     ) { padding ->
-        Row(Modifier.fillMaxSize().padding(padding)) {
+        // Pasek zaznaczenia nakłada się na górę ekranu zamiast stać nad treścią:
+        // jako topBar przesuwał listę w dół przy każdym zaznaczeniu pierwszego pliku.
+        Box(Modifier.fillMaxSize().padding(padding)) {
+        Row(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxHeight()) {
-        if (tab == Tab.FILES && !selectionMode) {
+        if (tab == Tab.FILES) {
             // Dwa panele mają sens dopiero wtedy, gdy każdy dostanie realną
             // szerokość — na wąskim telefonie byłyby nieczytelne.
             val canSplit = LocalConfiguration.current.screenWidthDp >= 600
@@ -940,7 +885,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             onClick = { onItemClick(item) },
                                             onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
                                             onMenu = { selectedUris = setOf(item.uri.toString()) },
-                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
+                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit, groupSize)
                                         )
                                         }
                                     }
@@ -965,7 +910,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                             onClick = { onItemClick(item) },
                                             onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
                                             columns = gridColumns,
-                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit)
+                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit, groupSize)
                                         )
                                         }
                                     }
@@ -977,19 +922,24 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 }
             }
 
-            if (busy) {
+            if (busy || loading) {
+                // Nakładka nie łapie dotyku: w trakcie wczytywania folderu można
+                // stuknąć inny folder albo Wstecz — to przerywa wczytywanie.
                 Box(
                     Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = .18f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(shape = RoundedCornerShape(24.dp), tonalElevation = 6.dp) {
                         Row(
-                            Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
+                            Modifier.padding(start = 24.dp, end = if (loading && !busy) 12.dp else 24.dp, top = 12.dp, bottom = 12.dp).heightIn(min = 48.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp)
-                            Text(stringResource(R.string.common_processing), fontWeight = FontWeight.Medium)
+                            Text(stringResource(if (loading && !busy) R.string.loading_folder else R.string.common_processing), fontWeight = FontWeight.Medium)
+                            if (loading && !busy) {
+                                TextButton(onClick = vm::cancelLoading) { Text(stringResource(R.string.common_stop)) }
+                            }
                         }
                     }
                 }
@@ -1017,6 +967,71 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                 modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
+        }
+        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+            // Przy chowaniu pasek jeszcze chwilę widać — liczba ma zostać ostatnią niezerową.
+            val shownCount = remember { intArrayOf(0) }.also { if (selectedItems.isNotEmpty()) it[0] = selectedItems.size }
+            AnimatedVisibility(
+                selectionMode,
+                enter = slideInVertically { -it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut()
+            ) {
+                MultiSelectionTopBar(
+                    count = shownCount[0],
+                    canRename = selectedItems.size == 1,
+                    canExtract = inArchive || (selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name)),
+                    canBrowse = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name),
+                    canExtractToOther = dualPane,
+                    readOnly = inArchive,
+                    canOffline = selectedItems.isNotEmpty() && selectedItems.all { vm.isRemote(it.uri) },
+                    allOffline = selectedItems.isNotEmpty() && selectedItems.all { item -> offlineEntries.any { it.source == item.uri.toString() } },
+                    onOffline = { remove ->
+                        if (remove) vm.removeOffline(selectedItems) else {
+                            askForNotifications()
+                            vm.makeOffline(selectedItems)
+                        }
+                        selectedUris = emptySet()
+                    },
+                    onBrowse = { selectedItems.firstOrNull()?.let(vm::openArchive); selectedUris = emptySet() },
+                    onExtractToOther = {
+                        if (inArchive) vm.extractItems(selectedItems, toOtherPane = true)
+                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it, toOtherPane = true) }
+                        selectedUris = emptySet()
+                    },
+                    onClose = { selectedUris = emptySet() },
+                    onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
+                    onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
+                    onShelf = { vm.addToShelf(selectedItems); selectedUris = emptySet() },
+                    onCopy = {
+                        vm.setClipboard(selectedItems, cut = false)
+                        selectedUris = emptySet(); tab = Tab.FILES
+                    },
+                    onCut = {
+                        vm.setClipboard(selectedItems, cut = true)
+                        selectedUris = emptySet(); tab = Tab.FILES
+                    },
+                    onArchive = { archiveItems = selectedItems },
+                    onExtract = {
+                        if (inArchive) vm.extractItems(selectedItems)
+                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it) }
+                        selectedUris = emptySet()
+                    },
+                    onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
+                    onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
+                    onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
+                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() },
+                    canPin = selectedItems.size == 1 && selectedItems.first().isDirectory,
+                    onPin = {
+                        selectedItems.firstOrNull()?.let(vm::pinFolder); selectedUris = emptySet()
+                    },
+                    onOpenInNewTab = {
+                        selectedItems.firstOrNull()?.let(vm::openInNewTab); selectedUris = emptySet()
+                    }
+                )
+            }
+                }
         }
     }
 
@@ -1073,8 +1088,31 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             )
             return@let
         }
+        // Film z serwera: najpierw pobranie do pamięci podręcznej (okno z postępem
+        // i „Przerwij”), potem ten sam odtwarzacz co dla filmów z telefonu.
+        if (item.mimeType.startsWith("video/") && item.uri.scheme != "file" && item.uri.scheme != "content") {
+            var local by remember(item.uri) { mutableStateOf<Uri?>(null) }
+            LaunchedEffect(item.uri) {
+                try {
+                    local = vm.prepareMedia(item)
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    vm.showError(e)
+                    preview = null
+                }
+            }
+            local?.let { uri ->
+                pl.arma.viewer.video.FullscreenVideoPlayer(
+                    playlist = listOf(pl.arma.viewer.video.VideoClip(uri, item.name, "${item.uri}|${item.size}")),
+                    startIndex = 0,
+                    onDismiss = { preview = null }
+                )
+            }
+            return@let
+        }
         // Film z telefonu: od razu odtwarzacz na całym ekranie, a pozostałe filmy
-        // z widocznej listy są kolejką. Filmy z serwerów — na razie jak dotąd.
+        // z widocznej listy są kolejką.
         if (item.mimeType.startsWith("video/") && (item.uri.scheme == "file" || item.uri.scheme == "content")) {
             val videos = visibleFiles.filter { it.mimeType.startsWith("video/") && (it.uri.scheme == "file" || it.uri.scheme == "content") }
                 .ifEmpty { listOf(item) }
@@ -1108,6 +1146,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             // Rodzeństwo bierzemy z aktualnie widocznej listy, więc przewijanie
             // respektuje wybrane sortowanie, filtr i wyniki wyszukiwania.
             siblings = visibleFiles.filter { it.mimeType.startsWith("image/") },
+            // Nagrania z widocznej listy grają po kolei, jak filmy.
+            audioSiblings = visibleFiles.filter { it.mimeType.startsWith("audio/") },
             onNavigate = { preview = it; vm.addRecent(it) },
             onDismiss = { preview = null },
             onFavorite = { vm.toggleFavorite(item) },
@@ -1118,6 +1158,15 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     }
 
     details?.let { item -> DetailsSheet(item = item, vm = vm, onDismiss = { details = null }) }
+
+    // Pobieranie pliku z sieci, na który użytkownik czeka (podgląd, „Otwórz w…”).
+    // Po złożeniu podglądu, żeby okno stało nad odtwarzaczem i przeglądarką.
+    downloads.lastOrNull()?.let { download ->
+        DownloadDialog(download) {
+            vm.cancelDownload(download.id)
+            if (preview?.uri == download.uri) preview = null
+        }
+    }
 
     error?.let {
         AlertDialog(
@@ -2619,6 +2668,11 @@ private fun MultiSelectionTopBar(
 ) {
     var more by remember { mutableStateOf(false) }
     TopAppBar(
+        // Pasek leży wewnątrz treści, pod paskiem stanu — bez własnego odstępu na niego.
+        windowInsets = WindowInsets(0, 0, 0, 0),
+        // Zakrywa pasek kart i cały rząd przycisków folderu — inaczej spod paska
+        // wystawały przycięte ikony.
+        expandedHeight = 84.dp,
         title = { Text(stringResource(R.string.selected_count, count), fontWeight = FontWeight.SemiBold) },
         navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close_app)) } },
         actions = {
@@ -2665,6 +2719,7 @@ private fun PreviewSheet(
     onNavigate: (FileItem) -> Unit,
     onDismiss: () -> Unit,
     onFavorite: () -> Unit,
+    audioSiblings: List<FileItem> = emptyList(),
     onDetails: () -> Unit,
     onShare: () -> Unit,
     onOpenExternal: () -> Unit,
@@ -2742,7 +2797,7 @@ private fun PreviewSheet(
                         ImageViewer(
                             key = item.uri to item.lastModified,
                             name = item.name,
-                            load = { vm.decodeImage(item, targetMaxSide = 4096) },
+                            load = { vm.decodeImage(item, targetMaxSide = 4096, foreground = true) },
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             onNavigate = step,
                             canNavigate = siblings.size > 1,
@@ -2750,6 +2805,9 @@ private fun PreviewSheet(
                             hasNeighbor = { delta -> position >= 0 && siblings.getOrNull(position + delta) != null }
                         )
                     }
+                }
+                item.mimeType.startsWith("audio/") -> {
+                    AudioPreview(item, vm, audioSiblings, onDismiss, Modifier.fillMaxWidth().weight(1f))
                 }
                 // Arkusz (xlsx, CSV) jako tabela. CSV wciąż da się edytować jako tekst
                 // przez „Otwórz w innej aplikacji” — tu tylko do oglądania.
@@ -2820,6 +2878,71 @@ private fun PreviewSheet(
     }
 }
 
+/**
+ * Nagranie w podglądzie. Z telefonu gra od razu, a pozostałe nagrania folderu
+ * są kolejką; z serwera najpierw pobiera się do pamięci podręcznej (z postępem).
+ */
+@Composable
+private fun AudioPreview(item: FileItem, vm: FileManagerViewModel, siblings: List<FileItem>, onDismiss: () -> Unit, modifier: Modifier) {
+    val local = item.uri.scheme == "file" || item.uri.scheme == "content"
+    if (local) {
+        val tracks = siblings.filter { it.uri.scheme == "file" || it.uri.scheme == "content" }.ifEmpty { listOf(item) }
+        pl.arma.viewer.audio.AudioPlayer(
+            playlist = tracks.map { pl.arma.viewer.audio.AudioTrack(it.uri, it.name) },
+            startIndex = tracks.indexOfFirst { it.uri == item.uri }.coerceAtLeast(0),
+            modifier = modifier,
+            onCurrentChanged = { index -> tracks.getOrNull(index)?.let(vm::addRecent) }
+        )
+        return
+    }
+    var uri by remember(item.uri) { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(item.uri) {
+        try {
+            uri = vm.prepareMedia(item)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            vm.showError(e)
+            onDismiss()
+        }
+    }
+    val ready = uri
+    if (ready == null) {
+        Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    } else {
+        pl.arma.viewer.audio.AudioPlayer(listOf(pl.arma.viewer.audio.AudioTrack(ready, item.name)), 0, modifier)
+    }
+}
+
+@Composable
+private fun DownloadDialog(download: FileManagerViewModel.Download, onCancel: () -> Unit) {
+    AlertDialog(
+        // Zamknięcie okna nie przerywa pobierania po cichu — tylko przycisk.
+        onDismissRequest = {},
+        properties = DialogProperties(dismissOnClickOutside = false),
+        icon = { Icon(Icons.Default.CloudDownload, null) },
+        title = { Text(stringResource(R.string.download_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(download.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
+                if (download.total > 0) {
+                    val fraction = (download.done.toFloat() / download.total).coerceIn(0f, 1f)
+                    LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                    Text(
+                        stringResource(R.string.download_progress, formatSize(download.done), formatSize(download.total)) + " · ${(fraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(formatSize(download.done), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.common_stop)) } }
+    )
+}
+
 @Composable
 private fun LandscapeImageViewer(
     item: FileItem,
@@ -2844,7 +2967,7 @@ private fun LandscapeImageViewer(
     var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
     LaunchedEffect(item.uri, item.lastModified) {
         error = null
-        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096) }
+        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096, foreground = true) }
             .onFailure { error = it.message ?: text(R.string.err_image_open) }
             .getOrNull()
     }

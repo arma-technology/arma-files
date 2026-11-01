@@ -537,4 +537,8 @@ duke zgjedhur një skedë në shiritin sipër.</string>
         <item quantity="one">%1$d mospërputhje — zgjidhni versionin</item>
         <item quantity="other">%1$d mospërputhje — zgjidhni versionet</item>
     </plurals>
+    <string name="loading_folder">Po ngarkohet dosja…</string>
+    <string name="common_stop">Ndalo</string>
+    <string name="download_title">Po shkarkohet</string>
+    <string name="download_progress">%1$s nga %2$s</string>
 </resources>

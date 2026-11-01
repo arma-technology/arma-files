@@ -154,4 +154,11 @@
         <item quantity="many">%1$d řádku</item>
         <item quantity="other">%1$d řádků</item>
     </plurals>
+    <string name="viewer_audio_play">Přehrát</string>
+    <string name="viewer_audio_pause">Pozastavit</string>
+    <string name="viewer_audio_next">Další</string>
+    <string name="viewer_audio_previous">Předchozí</string>
+    <string name="viewer_audio_error">Nahrávku nelze přehrát (%1$s)</string>
+    <string name="viewer_text_formatted">Formátované zobrazení</string>
+    <string name="viewer_text_source">Zdroj</string>
 </resources>

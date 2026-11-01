@@ -220,6 +220,7 @@ private fun PeekBody(item: FileItem, vm: FileManagerViewModel, onOpenChild: (Fil
         item.mimeType.startsWith("audio/") -> AudioPeek(item, local)
         ArchiveFormats.canBrowse(item.name) -> ArchivePeek(item, vm)
         local && (item.mimeType == "application/pdf" || ext == "pdf") -> PdfPageThumb(item, Modifier.fillMaxWidth().aspectRatio(.75f)) { BigIcon(item) }
+        local && ext in setOf("md", "markdown", "mdown", "mkd") -> MarkdownPeek(item)
         local && ext in Syntax.CODE_EXTENSIONS -> TextPeek(item)
         else -> BigIcon(item)
     }
@@ -566,6 +567,36 @@ private fun FolderPeekGrid(item: FileItem, vm: FileManagerViewModel, onOpenChild
                 }
             }
         }
+    }
+}
+
+/** Początek pliku Markdown, sformatowany jak w podglądzie. */
+@Composable
+private fun MarkdownPeek(item: FileItem) {
+    val context = LocalContext.current
+    var blocks by remember(item.uri) { mutableStateOf<List<pl.arma.viewer.text.Markdown.Block>?>(null) }
+    LaunchedEffect(item.uri) {
+        blocks = withContext(Dispatchers.IO) {
+            runCatching {
+                LocalFiles.open(context, item.uri)?.use { input ->
+                    val bytes = ByteArray(16_000)
+                    var read = 0
+                    while (read < bytes.size) {
+                        val n = input.read(bytes, read, bytes.size - read)
+                        if (n < 0) break
+                        read += n
+                    }
+                    // Ucięty w połowie wiersz zostawiamy — reszta i tak jest w pełnym podglądzie.
+                    pl.arma.viewer.text.Markdown.parse(String(bytes, 0, read, Charsets.UTF_8).lineSequence().take(120).joinToString("\n"))
+                }
+            }.getOrNull()
+        }
+    }
+    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+        pl.arma.viewer.text.MarkdownColumn(
+            blocks.orEmpty(),
+            Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 380.dp).verticalScroll(rememberScrollState()).padding(12.dp)
+        )
     }
 }
 

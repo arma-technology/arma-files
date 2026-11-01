@@ -154,4 +154,11 @@
         <item quantity="many">%1$d радкоў</item>
         <item quantity="other">%1$d радка</item>
     </plurals>
+    <string name="viewer_audio_play">Прайграць</string>
+    <string name="viewer_audio_pause">Паўза</string>
+    <string name="viewer_audio_next">Наступны</string>
+    <string name="viewer_audio_previous">Папярэдні</string>
+    <string name="viewer_audio_error">Немагчыма прайграць запіс (%1$s)</string>
+    <string name="viewer_text_formatted">Фарматаваны выгляд</string>
+    <string name="viewer_text_source">Зыходны тэкст</string>
 </resources>

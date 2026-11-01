@@ -551,4 +551,8 @@ z izbiro zavihka v vrstici zgoraj.</string>
         <item quantity="few">%1$d neskladja — izberite različice</item>
         <item quantity="other">%1$d neskladij — izberite različice</item>
     </plurals>
+    <string name="loading_folder">Nalaganje mape…</string>
+    <string name="common_stop">Prekini</string>
+    <string name="download_title">Prenašanje</string>
+    <string name="download_progress">%1$s od %2$s</string>
 </resources>

@@ -154,4 +154,11 @@
         <item quantity="many">%1$d linii</item>
         <item quantity="other">%1$d linii</item>
     </plurals>
+    <string name="viewer_audio_play">Odtwórz</string>
+    <string name="viewer_audio_pause">Wstrzymaj</string>
+    <string name="viewer_audio_next">Następne</string>
+    <string name="viewer_audio_previous">Poprzednie</string>
+    <string name="viewer_audio_error">Nie można odtworzyć nagrania (%1$s)</string>
+    <string name="viewer_text_formatted">Widok sformatowany</string>
+    <string name="viewer_text_source">Źródło</string>
 </resources>

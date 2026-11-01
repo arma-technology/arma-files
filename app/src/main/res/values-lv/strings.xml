@@ -544,4 +544,8 @@ izvēloties cilni joslā augšā.</string>
         <item quantity="one">%1$d neatbilstība — izvēlieties versiju</item>
         <item quantity="other">%1$d neatbilstības — izvēlieties versijas</item>
     </plurals>
+    <string name="loading_folder">Ielādē mapi…</string>
+    <string name="common_stop">Pārtraukt</string>
+    <string name="download_title">Lejupielāde</string>
+    <string name="download_progress">%1$s no %2$s</string>
 </resources>

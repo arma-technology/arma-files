@@ -537,4 +537,8 @@ indem du oben einen Tab auswählst.</string>
         <item quantity="one">%1$d Konflikt — Version wählen</item>
         <item quantity="other">%1$d Konflikte — Versionen wählen</item>
     </plurals>
+    <string name="loading_folder">Ordner wird geladen…</string>
+    <string name="common_stop">Abbrechen</string>
+    <string name="download_title">Wird heruntergeladen</string>
+    <string name="download_progress">%1$s von %2$s</string>
 </resources>

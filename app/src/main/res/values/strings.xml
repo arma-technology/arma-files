@@ -538,4 +538,8 @@ by picking a tab in the bar above.</string>
         <item quantity="one">%1$d conflict — choose a version</item>
         <item quantity="other">%1$d conflicts — choose versions</item>
     </plurals>
+    <string name="loading_folder">Loading folder…</string>
+    <string name="common_stop">Stop</string>
+    <string name="download_title">Downloading</string>
+    <string name="download_progress">%1$s of %2$s</string>
 </resources>

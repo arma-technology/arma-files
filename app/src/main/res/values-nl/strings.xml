@@ -537,4 +537,8 @@ door bovenaan een tabblad te kiezen.</string>
         <item quantity="one">%1$d conflict — kies een versie</item>
         <item quantity="other">%1$d conflicten — kies versies</item>
     </plurals>
+    <string name="loading_folder">Map laden…</string>
+    <string name="common_stop">Stoppen</string>
+    <string name="download_title">Downloaden</string>
+    <string name="download_progress">%1$s van %2$s</string>
 </resources>

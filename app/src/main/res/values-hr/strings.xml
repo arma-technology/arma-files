@@ -544,4 +544,8 @@ odabirom kartice na traci iznad.</string>
         <item quantity="few">%1$d neusklađenosti — odaberite verzije</item>
         <item quantity="other">%1$d neusklađenosti — odaberite verzije</item>
     </plurals>
+    <string name="loading_folder">Učitavanje mape…</string>
+    <string name="common_stop">Prekini</string>
+    <string name="download_title">Preuzimanje</string>
+    <string name="download_progress">%1$s od %2$s</string>
 </resources>

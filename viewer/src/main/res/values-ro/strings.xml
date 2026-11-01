@@ -153,4 +153,11 @@
         <item quantity="few">%1$d rânduri</item>
         <item quantity="other">%1$d de rânduri</item>
     </plurals>
+    <string name="viewer_audio_play">Redă</string>
+    <string name="viewer_audio_pause">Pauză</string>
+    <string name="viewer_audio_next">Următoarea</string>
+    <string name="viewer_audio_previous">Anterioara</string>
+    <string name="viewer_audio_error">Înregistrarea nu poate fi redată (%1$s)</string>
+    <string name="viewer_text_formatted">Vizualizare formatată</string>
+    <string name="viewer_text_source">Sursă</string>
 </resources>

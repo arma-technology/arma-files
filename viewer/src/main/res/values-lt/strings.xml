@@ -154,4 +154,11 @@
         <item quantity="many">%1$d eilutės</item>
         <item quantity="other">%1$d eilučių</item>
     </plurals>
+    <string name="viewer_audio_play">Groti</string>
+    <string name="viewer_audio_pause">Pristabdyti</string>
+    <string name="viewer_audio_next">Kitas</string>
+    <string name="viewer_audio_previous">Ankstesnis</string>
+    <string name="viewer_audio_error">Įrašo nepavyksta paleisti (%1$s)</string>
+    <string name="viewer_text_formatted">Suformatuotas rodinys</string>
+    <string name="viewer_text_source">Šaltinis</string>
 </resources>

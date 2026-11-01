@@ -551,4 +551,8 @@
         <item quantity="many">%1$d разыходжанняў — выберыце версіі</item>
         <item quantity="other">%1$d разыходжання — выберыце версіі</item>
     </plurals>
+    <string name="loading_folder">Загрузка папкі…</string>
+    <string name="common_stop">Перапыніць</string>
+    <string name="download_title">Спампоўванне</string>
+    <string name="download_progress">%1$s з %2$s</string>
 </resources>

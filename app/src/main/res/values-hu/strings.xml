@@ -537,4 +537,8 @@ a fenti sávon egy lap kiválasztásával.</string>
         <item quantity="one">%1$d ütközés — válasszon verziót</item>
         <item quantity="other">%1$d ütközés — válasszon verziókat</item>
     </plurals>
+    <string name="loading_folder">Mappa betöltése…</string>
+    <string name="common_stop">Megszakítás</string>
+    <string name="download_title">Letöltés</string>
+    <string name="download_progress">%1$s / %2$s</string>
 </resources>

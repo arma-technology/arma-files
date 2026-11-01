@@ -551,4 +551,8 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
         <item quantity="many">%1$d nesutapimo — pasirinkite versijas</item>
         <item quantity="other">%1$d nesutapimų — pasirinkite versijas</item>
     </plurals>
+    <string name="loading_folder">Įkeliamas aplankas…</string>
+    <string name="common_stop">Nutraukti</string>
+    <string name="download_title">Atsisiunčiama</string>
+    <string name="download_progress">%1$s iš %2$s</string>
 </resources>

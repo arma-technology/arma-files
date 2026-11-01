@@ -551,4 +551,8 @@
         <item quantity="many">%1$d розбіжностей — виберіть версії</item>
         <item quantity="other">%1$d розбіжності — виберіть версії</item>
     </plurals>
+    <string name="loading_folder">Завантаження теки…</string>
+    <string name="common_stop">Перервати</string>
+    <string name="download_title">Завантаження файлу</string>
+    <string name="download_progress">%1$s з %2$s</string>
 </resources>

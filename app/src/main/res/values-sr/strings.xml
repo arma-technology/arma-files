@@ -544,4 +544,8 @@
         <item quantity="few">%1$d неусклађености — изаберите верзије</item>
         <item quantity="other">%1$d неусклађености — изаберите верзије</item>
     </plurals>
+    <string name="loading_folder">Учитавање фасцикле…</string>
+    <string name="common_stop">Прекини</string>
+    <string name="download_title">Преузимање</string>
+    <string name="download_progress">%1$s од %2$s</string>
 </resources>

@@ -152,4 +152,11 @@
         <item quantity="one">%1$d line</item>
         <item quantity="other">%1$d lines</item>
     </plurals>
+    <string name="viewer_audio_play">Play</string>
+    <string name="viewer_audio_pause">Pause</string>
+    <string name="viewer_audio_next">Next</string>
+    <string name="viewer_audio_previous">Previous</string>
+    <string name="viewer_audio_error">Cannot play this recording (%1$s)</string>
+    <string name="viewer_text_formatted">Formatted view</string>
+    <string name="viewer_text_source">Source</string>
 </resources>

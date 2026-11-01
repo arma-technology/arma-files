@@ -152,4 +152,11 @@
         <item quantity="one">%1$d rida</item>
         <item quantity="other">%1$d rida</item>
     </plurals>
+    <string name="viewer_audio_play">Esita</string>
+    <string name="viewer_audio_pause">Paus</string>
+    <string name="viewer_audio_next">Järgmine</string>
+    <string name="viewer_audio_previous">Eelmine</string>
+    <string name="viewer_audio_error">Salvestist ei saa esitada (%1$s)</string>
+    <string name="viewer_text_formatted">Vormindatud vaade</string>
+    <string name="viewer_text_source">Lähtetekst</string>
 </resources>

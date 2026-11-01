@@ -153,4 +153,11 @@
         <item quantity="one">%1$d rinda</item>
         <item quantity="other">%1$d rindas</item>
     </plurals>
+    <string name="viewer_audio_play">Atskaņot</string>
+    <string name="viewer_audio_pause">Pauze</string>
+    <string name="viewer_audio_next">Nākamais</string>
+    <string name="viewer_audio_previous">Iepriekšējais</string>
+    <string name="viewer_audio_error">Ierakstu nevar atskaņot (%1$s)</string>
+    <string name="viewer_text_formatted">Formatēts skats</string>
+    <string name="viewer_text_source">Avots</string>
 </resources>

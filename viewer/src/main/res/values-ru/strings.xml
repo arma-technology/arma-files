@@ -154,4 +154,11 @@
         <item quantity="many">%1$d строк</item>
         <item quantity="other">%1$d строки</item>
     </plurals>
+    <string name="viewer_audio_play">Воспроизвести</string>
+    <string name="viewer_audio_pause">Пауза</string>
+    <string name="viewer_audio_next">Следующая</string>
+    <string name="viewer_audio_previous">Предыдущая</string>
+    <string name="viewer_audio_error">Не удаётся воспроизвести запись (%1$s)</string>
+    <string name="viewer_text_formatted">Форматированный вид</string>
+    <string name="viewer_text_source">Исходный текст</string>
 </resources>
