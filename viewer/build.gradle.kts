@@ -45,6 +45,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui")
+    // BackHandler: Wstecz kończy pomiar albo wyszukiwanie, zanim zamknie dokument.
+    implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.core:core-ktx:1.16.0")
     // Obrazy SVG w przeglądarce obrazów.
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")

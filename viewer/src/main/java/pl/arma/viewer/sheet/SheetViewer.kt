@@ -195,6 +195,20 @@ private fun DocumentView(
     val density = LocalDensity.current
     val context = LocalContext.current
     val pageCount = document.pageCount
+    // Krzyżyk i Wstecz wychodzą o jeden poziom: najpierw z pomiaru, komentowania
+    // albo wyszukiwania, dopiero potem z dokumentu. W pełnym ekranie (w poziomie)
+    // krzyżyk zamknięcia stał na pasku obok pomiaru i zamykał cały plik.
+    val inTool = state.placement != Placement.NONE || state.searchOpen
+    fun leaveTool() {
+        if (state.placement != Placement.NONE) {
+            state.placement = Placement.NONE
+            state.firstPoint = null
+        } else {
+            state.searchOpen = false
+            state.query = ""
+        }
+    }
+    androidx.activity.compose.BackHandler(enabled = inTool) { leaveTool() }
     val revision by document.revision.collectAsState()
     val paper by document.paperColor.collectAsState()
     // Rysunek CAD nie ma kartki: tło ma kolor arkusza, rysunek zajmuje cały
@@ -541,7 +555,7 @@ private fun DocumentView(
             onZoomIn = { zoomBy(ZOOM_STEP) },
             onFit = ::fit,
             onSave = save,
-            onClose = onClose.takeIf { immersive },
+            onClose = onClose?.takeIf { immersive }?.let { close -> { if (inTool) leaveTool() else close() } },
             title = title,
             actions = actions
         )
