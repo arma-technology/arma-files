@@ -17,7 +17,7 @@ fun local(name: String): String? =
 // Adres kodu źródłowego pokazywany w aplikacji — GPL wymaga, żeby użytkownik
 // wiedział, skąd go wziąć. Fork ustawia własny: -PsourceUrl=...
 val sourceUrl: String = local("sourceUrl")
-    ?: "https://github.com/arturotolinski/aplikacje-android-arma-files"
+    ?: "https://github.com/arma-technology/arma-files"
 
 android {
     namespace = "pl.arma.files"

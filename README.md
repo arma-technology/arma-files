@@ -49,8 +49,8 @@ LibreDWG i libarchive są w LFS.
 
 ```bash
 git lfs install
-git clone https://github.com/arturotolinski/aplikacje-android-arma-files.git
-cd aplikacje-android-arma-files
+git clone https://github.com/arma-technology/arma-files.git
+cd arma-files
 ./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
 scripts/test.sh                # testy jednostkowe
 ```
