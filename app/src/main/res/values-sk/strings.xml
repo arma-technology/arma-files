@@ -555,4 +555,31 @@ výberom karty v lište hore.</string>
     <string name="common_stop">Prerušiť</string>
     <string name="download_title">Sťahovanie</string>
     <string name="download_progress">%1$s z %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Navrhnúť funkciu alebo nahlásiť chybu</string>
+    <string name="feedback_heading">Nahlásiť chybu alebo navrhnúť nápad</string>
+    <string name="feedback_type_bug">Chyba</string>
+    <string name="feedback_type_feature">Nápad</string>
+    <string name="feedback_field_title">Názov</string>
+    <string name="feedback_field_description">Popis</string>
+    <string name="feedback_description_hint_bug">Čo sa stalo? Opíšte kroky a čo ste očakávali.</string>
+    <string name="feedback_description_hint_feature">Čo by aplikácia mohla robiť a s čím by to pomohlo?</string>
+    <string name="feedback_field_email">E-mail (nepovinné)</string>
+    <string name="feedback_email_note">Len ak chcete odpoveď. Dostanú ho iba autori aplikácie, nikdy sa neobjaví vo verejnom hlásení.</string>
+    <string name="feedback_include_device">Priložiť údaje o zariadení</string>
+    <string name="feedback_send">Odoslať</string>
+    <string name="feedback_sending">Odosiela sa…</string>
+    <string name="feedback_open_github">Otvoriť na GitHube</string>
+    <string name="feedback_github_note">Hlásenie sa otvorí na GitHube s vyplneným textom. Je potrebný účet GitHub.</string>
+    <string name="feedback_public_note">Hlásenie bude na GitHube verejné, bez vašej e-mailovej adresy.</string>
+    <string name="feedback_sent">Ďakujeme! Hlásenie #%1$d bolo prijaté.</string>
+    <string name="feedback_view">Zobraziť hlásenie</string>
+    <string name="feedback_close">Zavrieť</string>
+    <string name="feedback_rate_limited">Príliš veľa hlásení za krátky čas. Skúste to prosím neskôr.</string>
+    <string name="feedback_unavailable">Odoslanie zlyhalo. Skontrolujte pripojenie alebo otvorte hlásenie na GitHube.</string>
+    <string name="feedback_invalid">Server hlásenie odmietol. Skontrolujte názov, popis a e-mailovú adresu.</string>
+    <string name="feedback_title_error">3 až 120 znakov</string>
+    <string name="feedback_description_error">Aspoň 10 znakov</string>
+    <string name="feedback_email_error">Neplatná e-mailová adresa</string>
 </resources>

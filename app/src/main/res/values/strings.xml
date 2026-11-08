@@ -542,4 +542,31 @@ by picking a tab in the bar above.</string>
     <string name="common_stop">Stop</string>
     <string name="download_title">Downloading</string>
     <string name="download_progress">%1$s of %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Suggest a feature or report a bug</string>
+    <string name="feedback_heading">Report a bug or suggest an idea</string>
+    <string name="feedback_type_bug">Bug</string>
+    <string name="feedback_type_feature">Idea</string>
+    <string name="feedback_field_title">Title</string>
+    <string name="feedback_field_description">Description</string>
+    <string name="feedback_description_hint_bug">What happened? Describe the steps and what you expected.</string>
+    <string name="feedback_description_hint_feature">What could the app do, and what would it help with?</string>
+    <string name="feedback_field_email">Email (optional)</string>
+    <string name="feedback_email_note">Only if you want a reply. It goes to the app\'s authors only, never to the public report.</string>
+    <string name="feedback_include_device">Include device details</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_sending">Sending…</string>
+    <string name="feedback_open_github">Open on GitHub</string>
+    <string name="feedback_github_note">The report will open on GitHub with your text filled in. A GitHub account is needed.</string>
+    <string name="feedback_public_note">The report will be public on GitHub, without your email address.</string>
+    <string name="feedback_sent">Thank you! Report #%1$d has been received.</string>
+    <string name="feedback_view">View report</string>
+    <string name="feedback_close">Close</string>
+    <string name="feedback_rate_limited">Too many reports in a short time. Please try again later.</string>
+    <string name="feedback_unavailable">Couldn\'t send. Check your connection or open the report on GitHub.</string>
+    <string name="feedback_invalid">The server rejected the report. Check the title, description and email address.</string>
+    <string name="feedback_title_error">3 to 120 characters</string>
+    <string name="feedback_description_error">At least 10 characters</string>
+    <string name="feedback_email_error">Invalid email address</string>
 </resources>

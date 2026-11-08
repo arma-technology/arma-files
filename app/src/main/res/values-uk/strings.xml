@@ -555,4 +555,31 @@
     <string name="common_stop">Перервати</string>
     <string name="download_title">Завантаження файлу</string>
     <string name="download_progress">%1$s з %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Запропонувати функцію або повідомити про помилку</string>
+    <string name="feedback_heading">Повідомити про помилку або запропонувати ідею</string>
+    <string name="feedback_type_bug">Помилка</string>
+    <string name="feedback_type_feature">Ідея</string>
+    <string name="feedback_field_title">Заголовок</string>
+    <string name="feedback_field_description">Опис</string>
+    <string name="feedback_description_hint_bug">Що сталося? Опишіть кроки й чого ви очікували.</string>
+    <string name="feedback_description_hint_feature">Що могла б робити програма і чим би це допомогло?</string>
+    <string name="feedback_field_email">Ел. пошта (необов’язково)</string>
+    <string name="feedback_email_note">Лише якщо хочете отримати відповідь. Адресу отримають тільки автори програми, у публічний звіт вона не потрапить.</string>
+    <string name="feedback_include_device">Додати дані про пристрій</string>
+    <string name="feedback_send">Надіслати</string>
+    <string name="feedback_sending">Надсилання…</string>
+    <string name="feedback_open_github">Відкрити на GitHub</string>
+    <string name="feedback_github_note">Звіт відкриється на GitHub із заповненим текстом. Потрібен обліковий запис GitHub.</string>
+    <string name="feedback_public_note">Звіт буде публічним на GitHub, без вашої адреси ел. пошти.</string>
+    <string name="feedback_sent">Дякуємо! Звіт #%1$d отримано.</string>
+    <string name="feedback_view">Переглянути звіт</string>
+    <string name="feedback_close">Закрити</string>
+    <string name="feedback_rate_limited">Забагато звітів за короткий час. Спробуйте пізніше.</string>
+    <string name="feedback_unavailable">Не вдалося надіслати. Перевірте з’єднання або відкрийте звіт на GitHub.</string>
+    <string name="feedback_invalid">Сервер відхилив звіт. Перевірте заголовок, опис і адресу ел. пошти.</string>
+    <string name="feedback_title_error">Від 3 до 120 символів</string>
+    <string name="feedback_description_error">Щонайменше 10 символів</string>
+    <string name="feedback_email_error">Неправильна адреса ел. пошти</string>
 </resources>

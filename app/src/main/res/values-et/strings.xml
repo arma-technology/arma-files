@@ -541,4 +541,31 @@ valides ülal ribal vahelehe.</string>
     <string name="common_stop">Katkesta</string>
     <string name="download_title">Allalaadimine</string>
     <string name="download_progress">%1$s / %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Soovita funktsiooni või teata veast</string>
+    <string name="feedback_heading">Teata veast või paku idee</string>
+    <string name="feedback_type_bug">Viga</string>
+    <string name="feedback_type_feature">Idee</string>
+    <string name="feedback_field_title">Pealkiri</string>
+    <string name="feedback_field_description">Kirjeldus</string>
+    <string name="feedback_description_hint_bug">Mis juhtus? Kirjelda samme ja mida ootasid.</string>
+    <string name="feedback_description_hint_feature">Mida võiks rakendus teha ja milles see aitaks?</string>
+    <string name="feedback_field_email">E-post (valikuline)</string>
+    <string name="feedback_email_note">Ainult siis, kui soovid vastust. See jõuab ainult rakenduse autoriteni, mitte avalikku teatesse.</string>
+    <string name="feedback_include_device">Lisa seadme andmed</string>
+    <string name="feedback_send">Saada</string>
+    <string name="feedback_sending">Saatmine…</string>
+    <string name="feedback_open_github">Ava GitHubis</string>
+    <string name="feedback_github_note">Teade avaneb GitHubis täidetud tekstiga. Vaja on GitHubi kontot.</string>
+    <string name="feedback_public_note">Teade on GitHubis avalik, ilma sinu e-posti aadressita.</string>
+    <string name="feedback_sent">Aitäh! Teade #%1$d on vastu võetud.</string>
+    <string name="feedback_view">Vaata teadet</string>
+    <string name="feedback_close">Sulge</string>
+    <string name="feedback_rate_limited">Liiga palju teateid lühikese aja jooksul. Proovi hiljem uuesti.</string>
+    <string name="feedback_unavailable">Saatmine ebaõnnestus. Kontrolli ühendust või ava teade GitHubis.</string>
+    <string name="feedback_invalid">Server lükkas teate tagasi. Kontrolli pealkirja, kirjeldust ja e-posti aadressi.</string>
+    <string name="feedback_title_error">3 kuni 120 märki</string>
+    <string name="feedback_description_error">Vähemalt 10 märki</string>
+    <string name="feedback_email_error">Vigane e-posti aadress</string>
 </resources>

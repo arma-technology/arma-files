@@ -19,6 +19,10 @@ fun local(name: String): String? =
 val sourceUrl: String = local("sourceUrl")
     ?: "https://github.com/arma-technology/arma-files"
 
+// Serwer zgłoszeń z karty „O aplikacji” (feedback-server/). Pusty = formularz
+// otwiera gotowe zgłoszenie na GitHubie zamiast wysyłać je bezpośrednio.
+val feedbackUrl: String = local("feedbackUrl") ?: ""
+
 android {
     namespace = "pl.arma.files"
     compileSdk = 36
@@ -31,6 +35,7 @@ android {
         versionName = "0.11.0"
 
         buildConfigField("String", "SOURCE_URL", "\"$sourceUrl\"")
+        buildConfigField("String", "FEEDBACK_URL", "\"$feedbackUrl\"")
     }
 
     signingConfigs {

@@ -541,4 +541,31 @@
     <string name="common_stop">Прекини</string>
     <string name="download_title">Преземање</string>
     <string name="download_progress">%1$s од %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Предложи функција или пријави грешка</string>
+    <string name="feedback_heading">Пријави грешка или предложи идеја</string>
+    <string name="feedback_type_bug">Грешка</string>
+    <string name="feedback_type_feature">Идеја</string>
+    <string name="feedback_field_title">Наслов</string>
+    <string name="feedback_field_description">Опис</string>
+    <string name="feedback_description_hint_bug">Што се случи? Опиши ги чекорите и што очекуваше.</string>
+    <string name="feedback_description_hint_feature">Што би можела апликацијата да прави и во што би помогнало?</string>
+    <string name="feedback_field_email">Е-пошта (незадолжително)</string>
+    <string name="feedback_email_note">Само ако сакаш одговор. Оди само до авторите на апликацијата, никогаш во јавната пријава.</string>
+    <string name="feedback_include_device">Приложи податоци за уредот</string>
+    <string name="feedback_send">Испрати</string>
+    <string name="feedback_sending">Се испраќа…</string>
+    <string name="feedback_open_github">Отвори на GitHub</string>
+    <string name="feedback_github_note">Пријавата ќе се отвори на GitHub со внесениот текст. Потребна е GitHub сметка.</string>
+    <string name="feedback_public_note">Пријавата ќе биде јавна на GitHub, без твојата е-пошта.</string>
+    <string name="feedback_sent">Благодариме! Пријавата #%1$d е примена.</string>
+    <string name="feedback_view">Види ја пријавата</string>
+    <string name="feedback_close">Затвори</string>
+    <string name="feedback_rate_limited">Премногу пријави за кратко време. Обиди се повторно подоцна.</string>
+    <string name="feedback_unavailable">Испраќањето не успеа. Провери ја врската или отвори ја пријавата на GitHub.</string>
+    <string name="feedback_invalid">Серверот ја одби пријавата. Провери ги насловот, описот и е-поштата.</string>
+    <string name="feedback_title_error">Од 3 до 120 знаци</string>
+    <string name="feedback_description_error">Најмалку 10 знаци</string>
+    <string name="feedback_email_error">Неважечка е-пошта</string>
 </resources>

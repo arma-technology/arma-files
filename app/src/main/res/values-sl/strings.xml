@@ -555,4 +555,31 @@ z izbiro zavihka v vrstici zgoraj.</string>
     <string name="common_stop">Prekini</string>
     <string name="download_title">Prenašanje</string>
     <string name="download_progress">%1$s od %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Predlagaj funkcijo ali prijavi napako</string>
+    <string name="feedback_heading">Prijavi napako ali predlagaj idejo</string>
+    <string name="feedback_type_bug">Napaka</string>
+    <string name="feedback_type_feature">Ideja</string>
+    <string name="feedback_field_title">Naslov</string>
+    <string name="feedback_field_description">Opis</string>
+    <string name="feedback_description_hint_bug">Kaj se je zgodilo? Opišite korake in kaj ste pričakovali.</string>
+    <string name="feedback_description_hint_feature">Kaj bi aplikacija lahko počela in pri čem bi to pomagalo?</string>
+    <string name="feedback_field_email">E-pošta (neobvezno)</string>
+    <string name="feedback_email_note">Samo če želite odgovor. Prejmejo jo le avtorji aplikacije, nikoli ni v javni prijavi.</string>
+    <string name="feedback_include_device">Priloži podatke o napravi</string>
+    <string name="feedback_send">Pošlji</string>
+    <string name="feedback_sending">Pošiljanje…</string>
+    <string name="feedback_open_github">Odpri na GitHubu</string>
+    <string name="feedback_github_note">Prijava se bo odprla na GitHubu z izpolnjenim besedilom. Potreben je račun GitHub.</string>
+    <string name="feedback_public_note">Prijava bo na GitHubu javna, brez vašega e-poštnega naslova.</string>
+    <string name="feedback_sent">Hvala! Prijava #%1$d je prejeta.</string>
+    <string name="feedback_view">Poglej prijavo</string>
+    <string name="feedback_close">Zapri</string>
+    <string name="feedback_rate_limited">Preveč prijav v kratkem času. Poskusite znova pozneje.</string>
+    <string name="feedback_unavailable">Pošiljanje ni uspelo. Preverite povezavo ali odprite prijavo na GitHubu.</string>
+    <string name="feedback_invalid">Strežnik je zavrnil prijavo. Preverite naslov, opis in e-poštni naslov.</string>
+    <string name="feedback_title_error">Od 3 do 120 znakov</string>
+    <string name="feedback_description_error">Vsaj 10 znakov</string>
+    <string name="feedback_email_error">Neveljaven e-poštni naslov</string>
 </resources>

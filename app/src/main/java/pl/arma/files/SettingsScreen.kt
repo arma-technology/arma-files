@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -588,6 +589,8 @@ private val bundledLibraries = listOf(
 private fun AboutCard() {
     val uriHandler = LocalUriHandler.current
     var showLibraries by remember { mutableStateOf(false) }
+    var showFeedback by rememberSaveable { mutableStateOf(false) }
+    if (showFeedback) pl.arma.files.feedback.FeedbackSheet(onDismiss = { showFeedback = false })
     Surface(
         modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -611,6 +614,11 @@ private fun AboutCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Button(onClick = { showFeedback = true }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Feedback, null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.feedback_button))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = { uriHandler.openUri(BuildConfig.SOURCE_URL) }, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Code, null)

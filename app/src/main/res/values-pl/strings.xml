@@ -555,4 +555,31 @@ wybierając kartę z paska powyżej.</string>
     <string name="common_stop">Przerwij</string>
     <string name="download_title">Pobieranie</string>
     <string name="download_progress">%1$s z %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Dodaj sugestię funkcjonalności lub zgłoś błąd</string>
+    <string name="feedback_heading">Zgłoś błąd lub zaproponuj pomysł</string>
+    <string name="feedback_type_bug">Błąd</string>
+    <string name="feedback_type_feature">Pomysł</string>
+    <string name="feedback_field_title">Tytuł</string>
+    <string name="feedback_field_description">Opis</string>
+    <string name="feedback_description_hint_bug">Co się stało? Opisz kroki i czego się spodziewano.</string>
+    <string name="feedback_description_hint_feature">Co aplikacja mogłaby robić i w czym by to pomogło?</string>
+    <string name="feedback_field_email">E-mail (opcjonalnie)</string>
+    <string name="feedback_email_note">Tylko jeśli chcesz odpowiedź. Trafi wyłącznie do autorów aplikacji, nigdy do publicznego zgłoszenia.</string>
+    <string name="feedback_include_device">Dołącz dane urządzenia</string>
+    <string name="feedback_send">Wyślij</string>
+    <string name="feedback_sending">Wysyłanie…</string>
+    <string name="feedback_open_github">Otwórz na GitHubie</string>
+    <string name="feedback_github_note">Zgłoszenie otworzy się na GitHubie z wpisaną treścią. Potrzebne jest konto GitHub.</string>
+    <string name="feedback_public_note">Zgłoszenie będzie publiczne na GitHubie, bez Twojego adresu e-mail.</string>
+    <string name="feedback_sent">Dziękujemy! Zgłoszenie #%1$d zostało przyjęte.</string>
+    <string name="feedback_view">Zobacz zgłoszenie</string>
+    <string name="feedback_close">Zamknij</string>
+    <string name="feedback_rate_limited">Za dużo zgłoszeń w krótkim czasie. Spróbuj ponownie później.</string>
+    <string name="feedback_unavailable">Nie udało się wysłać. Sprawdź połączenie albo otwórz zgłoszenie na GitHubie.</string>
+    <string name="feedback_invalid">Serwer odrzucił zgłoszenie. Sprawdź tytuł, opis i adres e-mail.</string>
+    <string name="feedback_title_error">Od 3 do 120 znaków</string>
+    <string name="feedback_description_error">Co najmniej 10 znaków</string>
+    <string name="feedback_email_error">Nieprawidłowy adres e-mail</string>
 </resources>

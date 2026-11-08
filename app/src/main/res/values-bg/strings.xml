@@ -541,4 +541,31 @@
     <string name="common_stop">Прекъсни</string>
     <string name="download_title">Изтегляне</string>
     <string name="download_progress">%1$s от %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Предложи функция или съобщи за грешка</string>
+    <string name="feedback_heading">Съобщи за грешка или предложи идея</string>
+    <string name="feedback_type_bug">Грешка</string>
+    <string name="feedback_type_feature">Идея</string>
+    <string name="feedback_field_title">Заглавие</string>
+    <string name="feedback_field_description">Описание</string>
+    <string name="feedback_description_hint_bug">Какво се случи? Опиши стъпките и какво очакваше.</string>
+    <string name="feedback_description_hint_feature">Какво би могло да прави приложението и в какво би помогнало?</string>
+    <string name="feedback_field_email">Имейл (по желание)</string>
+    <string name="feedback_email_note">Само ако искаш отговор. Отива само при авторите на приложението, никога в публичния доклад.</string>
+    <string name="feedback_include_device">Прикачи данни за устройството</string>
+    <string name="feedback_send">Изпрати</string>
+    <string name="feedback_sending">Изпращане…</string>
+    <string name="feedback_open_github">Отвори в GitHub</string>
+    <string name="feedback_github_note">Докладът ще се отвори в GitHub с попълнения текст. Нужен е профил в GitHub.</string>
+    <string name="feedback_public_note">Докладът ще бъде публичен в GitHub, без твоя имейл адрес.</string>
+    <string name="feedback_sent">Благодарим! Доклад #%1$d е получен.</string>
+    <string name="feedback_view">Виж доклада</string>
+    <string name="feedback_close">Затвори</string>
+    <string name="feedback_rate_limited">Твърде много доклади за кратко време. Опитай отново по-късно.</string>
+    <string name="feedback_unavailable">Изпращането не успя. Провери връзката или отвори доклада в GitHub.</string>
+    <string name="feedback_invalid">Сървърът отхвърли доклада. Провери заглавието, описанието и имейл адреса.</string>
+    <string name="feedback_title_error">От 3 до 120 знака</string>
+    <string name="feedback_description_error">Поне 10 знака</string>
+    <string name="feedback_email_error">Невалиден имейл адрес</string>
 </resources>

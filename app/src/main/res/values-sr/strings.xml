@@ -548,4 +548,31 @@
     <string name="common_stop">Прекини</string>
     <string name="download_title">Преузимање</string>
     <string name="download_progress">%1$s од %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Предложи функцију или пријави грешку</string>
+    <string name="feedback_heading">Пријави грешку или предложи идеју</string>
+    <string name="feedback_type_bug">Грешка</string>
+    <string name="feedback_type_feature">Идеја</string>
+    <string name="feedback_field_title">Наслов</string>
+    <string name="feedback_field_description">Опис</string>
+    <string name="feedback_description_hint_bug">Шта се десило? Опиши кораке и шта си очекивао.</string>
+    <string name="feedback_description_hint_feature">Шта би апликација могла да ради и у чему би то помогло?</string>
+    <string name="feedback_field_email">Е-пошта (необавезно)</string>
+    <string name="feedback_email_note">Само ако желиш одговор. Иде искључиво ауторима апликације, никад у јавну пријаву.</string>
+    <string name="feedback_include_device">Приложи податке о уређају</string>
+    <string name="feedback_send">Пошаљи</string>
+    <string name="feedback_sending">Слање…</string>
+    <string name="feedback_open_github">Отвори на GitHub-у</string>
+    <string name="feedback_github_note">Пријава ће се отворити на GitHub-у са уписаним текстом. Потребан је GitHub налог.</string>
+    <string name="feedback_public_note">Пријава ће бити јавна на GitHub-у, без твоје адресе е-поште.</string>
+    <string name="feedback_sent">Хвала! Пријава #%1$d је примљена.</string>
+    <string name="feedback_view">Погледај пријаву</string>
+    <string name="feedback_close">Затвори</string>
+    <string name="feedback_rate_limited">Превише пријава у кратком времену. Покушај поново касније.</string>
+    <string name="feedback_unavailable">Слање није успело. Провери везу или отвори пријаву на GitHub-у.</string>
+    <string name="feedback_invalid">Сервер је одбио пријаву. Провери наслов, опис и адресу е-поште.</string>
+    <string name="feedback_title_error">Од 3 до 120 знакова</string>
+    <string name="feedback_description_error">Најмање 10 знакова</string>
+    <string name="feedback_email_error">Неисправна адреса е-поште</string>
 </resources>

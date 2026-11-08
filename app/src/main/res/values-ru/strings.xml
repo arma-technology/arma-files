@@ -555,4 +555,31 @@
     <string name="common_stop">Прервать</string>
     <string name="download_title">Загрузка файла</string>
     <string name="download_progress">%1$s из %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Предложить функцию или сообщить об ошибке</string>
+    <string name="feedback_heading">Сообщить об ошибке или предложить идею</string>
+    <string name="feedback_type_bug">Ошибка</string>
+    <string name="feedback_type_feature">Идея</string>
+    <string name="feedback_field_title">Заголовок</string>
+    <string name="feedback_field_description">Описание</string>
+    <string name="feedback_description_hint_bug">Что произошло? Опишите шаги и чего вы ожидали.</string>
+    <string name="feedback_description_hint_feature">Что могло бы делать приложение и чем бы это помогло?</string>
+    <string name="feedback_field_email">Эл. почта (необязательно)</string>
+    <string name="feedback_email_note">Только если хотите получить ответ. Адрес получат лишь авторы приложения, в публичный отчёт он не попадёт.</string>
+    <string name="feedback_include_device">Приложить данные об устройстве</string>
+    <string name="feedback_send">Отправить</string>
+    <string name="feedback_sending">Отправка…</string>
+    <string name="feedback_open_github">Открыть на GitHub</string>
+    <string name="feedback_github_note">Отчёт откроется на GitHub с заполненным текстом. Нужна учётная запись GitHub.</string>
+    <string name="feedback_public_note">Отчёт будет публичным на GitHub, без вашего адреса эл. почты.</string>
+    <string name="feedback_sent">Спасибо! Отчёт #%1$d получен.</string>
+    <string name="feedback_view">Посмотреть отчёт</string>
+    <string name="feedback_close">Закрыть</string>
+    <string name="feedback_rate_limited">Слишком много отчётов за короткое время. Попробуйте позже.</string>
+    <string name="feedback_unavailable">Не удалось отправить. Проверьте подключение или откройте отчёт на GitHub.</string>
+    <string name="feedback_invalid">Сервер отклонил отчёт. Проверьте заголовок, описание и адрес эл. почты.</string>
+    <string name="feedback_title_error">От 3 до 120 символов</string>
+    <string name="feedback_description_error">Не менее 10 символов</string>
+    <string name="feedback_email_error">Неверный адрес эл. почты</string>
 </resources>

@@ -548,4 +548,31 @@ izvēloties cilni joslā augšā.</string>
     <string name="common_stop">Pārtraukt</string>
     <string name="download_title">Lejupielāde</string>
     <string name="download_progress">%1$s no %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Ieteikt funkciju vai ziņot par kļūdu</string>
+    <string name="feedback_heading">Ziņot par kļūdu vai ieteikt ideju</string>
+    <string name="feedback_type_bug">Kļūda</string>
+    <string name="feedback_type_feature">Ideja</string>
+    <string name="feedback_field_title">Virsraksts</string>
+    <string name="feedback_field_description">Apraksts</string>
+    <string name="feedback_description_hint_bug">Kas notika? Aprakstiet soļus un ko gaidījāt.</string>
+    <string name="feedback_description_hint_feature">Ko lietotne varētu darīt un kā tas palīdzētu?</string>
+    <string name="feedback_field_email">E-pasts (nav obligāti)</string>
+    <string name="feedback_email_note">Tikai, ja vēlaties atbildi. To saņems tikai lietotnes autori, publiskajā ziņojumā tas nebūs.</string>
+    <string name="feedback_include_device">Pievienot ierīces datus</string>
+    <string name="feedback_send">Sūtīt</string>
+    <string name="feedback_sending">Sūta…</string>
+    <string name="feedback_open_github">Atvērt GitHub</string>
+    <string name="feedback_github_note">Ziņojums atvērsies GitHub ar ierakstītu tekstu. Nepieciešams GitHub konts.</string>
+    <string name="feedback_public_note">Ziņojums GitHub būs publisks, bez jūsu e-pasta adreses.</string>
+    <string name="feedback_sent">Paldies! Ziņojums #%1$d ir saņemts.</string>
+    <string name="feedback_view">Skatīt ziņojumu</string>
+    <string name="feedback_close">Aizvērt</string>
+    <string name="feedback_rate_limited">Pārāk daudz ziņojumu īsā laikā. Mēģiniet vēlāk.</string>
+    <string name="feedback_unavailable">Neizdevās nosūtīt. Pārbaudiet savienojumu vai atveriet ziņojumu GitHub.</string>
+    <string name="feedback_invalid">Serveris noraidīja ziņojumu. Pārbaudiet virsrakstu, aprakstu un e-pasta adresi.</string>
+    <string name="feedback_title_error">No 3 līdz 120 rakstzīmēm</string>
+    <string name="feedback_description_error">Vismaz 10 rakstzīmes</string>
+    <string name="feedback_email_error">Nederīga e-pasta adrese</string>
 </resources>

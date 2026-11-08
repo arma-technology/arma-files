@@ -541,4 +541,31 @@ indem du oben einen Tab auswählst.</string>
     <string name="common_stop">Abbrechen</string>
     <string name="download_title">Wird heruntergeladen</string>
     <string name="download_progress">%1$s von %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Funktion vorschlagen oder Fehler melden</string>
+    <string name="feedback_heading">Fehler melden oder Idee vorschlagen</string>
+    <string name="feedback_type_bug">Fehler</string>
+    <string name="feedback_type_feature">Idee</string>
+    <string name="feedback_field_title">Titel</string>
+    <string name="feedback_field_description">Beschreibung</string>
+    <string name="feedback_description_hint_bug">Was ist passiert? Beschreibe die Schritte und was du erwartet hast.</string>
+    <string name="feedback_description_hint_feature">Was könnte die App tun, und wobei würde es helfen?</string>
+    <string name="feedback_field_email">E-Mail (optional)</string>
+    <string name="feedback_email_note">Nur wenn du eine Antwort möchtest. Sie geht nur an die Entwickler, nie in die öffentliche Meldung.</string>
+    <string name="feedback_include_device">Gerätedaten anhängen</string>
+    <string name="feedback_send">Senden</string>
+    <string name="feedback_sending">Wird gesendet…</string>
+    <string name="feedback_open_github">Auf GitHub öffnen</string>
+    <string name="feedback_github_note">Die Meldung öffnet sich auf GitHub mit deinem Text. Ein GitHub-Konto ist nötig.</string>
+    <string name="feedback_public_note">Die Meldung ist auf GitHub öffentlich, ohne deine E-Mail-Adresse.</string>
+    <string name="feedback_sent">Danke! Meldung #%1$d ist eingegangen.</string>
+    <string name="feedback_view">Meldung ansehen</string>
+    <string name="feedback_close">Schließen</string>
+    <string name="feedback_rate_limited">Zu viele Meldungen in kurzer Zeit. Bitte versuche es später erneut.</string>
+    <string name="feedback_unavailable">Senden fehlgeschlagen. Prüfe die Verbindung oder öffne die Meldung auf GitHub.</string>
+    <string name="feedback_invalid">Der Server hat die Meldung abgelehnt. Prüfe Titel, Beschreibung und E-Mail-Adresse.</string>
+    <string name="feedback_title_error">3 bis 120 Zeichen</string>
+    <string name="feedback_description_error">Mindestens 10 Zeichen</string>
+    <string name="feedback_email_error">Ungültige E-Mail-Adresse</string>
 </resources>
