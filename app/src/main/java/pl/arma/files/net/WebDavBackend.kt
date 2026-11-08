@@ -17,7 +17,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.URI
-import java.net.URLDecoder
 import java.util.concurrent.TimeUnit
 
 /**
@@ -102,25 +101,18 @@ class WebDavBackend : RemoteBackend {
         val self = url(account, path, directory = true)
         return propfind(account, path, depth = "1")
             .mapNotNull { entry ->
-                val name = nameFromHref(entry) ?: return@mapNotNull null
+                val name = WebDavXml.nameOf(entry) ?: return@mapNotNull null
                 // Pierwsza pozycja odpowiedzi to sam katalog, o który pytamy.
                 if (sameResource(entry.href, self)) return@mapNotNull null
                 RemoteEntry(name, entry.isDirectory, entry.size, entry.modified)
             }
     }
 
-    private fun nameFromHref(entry: WebDavXml.Response): String? {
-        entry.displayName?.let { return it }
-        val decoded = runCatching { URLDecoder.decode(entry.href, Charsets.UTF_8.name()) }
-            .getOrDefault(entry.href)
-        return decoded.trimEnd('/').substringAfterLast('/').takeIf { it.isNotBlank() }
-    }
-
     /** Porównanie ścieżek href, bo serwer może zwrócić adres względny albo pełny. */
     private fun sameResource(href: String, url: String): Boolean {
-        fun pathOf(value: String) = runCatching { URI(value).path }.getOrNull().orEmpty()
+        fun pathOf(value: String) = runCatching { URI(value).rawPath }.getOrNull().orEmpty()
             .trimEnd('/')
-            .let { runCatching { URLDecoder.decode(it, Charsets.UTF_8.name()) }.getOrDefault(it) }
+            .let(WebDavXml::decodePath)
         return pathOf(href) == pathOf(url)
     }
 

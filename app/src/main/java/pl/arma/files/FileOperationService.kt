@@ -45,7 +45,12 @@ class FileOperationService : Service() {
         }
 
         startForegroundWith(notification(null))
-        if (watcher == null) watcher = scope.launch { watchQueue() }
+        // Obserwacja zawsze od nowa: przepływ od razu poda bieżący stan kolejki.
+        // Stary obserwator mógł już uznać kolejkę za pustą i zatrzymać usługę —
+        // kolejne uruchomienie (np. dwa zadania z szuflady naraz) zostawiało wtedy
+        // na zawsze powiadomienie „Przygotowywanie…”, bo nic go już nie gasiło.
+        watcher?.cancel()
+        watcher = scope.launch { watchQueue() }
         return START_NOT_STICKY
     }
 
@@ -53,6 +58,8 @@ class FileOperationService : Service() {
         armaApp.engine.operations.collectLatest { operations ->
             val active = operations.firstOrNull { !it.isFinished }
             if (active == null) {
+                ServiceCompat.stopForeground(this@FileOperationService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                notificationManager().cancel(NOTIFICATION_ID)
                 stopSelf()
                 return@collectLatest
             }

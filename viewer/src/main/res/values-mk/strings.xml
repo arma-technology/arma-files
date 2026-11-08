@@ -152,4 +152,11 @@
         <item quantity="one">%1$d ред</item>
         <item quantity="other">%1$d редови</item>
     </plurals>
+    <string name="viewer_audio_play">Пушти</string>
+    <string name="viewer_audio_pause">Пауза</string>
+    <string name="viewer_audio_next">Следна</string>
+    <string name="viewer_audio_previous">Претходна</string>
+    <string name="viewer_audio_error">Снимката не може да се пушти (%1$s)</string>
+    <string name="viewer_text_formatted">Форматиран приказ</string>
+    <string name="viewer_text_source">Извор</string>
 </resources>

@@ -216,6 +216,45 @@ class FileIndexDbTest {
     }
 
     @Test
+    fun `zajetosc osobno dla kazdego nosnika`() {
+        db.upsert(
+            listOf(
+                file("/storage/emulated/0/DCIM/a.jpg", size = 1_000),
+                file("/storage/1234-ABCD/DCIM/b.jpg", size = 2_000),
+                file("/storage/1234-ABCD_2/c.jpg", size = 4_000)
+            )
+        )
+        assertEquals(1_000L, db.usageByCategoryUnder("file:///storage/emulated/0")[IndexCategory.IMAGE])
+        // Prefiks nośnika nie łapie sąsiedniego katalogu o dłuższej nazwie ani „_” jako wzorca.
+        assertEquals(2_000L, db.usageByCategoryUnder("file:///storage/1234-ABCD/")[IndexCategory.IMAGE])
+    }
+
+    @Test
+    fun `mapa liczy podfoldery razem z zawartoscia i pliki osobno`() {
+        db.upsert(
+            listOf(
+                file("/storage/emulated/0/DCIM/Camera/a.mp4", size = 9_000),
+                file("/storage/emulated/0/DCIM/Camera/b.jpg", size = 1_000),
+                file("/storage/emulated/0/DCIM/Screenshots/c.png", size = 500),
+                file("/storage/emulated/0/DCIM/notatka.txt", size = 40),
+                file("/storage/emulated/0/DCIM_kopia/d.jpg", size = 7_777),
+                file("/storage/emulated/0/DCIM/Camera", directory = true)
+            )
+        )
+        val entries = db.mapChildren("file:///storage/emulated/0/DCIM")
+        assertEquals(listOf("Camera", "Screenshots", "notatka.txt"), entries.map { it.segment })
+        val camera = entries.first()
+        assertTrue(camera.isDirectory)
+        assertEquals(10_000L, camera.bytes)
+        assertEquals(2, camera.files)
+        // Kolor kafelka: kategoria, która zajmuje najwięcej miejsca, a nie najwięcej plików.
+        assertEquals(IndexCategory.VIDEO, camera.category)
+        assertEquals(false, entries.last().isDirectory)
+        // Sąsiedni „DCIM_kopia” nie należy do „DCIM”.
+        assertEquals(10_540L, entries.sumOf { it.bytes })
+    }
+
+    @Test
     fun `liczenie plikow obejmuje podkatalogi`() {
         db.upsert(
             listOf(

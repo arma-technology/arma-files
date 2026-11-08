@@ -21,7 +21,7 @@ object PaneRules {
     }
 
     /**
-     * Nazwa karty na podstawie ścieżki; null oznacza ekran „Mój komputer".
+     * Nazwa karty na podstawie ścieżki; null oznacza ekran „Moje urządzenie".
      * Obie nazwy zastępcze podaje wołający, w języku aplikacji.
      */
     fun tabTitle(path: String?, home: String, root: String): String {

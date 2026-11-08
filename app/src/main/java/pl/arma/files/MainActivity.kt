@@ -14,6 +14,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -95,6 +106,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
@@ -114,6 +129,10 @@ import pl.arma.files.net.RemoteAccount
 import pl.arma.files.net.RemoteType
 import pl.arma.files.ui.theme.ArmaFilesTheme
 import pl.arma.files.ui.theme.LocalFileTypeColors
+import pl.arma.files.ui.theme.LocalArmaStyle
+import pl.arma.files.ui.theme.ArmaStyle
+import pl.arma.files.ui.theme.PlexMono
+import androidx.compose.foundation.selection.selectable
 import pl.arma.viewer.SheetDocuments
 import pl.arma.viewer.image.FullscreenImageViewer
 import pl.arma.viewer.image.FullscreenSvgViewer
@@ -148,7 +167,16 @@ class MainActivity : ComponentActivity() {
         externalOpen.value = intent?.data?.let { it to System.nanoTime() }
         setContent {
             val open = externalOpen.value
-            ArmaFilesTheme { FileManagerApp(vm, open?.first, open?.second) }
+            ArmaFilesTheme {
+                // Orbita działań rysuje się nad całym oknem, gest zaczyna się w liście.
+                val orbit = remember { OrbitController() }
+                androidx.compose.runtime.CompositionLocalProvider(LocalOrbit provides orbit) {
+                    Box(Modifier.fillMaxSize()) {
+                        FileManagerApp(vm, open?.first, open?.second)
+                        OrbitOverlay(orbit)
+                    }
+                }
+            }
         }
     }
 
@@ -187,6 +215,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val error by vm.error.collectAsStateWithLifecycle()
     val notice by vm.notice.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val loading by vm.loading.collectAsStateWithLifecycle()
+    val downloads by vm.downloads.collectAsStateWithLifecycle()
     val clipboard by vm.clipboard.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val currentSource by vm.currentSource.collectAsStateWithLifecycle()
@@ -198,7 +228,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val operationHistory by vm.operationHistory.collectAsStateWithLifecycle()
     val trashEntries by vm.trashEntries.collectAsStateWithLifecycle()
     val remoteAccounts by vm.remoteAccounts.collectAsStateWithLifecycle()
-    val pinnedStats by vm.pinnedStats.collectAsStateWithLifecycle()
     val indexProgress by vm.indexProgress.collectAsStateWithLifecycle()
     val searchResults by vm.searchResults.collectAsStateWithLifecycle()
     val globalSearch by vm.globalSearch.collectAsStateWithLifecycle()
@@ -211,6 +240,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
     val offlineProgress by vm.offlineProgress.collectAsStateWithLifecycle()
     val offlineSince by vm.offlineSince.collectAsStateWithLifecycle()
+    // Raz na listę, a nie osobna subskrypcja i przeszukanie w każdym wierszu.
+    val offlineSources = remember(offlineEntries) { offlineEntries.mapTo(HashSet()) { it.source } }
     val searchRemote by vm.searchRemote.collectAsStateWithLifecycle()
     val searchStatus by vm.searchStatus.collectAsStateWithLifecycle()
     var conflictsOf by remember { mutableStateOf<String?>(null) }
@@ -229,8 +260,19 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var viewMode by rememberSaveable { mutableStateOf(ViewMode.LIST) }
     var gridColumns by rememberSaveable { mutableIntStateOf(2) }
     var category by remember { mutableStateOf(FileCategory.ALL) }
+    // Nośnik, którego mapa pamięci jest otwarta na ekranie głównym.
+    var mapStorage by remember { mutableStateOf<DeviceStorage?>(null) }
+    var mapPath by remember { mutableStateOf(emptyList<String>()) }
+    // Kategoria z ekranu głównego („Zdjęcia”, „Dokumenty”) — jej pliki stoją pod paskiem wyszukiwania.
+    var homeCategory by remember { mutableStateOf<pl.arma.files.index.IndexCategory?>(null) }
     var selectedUris by remember { mutableStateOf<Set<String>>(emptySet()) }
     var preview by remember { mutableStateOf<FileItem?>(null) }
+    // Szybki podgląd po przytrzymaniu i puszczeniu pliku.
+    var peekItem by remember { mutableStateOf<FileItem?>(null) }
+    // Miejsce przytrzymania na ekranie — stamtąd wyrasta panel podglądu.
+    var peekOrigin by remember { mutableStateOf<Offset?>(null) }
+    val orbit = LocalOrbit.current
+    val shelfItems by vm.shelf.collectAsStateWithLifecycle()
     var details by remember { mutableStateOf<FileItem?>(null) }
     var createDialog by remember { mutableStateOf<String?>(null) }
     var renameItem by remember { mutableStateOf<FileItem?>(null) }
@@ -244,6 +286,18 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     var editedAccount by remember { mutableStateOf<Pair<RemoteAccount, Boolean>?>(null) }
     var showDiscovery by remember { mutableStateOf(false) }
     var showAnalysis by remember { mutableStateOf(false) }
+    var reopenAnalysis by remember { mutableStateOf(false) }
+    var analysisSection by remember { mutableIntStateOf(0) }
+    // Do kosza domyślnie wszystkie kopie poza najstarszą — ta jest zwykle oryginałem.
+    var duplicateMarks by remember(duplicates) {
+        mutableStateOf(duplicates.flatMap { set -> set.files.sortedBy { it.lastModified }.drop(1) }.map { it.uri.toString() }.toSet())
+    }
+    LaunchedEffect(preview) {
+        if (preview == null && reopenAnalysis) {
+            reopenAnalysis = false
+            showAnalysis = true
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val appScope = rememberCoroutineScope()
@@ -258,6 +312,11 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
             android.content.pm.PackageManager.PERMISSION_GRANTED
         ) notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    }
+    // „Dodaj folder” w rzędzie przypiętych: wybrany folder staje obok Pobranych i Zdjęć,
+    // a nie na dole wśród podłączonych źródeł.
+    val pinPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let(vm::pinTree)
     }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         uri?.let(vm::setTree)
@@ -321,12 +380,25 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     }
 
     // Pole wyszukiwania zostaje w folderze, w którym je otwarto.
-    LaunchedEffect(currentDir, tab) { if (query.isBlank()) searchOpen = false }
+    // Wejście do innego folderu kończy też wyszukiwanie globalne i przegląd kategorii —
+    // inaczej nowy folder pokazywał stare wyniki zamiast swojej zawartości.
+    LaunchedEffect(currentDir, tab) {
+        if (query.isBlank()) {
+            searchOpen = false
+            homeCategory = null
+            if (globalSearch) vm.setGlobalSearch(false)
+        }
+    }
 
     LaunchedEffect(query, globalSearch) {
         // Tylko przy wpisanej frazie. Puste zapytanie wyczyściłoby wyniki
         // wybrane przez kliknięcie kategorii, która też korzysta z tej listy.
         if (globalSearch && query.isNotBlank()) vm.searchEverywhere(query)
+    }
+
+    // Rozbieżność znaleziona w tle: od razu pytamy, którą wersję zachować.
+    LaunchedEffect(Unit) {
+        vm.newOfflineConflicts.collect { conflictsOf = it }
     }
 
     LaunchedEffect(notice) {
@@ -365,9 +437,13 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
     }
 
     val visibleFiles = remember(baseFiles, query, sort, category, globalSearch, searchResults) {
+        // Wyniki globalne są już dopasowane (bez polskich znaków, słowa w dowolnej
+        // kolejności) — drugi filtr „zawiera frazę” odrzucał część z nich.
+        // W folderze dopasowanie jest takie samo jak w wyszukiwaniu globalnym.
+        val matcher = NameMatcher(query).takeUnless { globalSearch || it.isEmpty }
         (if (globalSearch) searchResults else baseFiles)
             .asSequence()
-            .filter { it.name.contains(query, ignoreCase = true) }
+            .filter { matcher == null || matcher.matches(it.name) }
             .filter { matchesCategory(it, category) }
             .sortedWith(fileComparator(sort))
             .toList()
@@ -378,20 +454,51 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         context.armaApp.videoThumbnails.prefetch(visibleFiles)
     }
 
-    val selectedItems = remember(baseFiles, selectedUris) {
-        baseFiles.filter { it.uri.toString() in selectedUris }
+    // Zaznaczać można też wyniki wyszukiwania globalnego — nie leżą w bieżącym folderze.
+    val selectionSource = if (globalSearch) searchResults else baseFiles
+    val selectedItems = remember(selectionSource, selectedUris) {
+        selectionSource.filter { it.uri.toString() in selectedUris }
     }
     val selectionMode = selectedUris.isNotEmpty()
+
+    // Wynik gestu orbity: puszczenie bez ruchu = szybki podgląd, ruch = akcja z koła.
+    val onOrbit: (OrbitResult) -> Unit = { result ->
+        when (result) {
+            is OrbitResult.Peek -> {
+                peekOrigin = orbit.startOnScreen
+                peekItem = result.item
+            }
+            is OrbitResult.Action -> {
+                val item = result.item
+                // W trybie zaznaczania gest niesie całe zaznaczenie razem z przytrzymanym plikiem.
+                val group = if (selectionMode) (selectedItems + item).distinctBy { it.uri } else listOf(item)
+                when (result.action) {
+                    OrbitAction.SHARE -> appScope.launch { shareItems(context, group, vm) }
+                    OrbitAction.SHELF -> vm.addToShelf(group)
+                    OrbitAction.RENAME -> renameItem = item
+                    OrbitAction.DELETE -> deleteItems = group
+                    OrbitAction.SELECT -> selectedUris = toggleSelection(selectedUris, item)
+                    OrbitAction.DETAILS -> details = item
+                }
+                if (selectionMode && result.action in setOf(OrbitAction.SHARE, OrbitAction.SHELF, OrbitAction.DELETE)) selectedUris = emptySet()
+            }
+        }
+    }
+    val groupSize: (FileItem) -> Int = { item -> (selectedUris + item.uri.toString()).size }
     val computerHome = tab == Tab.FILES && currentDir == null
 
     BackHandler(
-        enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || currentDir != null ||
-            (!computerHome && (searchOpen || query.isNotBlank()))
+        enabled = preview != null || details != null || selectionMode || tab != Tab.FILES || vm.canGoBack() ||
+            (!computerHome && (searchOpen || query.isNotBlank())) || (computerHome && homeCategory != null)
     ) {
         when {
             preview != null -> preview = null
             details != null -> details = null
             selectionMode -> selectedUris = emptySet()
+            computerHome && homeCategory != null -> {
+                homeCategory = null
+                vm.setGlobalSearch(false)
+            }
             (searchOpen || query.isNotBlank()) && !computerHome -> {
                 searchOpen = false
                 query = ""
@@ -410,63 +517,6 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            if (selectionMode) {
-                MultiSelectionTopBar(
-                    count = selectedItems.size,
-                    canRename = selectedItems.size == 1,
-                    canExtract = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
-                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name) || inArchive,
-                    canBrowse = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
-                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name),
-                    canExtractToOther = dualPane,
-                    readOnly = inArchive,
-                    canOffline = selectedItems.isNotEmpty() && selectedItems.all { vm.isRemote(it.uri) },
-                    allOffline = selectedItems.isNotEmpty() && selectedItems.all { item -> offlineEntries.any { it.source == item.uri.toString() } },
-                    onOffline = { remove ->
-                        if (remove) vm.removeOffline(selectedItems) else {
-                            askForNotifications()
-                            vm.makeOffline(selectedItems)
-                        }
-                        selectedUris = emptySet()
-                    },
-                    onBrowse = { selectedItems.firstOrNull()?.let(vm::openArchive); selectedUris = emptySet() },
-                    onExtractToOther = {
-                        if (inArchive) vm.extractItems(selectedItems, toOtherPane = true)
-                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it, toOtherPane = true) }
-                        selectedUris = emptySet()
-                    },
-                    onClose = { selectedUris = emptySet() },
-                    onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
-                    onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
-                    onCopy = {
-                        vm.setClipboard(selectedItems, cut = false)
-                        selectedUris = emptySet(); tab = Tab.FILES
-                    },
-                    onCut = {
-                        vm.setClipboard(selectedItems, cut = true)
-                        selectedUris = emptySet(); tab = Tab.FILES
-                    },
-                    onArchive = { archiveItems = selectedItems },
-                    onExtract = {
-                        if (inArchive) vm.extractItems(selectedItems)
-                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it) }
-                        selectedUris = emptySet()
-                    },
-                    onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
-                    onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
-                    onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
-                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() },
-                    canPin = selectedItems.size == 1 && selectedItems.first().isDirectory,
-                    onPin = {
-                        selectedItems.firstOrNull()?.let(vm::pinFolder); selectedUris = emptySet()
-                    },
-                    onOpenInNewTab = {
-                        selectedItems.firstOrNull()?.let(vm::openInNewTab); selectedUris = emptySet()
-                    }
-                )
-            }
-        },
         bottomBar = {
             Column {
                 OperationBar(
@@ -476,10 +526,26 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     onCancel = vm::cancelOperation,
                     onOpenQueue = { showQueue = true }
                 )
-                if (!selectionMode) {
-                    NavigationBar(tonalElevation = 0.dp) {
-                    NavItem(Tab.FILES, tab, Icons.Default.Computer, stringResource(R.string.nav_home)) {
-                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; vm.goComputerHome()
+                // Szuflada nad nawigacją, gdy coś w niej leży.
+                AnimatedVisibility(shelfItems.isNotEmpty() && !selectionMode) {
+                    ShelfBar(
+                        items = shelfItems,
+                        vm = vm,
+                        canDrop = tab == Tab.FILES && currentDir != null && !inArchive,
+                        onDrop = vm::dropShelf,
+                        onRemove = vm::removeFromShelf,
+                        onClear = vm::clearShelf
+                    )
+                }
+                AnimatedVisibility(
+                    !selectionMode,
+                    enter = slideInVertically { it } + fadeIn(),
+                    exit = slideOutVertically { it } + fadeOut()
+                ) {
+                    ArmaNavBar(selected = tab.ordinal, count = Tab.entries.size) {
+                    NavItem(Tab.FILES, tab, Icons.Default.PhoneAndroid, stringResource(R.string.nav_home)) {
+                        // Zakładka zawsze prowadzi na sam ekran główny, także spod mapy.
+                        tab = Tab.FILES; query = ""; category = FileCategory.ALL; mapStorage = null; mapPath = emptyList(); vm.showHome()
                     }
                     NavItem(Tab.RECENT, tab, Icons.Default.Schedule, stringResource(R.string.nav_recent)) {
                         tab = Tab.RECENT; query = ""; category = FileCategory.ALL
@@ -518,9 +584,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             }
         }
     ) { padding ->
-        Row(Modifier.fillMaxSize().padding(padding)) {
+        // Pasek zaznaczenia nakłada się na górę ekranu zamiast stać nad treścią:
+        // jako topBar przesuwał listę w dół przy każdym zaznaczeniu pierwszego pliku.
+        Box(Modifier.fillMaxSize().padding(padding)) {
+        Row(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).fillMaxHeight()) {
-        if (tab == Tab.FILES && !selectionMode) {
+        if (tab == Tab.FILES) {
             // Dwa panele mają sens dopiero wtedy, gdy każdy dostanie realną
             // szerokość — na wąskim telefonie byłyby nieczytelne.
             val canSplit = LocalConfiguration.current.screenWidthDp >= 600
@@ -570,6 +639,25 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                     )
                 }
 
+                computerHome && mapStorage != null -> {
+                    val storage = mapStorage!!
+                    StorageMapScreen(
+                        storage = storage,
+                        vm = vm,
+                        indexing = indexProgress.running,
+                        // Podgląd i okna nad mapą mają pierwszeństwo przy Wstecz.
+                        backEnabled = preview == null && details == null && peekItem == null && !selectionMode,
+                        onBuildIndex = { vm.buildIndex(); vm.analyzeStorage() },
+                        // Mapa zostaje otwarta pod folderem — Wstecz z niego wraca do niej.
+                        onOpenFolder = { uri -> openLocal(uri) },
+                        onOpenFile = { item -> preview = item; vm.addRecent(item) },
+                        onInfo = { text -> appScope.launch { snackbarHostState.showSnackbar(text) } },
+                        onClose = { mapStorage = null; mapPath = emptyList() },
+                        path = mapPath,
+                        onPath = { mapPath = it }
+                    )
+                }
+
                 computerHome -> {
                     ComputerHome(
                         storages = deviceStorages,
@@ -579,10 +667,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                 (it.type != SourceType.LOCAL && it.enabled && it.configured)
                         },
                         allFilesAccess = allFilesAccess,
-                        onOpenPinned = { openLocal(it.rootUri) },
+                        // Przypięty przez SAF nie potrzebuje pełnego dostępu.
+                        onOpenPinned = { if (it.rootUri.scheme == "content") vm.openLocalLocation(it.rootUri) else openLocal(it.rootUri) },
                         onOpenStorage = { openLocal(it.rootUri) },
                         onOpenSource = { vm.openSource(it) },
                         onDisconnectSource = vm::disconnectSource,
+                        onPinSource = vm::pinSource,
                         onDisableSource = { source -> source.accountId?.let { vm.setAccountEnabled(it, false) } },
                         onManageSources = { tab = Tab.SETTINGS; query = ""; category = FileCategory.ALL },
                         offlineEntries = offlineEntries,
@@ -595,7 +685,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onConflicts = { conflictsOf = it.id },
                         onSyncOffline = vm::syncOffline,
                         onGrantAccess = ::requestBroadStorageAccess,
-                        onAddFolder = { folderPicker.launch(null) },
+                        onAddFolder = { pinPicker.launch(null) },
                         trashCount = trashEntries.size,
                         onOpenTrash = { showTrash = true },
                         indexProgress = indexProgress,
@@ -610,6 +700,7 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             // Wpisanie frazy tutaj włącza wyszukiwanie globalne
                             // i przenosi na listę wyników.
                             query = value
+                            homeCategory = null
                             vm.setGlobalSearch(value.isNotBlank())
                             if (value.isNotBlank()) tab = Tab.FILES
                         },
@@ -617,16 +708,24 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         onCancelIndex = vm::cancelIndexing,
                         onAnalyze = { showAnalysis = true; vm.analyzeStorage() },
                         onCategory = { category ->
+                            homeCategory = category
                             vm.browseCategory(category); tab = Tab.FILES; query = ""
                         },
                         onUnpin = vm::unpinFolder,
                         onMovePinned = vm::movePinned,
-                        pinnedStats = pinnedStats,
                         onOpenPinnedInNewTab = { folder ->
                             vm.openTab(); openLocal(folder.rootUri)
                         },
-                        searchResults = if (globalSearch && query.isNotBlank()) searchResults else emptyList(),
+                        searchResults = if (globalSearch && (query.isNotBlank() || homeCategory != null)) searchResults else emptyList(),
+                        resultsTitle = homeCategory?.let(::categoryShortLabel),
+                        onCloseResults = { homeCategory = null; vm.setGlobalSearch(false) },
                         onOpenResult = { item ->
+                            // Folder z wyników otwiera się jako folder, a nie jako dalsze wyniki.
+                            if (item.isDirectory || ArchiveFormats.canBrowse(item.name)) {
+                                query = ""
+                                homeCategory = null
+                                vm.setGlobalSearch(false)
+                            }
                             when {
                                 item.isDirectory -> vm.openDirectory(item)
                                 ArchiveFormats.canBrowse(item.name) -> vm.openArchive(item)
@@ -634,12 +733,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             }
                         },
                         onRevealResult = vm::revealParent,
-                        storageUsage = analysis.usageByCategory
-                            .filterValues { it > 0 }
-                            .toList()
-                            .sortedByDescending { it.second }
-                            .take(4)
-                            .map { (category, bytes) -> categoryShortLabel(category) to bytes },
+                        storageUsage = analysis.usageByStorage,
+                        onMapStorage = { storage -> mapStorage = storage; mapPath = emptyList(); if (analysis.stats == null) vm.analyzeStorage() },
                         onOpenHistory = { showHistory = true }
                     )
                 }
@@ -669,10 +764,12 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             summary = pluralStringResource(R.plurals.n_items, baseFiles.size, baseFiles.size) + " · " +
                                 formatSize(baseFiles.filterNot { it.isDirectory }.sumOf { it.size }),
                             onRefresh = vm::refresh,
-                            onPickRoot = { folderPicker.launch(null) }
+                            onPickRoot = { folderPicker.launch(null) },
+                            files = baseFiles
                         )
 
-                        CategoryRow(selected = category, source = baseFiles, onSelected = { category = it })
+                        // Przy wyszukiwaniu globalnym kategorie liczą wyniki, a nie folder pod nimi.
+                        CategoryRow(selected = category, source = selectionSource, onSelected = { category = it })
 
                         AnimatedVisibility(clipboard != null && tab == Tab.FILES) {
                             ClipboardCard(payload = clipboard, onPaste = vm::paste, onCancel = vm::clearClipboard)
@@ -735,11 +832,31 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                         // z podfolderu albo archiwum lista stoi tam, gdzie ją zostawiono.
                         // Stan żyje poza samą listą, bo ta znika na czas wczytywania.
                         val paneId = tabs.firstOrNull { it.active }?.id.orEmpty()
-                        val savedScroll = remember(paneId, currentDir) { vm.scrollPosition(paneId, currentDir) }
-                        val listState = remember(paneId, currentDir) { LazyListState(savedScroll.first, savedScroll.second) }
-                        val gridState = remember(paneId, currentDir) { LazyGridState(savedScroll.first, savedScroll.second) }
-                        // Wartości z chwili kompozycji — w onDispose currentDir byłby już nowym folderem.
-                        val shownDir = currentDir
+                        // Ostatnio widziane pliki każdego folderu — warstwa pod bieżącym arkuszem.
+                        val layerCache = remember {
+                            // Najwyżej 20 ostatnich folderów — duże foldery to tysiące wpisów.
+                            object : LinkedHashMap<String, List<FileItem>>(16, .75f, true) {
+                                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<FileItem>>) = size > 20
+                            }
+                        }
+                        LaunchedEffect(currentDir, visibleFiles) { layerCache[currentDir.toString()] = visibleFiles }
+                        val depthLayer = remember(currentDir, visibleFiles, tab) {
+                            DepthLayer(currentDir, visibleFiles, if (tab == Tab.FILES) vm.navDepth() else 0, vm.backTarget())
+                        }
+                        DepthStack(
+                            layer = depthLayer,
+                            behind = { parent -> parent?.let { layerCache[it.toString()] } },
+                            vm = vm,
+                            onBack = { vm.goBack() },
+                            modifier = fileAreaModifier
+                        ) { layer ->
+                        val layerDir = layer.dir
+                        val layerFiles = layer.files
+                        val savedScroll = remember(paneId, layerDir) { vm.scrollPosition(paneId, layerDir) }
+                        val listState = remember(paneId, layerDir) { LazyListState(savedScroll.first, savedScroll.second) }
+                        val gridState = remember(paneId, layerDir) { LazyGridState(savedScroll.first, savedScroll.second) }
+                        // Wartości z chwili kompozycji — w onDispose folder byłby już nowym folderem.
+                        val shownDir = layerDir
                         val shownMode = viewMode
                         DisposableEffect(paneId, shownDir, shownMode) {
                             onDispose {
@@ -749,22 +866,28 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                             }
                         }
 
-                        Box(fileAreaModifier) {
-                            if (visibleFiles.isEmpty()) {
+                        Box(Modifier.fillMaxSize()) {
+                            if (layerFiles.isEmpty()) {
                                 EmptyFolder(filtered = query.isNotBlank() || category != FileCategory.ALL, tab = tab)
                             } else if (viewMode == ViewMode.LIST) {
                                 LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 88.dp)) {
-                                    items(visibleFiles, key = { it.uri.toString() }) { item ->
+                                    items(layerFiles, key = { it.uri.toString() }) { item ->
+                                        // Po sortowaniu, filtrze i zmianach w folderze wiersze przesuwają się
+                                        // na nowe miejsca zamiast przeskakiwać.
+                                        Box(Modifier.animateItem()) {
                                         FileRow(
                                             item = item,
                                             vm = vm,
                                             favorite = item.uri.toString() in favoriteUris,
+                                            offline = item.uri.toString() in offlineSources,
                                             selected = item.uri.toString() in selectedUris,
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
                                             onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
-                                            onMenu = { selectedUris = setOf(item.uri.toString()) }
+                                            onMenu = { selectedUris = setOf(item.uri.toString()) },
+                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit, groupSize)
                                         )
+                                        }
                                     }
                                 }
                             } else {
@@ -775,37 +898,48 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
                                     verticalArrangement = Arrangement.spacedBy(6.dp),
                                     contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = 88.dp)
                                 ) {
-                                    gridItems(visibleFiles, key = { it.uri.toString() }) { item ->
+                                    gridItems(layerFiles, key = { it.uri.toString() }) { item ->
+                                        Box(Modifier.animateItem()) {
                                         FileTile(
                                             item = item,
                                             vm = vm,
                                             favorite = item.uri.toString() in favoriteUris,
+                                            offline = item.uri.toString() in offlineSources,
                                             selected = item.uri.toString() in selectedUris,
                                             selectionMode = selectionMode,
                                             onClick = { onItemClick(item) },
-                                            onLongClick = { selectedUris = toggleSelection(selectedUris, item) }
+                                            onLongClick = { selectedUris = toggleSelection(selectedUris, item) },
+                                            columns = gridColumns,
+                                            interaction = Modifier.orbitGestures(item, orbit, selectionMode, { onItemClick(item) }, { selectedUris = toggleSelection(selectedUris, item) }, onOrbit, groupSize)
                                         )
+                                        }
                                     }
                                 }
                             }
+                        }
                         }
                     }
                 }
             }
 
-            if (busy) {
+            if (busy || loading) {
+                // Nakładka nie łapie dotyku: w trakcie wczytywania folderu można
+                // stuknąć inny folder albo Wstecz — to przerywa wczytywanie.
                 Box(
                     Modifier.fillMaxSize().background(MaterialTheme.colorScheme.scrim.copy(alpha = .18f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(shape = RoundedCornerShape(24.dp), tonalElevation = 6.dp) {
                         Row(
-                            Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
+                            Modifier.padding(start = 24.dp, end = if (loading && !busy) 12.dp else 24.dp, top = 12.dp, bottom = 12.dp).heightIn(min = 48.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 3.dp)
-                            Text(stringResource(R.string.common_processing), fontWeight = FontWeight.Medium)
+                            Text(stringResource(if (loading && !busy) R.string.loading_folder else R.string.common_processing), fontWeight = FontWeight.Medium)
+                            if (loading && !busy) {
+                                TextButton(onClick = vm::cancelLoading) { Text(stringResource(R.string.common_stop)) }
+                            }
                         }
                     }
                 }
@@ -834,6 +968,91 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             )
         }
         }
+        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+            // Przy chowaniu pasek jeszcze chwilę widać — liczba ma zostać ostatnią niezerową.
+            val shownCount = remember { intArrayOf(0) }.also { if (selectedItems.isNotEmpty()) it[0] = selectedItems.size }
+            AnimatedVisibility(
+                selectionMode,
+                enter = slideInVertically { -it } + fadeIn(),
+                exit = slideOutVertically { -it } + fadeOut()
+            ) {
+                MultiSelectionTopBar(
+                    count = shownCount[0],
+                    canRename = selectedItems.size == 1,
+                    canExtract = inArchive || (selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name)),
+                    canBrowse = selectedItems.size == 1 && !selectedItems.first().isDirectory &&
+                        ArchiveFormats.canOpenAsArchive(selectedItems.first().name),
+                    canExtractToOther = dualPane,
+                    readOnly = inArchive,
+                    canOffline = selectedItems.isNotEmpty() && selectedItems.all { vm.isRemote(it.uri) },
+                    allOffline = selectedItems.isNotEmpty() && selectedItems.all { item -> offlineEntries.any { it.source == item.uri.toString() } },
+                    onOffline = { remove ->
+                        if (remove) vm.removeOffline(selectedItems) else {
+                            askForNotifications()
+                            vm.makeOffline(selectedItems)
+                        }
+                        selectedUris = emptySet()
+                    },
+                    onBrowse = { selectedItems.firstOrNull()?.let(vm::openArchive); selectedUris = emptySet() },
+                    onExtractToOther = {
+                        if (inArchive) vm.extractItems(selectedItems, toOtherPane = true)
+                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it, toOtherPane = true) }
+                        selectedUris = emptySet()
+                    },
+                    onClose = { selectedUris = emptySet() },
+                    onSelectAll = { selectedUris = visibleFiles.map { it.uri.toString() }.toSet() },
+                    onFavorite = { vm.toggleFavorites(selectedItems); selectedUris = emptySet() },
+                    onShelf = { vm.addToShelf(selectedItems); selectedUris = emptySet() },
+                    onCopy = {
+                        vm.setClipboard(selectedItems, cut = false)
+                        selectedUris = emptySet(); tab = Tab.FILES
+                    },
+                    onCut = {
+                        vm.setClipboard(selectedItems, cut = true)
+                        selectedUris = emptySet(); tab = Tab.FILES
+                    },
+                    onArchive = { archiveItems = selectedItems },
+                    onExtract = {
+                        if (inArchive) vm.extractItems(selectedItems)
+                        else selectedItems.firstOrNull()?.let { vm.extractArchive(it) }
+                        selectedUris = emptySet()
+                    },
+                    onRename = { renameItem = selectedItems.firstOrNull(); selectedUris = emptySet() },
+                    onDetails = { details = selectedItems.firstOrNull(); selectedUris = emptySet() },
+                    onShare = { appScope.launch { shareItems(context, selectedItems, vm) }; selectedUris = emptySet() },
+                    onDelete = { deleteItems = selectedItems; selectedUris = emptySet() },
+                    canPin = selectedItems.size == 1 && selectedItems.first().isDirectory,
+                    onPin = {
+                        selectedItems.firstOrNull()?.let(vm::pinFolder); selectedUris = emptySet()
+                    },
+                    onOpenInNewTab = {
+                        selectedItems.firstOrNull()?.let(vm::openInNewTab); selectedUris = emptySet()
+                    }
+                )
+            }
+                }
+        }
+    }
+
+    peekItem?.let { item ->
+        QuickPeek(
+            item = item,
+            vm = vm,
+            actions = PeekActions(
+                open = { target ->
+                    peekItem = null
+                    openItem(vm, target, onOpenFile = { preview = it }, onInstallApk = { apkToInstall = it })
+                    if (target.isDirectory || ArchiveFormats.canBrowse(target.name)) { tab = Tab.FILES; query = ""; category = FileCategory.ALL }
+                },
+                share = { target -> appScope.launch { shareItems(context, listOf(target), vm) } },
+                shelf = { target -> vm.addToShelf(listOf(target)) },
+                rename = { target -> renameItem = target },
+                delete = { target -> deleteItems = listOf(target) }
+            ),
+            onDismiss = { peekItem = null },
+            origin = peekOrigin
+        )
     }
 
     preview?.let { item ->
@@ -869,8 +1088,31 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             )
             return@let
         }
+        // Film z serwera: najpierw pobranie do pamięci podręcznej (okno z postępem
+        // i „Przerwij”), potem ten sam odtwarzacz co dla filmów z telefonu.
+        if (item.mimeType.startsWith("video/") && item.uri.scheme != "file" && item.uri.scheme != "content") {
+            var local by remember(item.uri) { mutableStateOf<Uri?>(null) }
+            LaunchedEffect(item.uri) {
+                try {
+                    local = vm.prepareMedia(item)
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    vm.showError(e)
+                    preview = null
+                }
+            }
+            local?.let { uri ->
+                pl.arma.viewer.video.FullscreenVideoPlayer(
+                    playlist = listOf(pl.arma.viewer.video.VideoClip(uri, item.name, "${item.uri}|${item.size}")),
+                    startIndex = 0,
+                    onDismiss = { preview = null }
+                )
+            }
+            return@let
+        }
         // Film z telefonu: od razu odtwarzacz na całym ekranie, a pozostałe filmy
-        // z widocznej listy są kolejką. Filmy z serwerów — na razie jak dotąd.
+        // z widocznej listy są kolejką.
         if (item.mimeType.startsWith("video/") && (item.uri.scheme == "file" || item.uri.scheme == "content")) {
             val videos = visibleFiles.filter { it.mimeType.startsWith("video/") && (it.uri.scheme == "file" || it.uri.scheme == "content") }
                 .ifEmpty { listOf(item) }
@@ -904,6 +1146,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             // Rodzeństwo bierzemy z aktualnie widocznej listy, więc przewijanie
             // respektuje wybrane sortowanie, filtr i wyniki wyszukiwania.
             siblings = visibleFiles.filter { it.mimeType.startsWith("image/") },
+            // Nagrania z widocznej listy grają po kolei, jak filmy.
+            audioSiblings = visibleFiles.filter { it.mimeType.startsWith("audio/") },
             onNavigate = { preview = it; vm.addRecent(it) },
             onDismiss = { preview = null },
             onFavorite = { vm.toggleFavorite(item) },
@@ -915,10 +1159,19 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
     details?.let { item -> DetailsSheet(item = item, vm = vm, onDismiss = { details = null }) }
 
+    // Pobieranie pliku z sieci, na który użytkownik czeka (podgląd, „Otwórz w…”).
+    // Po złożeniu podglądu, żeby okno stało nad odtwarzaczem i przeglądarką.
+    downloads.lastOrNull()?.let { download ->
+        DownloadDialog(download) {
+            vm.cancelDownload(download.id)
+            if (preview?.uri == download.uri) preview = null
+        }
+    }
+
     error?.let {
         AlertDialog(
             onDismissRequest = vm::clearError,
-            confirmButton = { TextButton(onClick = vm::clearError) { Text("OK") } },
+            confirmButton = { TextButton(onClick = vm::clearError) { Text(stringResource(android.R.string.ok)) } },
             icon = { Icon(Icons.Default.ErrorOutline, null) },
             title = { Text(stringResource(R.string.err_operation_title)) },
             text = { Text(it) }
@@ -952,18 +1205,26 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             icon = { Icon(Icons.Default.DeleteOutline, null) },
             title = { Text(if (itemsToDelete.size == 1) stringResource(R.string.delete_one_title, itemsToDelete.first().name) else pluralStringResource(R.plurals.delete_n_title, itemsToDelete.size, itemsToDelete.size)) },
             text = {
-                Text(stringResource(R.string.delete_text))
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Text(stringResource(R.string.delete_text))
+                    // Nieodwracalne usunięcie osobno, w kolorze błędu — nie obok „Anuluj”,
+                    // gdzie łatwo trafić w nie zamiast w zwykłe zamknięcie okna.
+                    OutlinedButton(
+                        onClick = { vm.deleteForever(itemsToDelete); deleteItems = emptyList() },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = .5f))
+                    ) {
+                        Icon(Icons.Default.DeleteForever, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.delete_forever))
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text(stringResource(R.string.delete_to_trash)) }
+                Button(onClick = { vm.delete(itemsToDelete); deleteItems = emptyList() }) { Text(stringResource(R.string.delete_to_trash)) }
             },
             dismissButton = {
-                Row {
-                    TextButton(onClick = { deleteItems = emptyList() }) { Text(stringResource(R.string.common_cancel)) }
-                    TextButton(onClick = {
-                        vm.deleteForever(itemsToDelete); deleteItems = emptyList()
-                    }) { Text(stringResource(R.string.delete_forever)) }
-                }
+                TextButton(onClick = { deleteItems = emptyList() }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -997,7 +1258,8 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
 
     conflictsOf?.let { id ->
         val entry = offlineEntries.firstOrNull { it.id == id }
-        if (entry == null || entry.conflicts.isEmpty()) conflictsOf = null
+        // Ostatnia rozbieżność rozstrzygnięta — okno zamyka się samo, ale nie w trakcie kompozycji.
+        if (entry == null || entry.conflicts.isEmpty()) LaunchedEffect(id) { conflictsOf = null }
         else ConflictsDialog(entry, onChoice = { conflict, choice -> vm.resolveOfflineConflict(entry, conflict, choice) }, onDismiss = { conflictsOf = null })
     }
 
@@ -1083,8 +1345,21 @@ fun FileManagerApp(vm: FileManagerViewModel = viewModel(), initialUri: Uri? = nu
             duplicates = duplicates,
             busy = analyzing,
             onFindDuplicates = vm::findDuplicates,
-            onOpen = { item -> showAnalysis = false; vm.revealParent(item) },
-            onDismiss = { showAnalysis = false }
+            onOpen = { item -> showAnalysis = false; analysisSection = 0; vm.revealParent(item) },
+            onPreview = { item ->
+                // Podgląd nad arkuszem by go nie przykrył — arkusz wraca po zamknięciu podglądu.
+                showAnalysis = false
+                reopenAnalysis = true
+                preview = item
+            },
+            onDeleteDuplicates = { deleteItems = it },
+            location = vm::locationLabel,
+            vm = vm,
+            marked = duplicateMarks,
+            onMarked = { duplicateMarks = it },
+            initialSection = analysisSection,
+            onSection = { analysisSection = it },
+            onDismiss = { showAnalysis = false; analysisSection = 0 }
         )
     }
 
@@ -1108,6 +1383,7 @@ private fun ComputerHome(
     onOpenStorage: (DeviceStorage) -> Unit,
     onOpenSource: (StorageSource) -> Unit,
     onDisconnectSource: (StorageSource) -> Unit,
+    onPinSource: (StorageSource) -> Unit,
     onDisableSource: (StorageSource) -> Unit,
     onManageSources: () -> Unit,
     offlineEntries: List<OfflineStore.Entry>,
@@ -1135,12 +1411,14 @@ private fun ComputerHome(
     onCategory: (pl.arma.files.index.IndexCategory) -> Unit,
     onUnpin: (String) -> Unit,
     onMovePinned: (Int, Int) -> Unit,
-    pinnedStats: Map<String, Pair<Int, Long>>,
     onOpenPinnedInNewTab: (PinnedFolder) -> Unit,
     searchResults: List<FileItem>,
+    resultsTitle: String?,
+    onCloseResults: () -> Unit,
     onOpenResult: (FileItem) -> Unit,
     onRevealResult: (FileItem) -> Unit,
-    storageUsage: List<Pair<String, Long>>,
+    storageUsage: Map<String, Map<pl.arma.files.index.IndexCategory, Long>>,
+    onMapStorage: (DeviceStorage) -> Unit,
     onOpenHistory: () -> Unit
 ) {
     LazyColumn(
@@ -1195,7 +1473,6 @@ private fun ComputerHome(
         item {
             PinnedFolderRow(
                 pinned = pinned,
-                stats = pinnedStats,
                 onOpen = onOpenPinned,
                 onOpenInNewTab = onOpenPinnedInNewTab,
                 onUnpin = onUnpin,
@@ -1222,14 +1499,19 @@ private fun ComputerHome(
 
         // Wyniki pojawiają się pod paskiem, w miejscu pozostałych sekcji.
         // Zamiana całego ekranu zabierałaby pole, w którym trwa pisanie.
-        if (searchResults.isNotEmpty()) {
+        if (searchResults.isNotEmpty() || resultsTitle != null) {
             item {
-                Text(
-                    stringResource(R.string.search_found, searchResults.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-                )
+                Row(Modifier.padding(start = 20.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        listOfNotNull(resultsTitle, stringResource(R.string.search_found, searchResults.size)).joinToString(" · "),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                    )
+                    if (resultsTitle != null) {
+                        IconButton(onClick = onCloseResults) { Icon(Icons.Default.Close, stringResource(R.string.common_close_search)) }
+                    }
+                }
             }
             items(searchResults, key = { it.uri.toString() }) { item ->
                 SearchResultRow(
@@ -1246,7 +1528,7 @@ private fun ComputerHome(
             SectionTitle(stringResource(R.string.home_this_computer), Modifier.padding(horizontal = 16.dp).padding(top = 6.dp))
         }
         items(storages, key = { it.id }) { storage ->
-            DeviceStorageCard(storage = storage, usage = storageUsage, onClick = { onOpenStorage(storage) })
+            DeviceStorageCard(storage = storage, usage = storageUsage[storage.id].orEmpty(), onClick = { onOpenStorage(storage) }, onMap = { onMapStorage(storage) })
         }
 
         if (connectedSources.isNotEmpty()) {
@@ -1260,6 +1542,7 @@ private fun ComputerHome(
                     source = source,
                     onClick = { onOpenSource(source) },
                     onDisconnect = { onDisconnectSource(source) },
+                    onPin = { onPinSource(source) },
                     onDisable = { onDisableSource(source) },
                     onManage = onManageSources
                 )
@@ -1394,7 +1677,7 @@ private fun ConflictsDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } }
     )
 }
 
@@ -1506,11 +1789,12 @@ private fun categoryShortLabel(category: pl.arma.files.index.IndexCategory): Str
 @Composable
 private fun DeviceStorageCard(
     storage: DeviceStorage,
-    usage: List<Pair<String, Long>>,
-    onClick: () -> Unit
+    usage: Map<pl.arma.files.index.IndexCategory, Long>,
+    onClick: () -> Unit,
+    onMap: () -> Unit
 ) {
     val used = (storage.totalBytes - storage.freeBytes).coerceAtLeast(0L)
-    val fraction = if (storage.totalBytes > 0) (used.toFloat() / storage.totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
+    val top = usage.filterValues { it > 0 }.toList().sortedByDescending { it.second }
     Surface(
         onClick = onClick,
         modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth(),
@@ -1546,17 +1830,25 @@ private fun DeviceStorageCard(
                         )
                     }
                 }
-                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)))
-                if (usage.isNotEmpty()) {
+                UsageBar(storage.totalBytes, used, top)
+                if (top.isNotEmpty()) {
                     // Rozbicie pochodzi z indeksu, więc pojawia się dopiero po
                     // jego zbudowaniu — bez niego nie mamy skąd wziąć kategorii.
-                    Text(
-                        usage.joinToString(" · ") { (label, bytes) -> "$label ${formatSize(bytes)}" },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    // Kropka w kolorze odcinka paska mówi, który to.
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        top.take(3).forEach { (category, bytes) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(7.dp).clip(CircleShape).background(indexCategoryColor(category)))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "${categoryShortLabel(category)} ${formatSize(bytes)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
                 Text(
                     if (storage.totalBytes > 0) {
@@ -1566,9 +1858,45 @@ private fun DeviceStorageCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(4.dp))
+            // Dotknięcie karty otwiera nośnik; przycisk obok — jego mapę pamięci.
+            IconButton(onClick = onMap) {
+                Icon(Icons.Default.SpaceDashboard, stringResource(R.string.map_title), tint = MaterialTheme.colorScheme.primary)
+            }
         }
+    }
+}
+
+/**
+ * Pasek zajętości z odcinkami kategorii z indeksu; reszta zajętego miejsca
+ * (system, aplikacje, pliki spoza indeksu) to odcinek akcentu, wolne — tło.
+ */
+@Composable
+private fun UsageBar(total: Long, used: Long, parts: List<Pair<pl.arma.files.index.IndexCategory, Long>>) {
+    val track = MaterialTheme.colorScheme.surfaceContainerHighest
+    val rest = MaterialTheme.colorScheme.primary.copy(alpha = .55f)
+    val colors = parts.map { indexCategoryColor(it.first) }
+    // Pasek wypełnia się przy pierwszym pokazaniu, zamiast pojawić się gotowy.
+    val calm = LocalArmaStyle.current.calm
+    val grow = remember { androidx.compose.animation.core.Animatable(if (calm) 1f else 0f) }
+    LaunchedEffect(Unit) { grow.animateTo(1f, androidx.compose.animation.core.tween(700, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(50))) {
+        drawRect(track)
+        if (total <= 0) return@Canvas
+        val scale = size.width / total * grow.value
+        var x = 0f
+        var known = 0L
+        parts.forEachIndexed { i, (_, bytes) ->
+            // Indeks może liczyć więcej niż system (twarde dowiązania) — nie wychodzimy poza zajęte.
+            val clamped = bytes.coerceAtMost((used - known).coerceAtLeast(0))
+            known += clamped
+            val w = clamped * scale
+            drawRect(colors[i], topLeft = Offset(x, 0f), size = Size(w, size.height))
+            x += w
+            // Cienka przerwa między odcinkami — kolory nie zlewają się w jedną plamę.
+            if (w > 2f) drawRect(track, topLeft = Offset(x - 1f, 0f), size = Size(1f, size.height))
+        }
+        drawRect(rest, topLeft = Offset(x, 0f), size = Size((used - known).coerceAtLeast(0) * scale, size.height))
     }
 }
 
@@ -1577,6 +1905,7 @@ private fun ConnectedSourceCard(
     source: StorageSource,
     onClick: () -> Unit,
     onDisconnect: () -> Unit,
+    onPin: () -> Unit,
     onDisable: () -> Unit,
     onManage: () -> Unit
 ) {
@@ -1601,6 +1930,13 @@ private fun ConnectedSourceCard(
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.common_options)) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    if (source.type == SourceType.LOCAL) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.pin_to_home)) },
+                            leadingIcon = { Icon(Icons.Default.PushPin, null) },
+                            onClick = { menu = false; onPin() }
+                        )
+                    }
                     if (source.accountId == null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.source_disconnect)) },
@@ -1672,45 +2008,6 @@ private fun breadcrumbs(
     return crumbs
 }
 
-@Composable
-private fun LocationStrip(
-    crumbs: List<Pair<String, Uri>>,
-    onCrumb: (Uri) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val scroll = rememberScrollState()
-    // Przy głębokiej ścieżce interesuje nas koniec, nie początek.
-    LaunchedEffect(crumbs.size) { scroll.animateScrollTo(scroll.maxValue) }
-
-    Row(modifier.horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
-        crumbs.forEachIndexed { index, (name, uri) ->
-            if (index > 0) {
-                Icon(
-                    Icons.Default.ChevronRight,
-                    null,
-                    Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
-            }
-            val last = index == crumbs.lastIndex
-            Text(
-                name,
-                style = if (last) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
-                fontWeight = if (last) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (last) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !last) { onCrumb(uri) }
-                    .padding(horizontal = 6.dp, vertical = 6.dp)
-            )
-        }
-    }
-}
 
 /**
  * Jeden niski pasek nad listą: ścieżka i akcje folderu. Zastępuje zielony
@@ -1734,8 +2031,10 @@ private fun FolderHeader(
     onView: (ViewMode) -> Unit,
     summary: String,
     onRefresh: () -> Unit,
-    onPickRoot: () -> Unit
+    onPickRoot: () -> Unit,
+    files: List<FileItem> = emptyList()
 ) {
+    Column(Modifier.fillMaxWidth()) {
     Row(
         Modifier.fillMaxWidth().height(52.dp).padding(start = 10.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -1795,16 +2094,13 @@ private fun FolderHeader(
             return@Row
         }
 
-        if (tab == Tab.FILES) {
-            LocationStrip(crumbs, onCrumb, Modifier.weight(1f))
-        } else {
-            Text(
-                if (tab == Tab.RECENT) stringResource(R.string.recent_title) else stringResource(R.string.nav_favorites),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
-            )
+        // Wstecz do folderu nadrzędnego — tytuł i ścieżka stoją pod paskiem.
+        if (tab == Tab.FILES && crumbs.size > 1) {
+            IconButton(onClick = { onCrumb(crumbs[crumbs.lastIndex - 1].second) }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.panes_back), tint = MaterialTheme.colorScheme.onSurface)
+            }
         }
+        Spacer(Modifier.weight(1f))
 
         val iconTint = MaterialTheme.colorScheme.onSurfaceVariant
         IconButton(onClick = { onSearchOpen(true) }) { Icon(Icons.Default.Search, stringResource(R.string.common_search), tint = iconTint) }
@@ -1850,6 +2146,90 @@ private fun FolderHeader(
             }
         }
     }
+    if (!searchOpen) HeaderTitle(tab, crumbs, onCrumb, files)
+    }
+}
+
+/**
+ * Tytuł jak w makiecie: ścieżka drobnym pismem maszynowym (każdy człon
+ * prowadzi do swojego folderu) i duża nazwa bieżącego folderu; przy
+ * folderze ze zdjęciami — kropki jego kolorów.
+ */
+@Composable
+private fun HeaderTitle(tab: Tab, crumbs: List<Pair<String, Uri>>, onCrumb: (Uri) -> Unit, files: List<FileItem>) {
+    val style = LocalArmaStyle.current
+    val title = when (tab) {
+        Tab.FILES -> crumbs.lastOrNull()?.first.orEmpty()
+        Tab.RECENT -> stringResource(R.string.recent_title)
+        else -> stringResource(R.string.nav_favorites)
+    }
+    Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, bottom = 6.dp)) {
+        if (tab == Tab.FILES && crumbs.size > 1) {
+            val scroll = rememberScrollState()
+            LaunchedEffect(crumbs.size) { scroll.animateScrollTo(scroll.maxValue) }
+            Row(Modifier.horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
+                crumbs.dropLast(1).forEachIndexed { index, (name, uri) ->
+                    if (index > 0) Text(" / ", style = MonoCaption, color = style.muted)
+                    Text(
+                        name.uppercase(),
+                        style = MonoCaption,
+                        color = style.muted,
+                        maxLines = 1,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { onCrumb(uri) }.padding(vertical = 4.dp)
+                    )
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title,
+                fontSize = 34.sp,
+                lineHeight = 38.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-1).sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            if (style.folderColors && tab == Tab.FILES) FolderColorDots(files, Modifier.padding(start = 12.dp))
+        }
+    }
+}
+
+private val MonoCaption = androidx.compose.ui.text.TextStyle(fontFamily = PlexMono, fontSize = 11.sp, letterSpacing = .4.sp)
+
+/** Do czterech kolorów z miniatur zdjęć folderu — tych, które już są w pamięci. */
+@Composable
+private fun FolderColorDots(files: List<FileItem>, modifier: Modifier) {
+    var colors by remember(files) { mutableStateOf<List<Color>>(emptyList()) }
+    LaunchedEffect(files) {
+        val media = files.filter { it.mimeType.startsWith("image/") || it.mimeType.startsWith("video/") }.take(16)
+        if (media.isEmpty()) return@LaunchedEffect
+        // Miniatury dochodzą w tle — kilka podejść, aż będzie z czego liczyć.
+        repeat(4) {
+            kotlinx.coroutines.delay(700)
+            val found = withContext(Dispatchers.Default) {
+                media.mapNotNull { item ->
+                    val full = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+                    (ThumbnailCache.get(full) ?: ThumbnailCache.get(ThumbnailCache.small(full)))?.let { bitmap ->
+                        val one = Bitmap.createScaledBitmap(bitmap, 1, 1, true)
+                        Color(one.getPixel(0, 0)).also { if (one !== bitmap) one.recycle() }
+                    }
+                }
+            }
+            val distinct = mutableListOf<Color>()
+            for (c in found) {
+                if (distinct.none { d -> kotlin.math.abs(d.red - c.red) + kotlin.math.abs(d.green - c.green) + kotlin.math.abs(d.blue - c.blue) < .25f }) distinct += c
+                if (distinct.size == 4) break
+            }
+            colors = distinct
+            if (distinct.size >= 3) return@LaunchedEffect
+        }
+    }
+    if (colors.isEmpty()) return
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        colors.forEach { c -> Box(Modifier.size(14.dp).clip(CircleShape).background(c)) }
+    }
 }
 
 @Composable
@@ -1860,54 +2240,33 @@ private fun CategoryRow(selected: FileCategory, source: List<FileItem>, onSelect
     // Puste kategorie tylko zabierają miejsce w rzędzie; wybrana zostaje,
     // żeby dało się z niej wyjść, nawet gdy filtr nic nie znajduje.
     val shown = FileCategory.entries.filter { it == FileCategory.ALL || it == selected || (counts[it] ?: 0) > 0 }
+    val style = LocalArmaStyle.current
+    // Zakładki z podkreśleniem zamiast pigułek — jak w makiecie „Wspólny język”.
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 2.dp)
     ) {
         items(shown, key = { it.name }) { category ->
             val active = selected == category
-            Surface(
-                onClick = { onSelected(category) },
-                shape = CircleShape,
-                color = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                border = if (active) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .5f)) else null
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .selectable(selected = active, role = androidx.compose.ui.semantics.Role.Tab) { onSelected(category) }
+                    .padding(top = 6.dp)
             ) {
-                Row(
-                    Modifier.padding(start = 10.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(categoryIcon(category), null, Modifier.size(16.dp), tint = categoryColor(category))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        categoryLabel(category),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (active) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(Modifier.width(5.dp))
-                    Text(
-                        "${counts[category] ?: 0}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    "${categoryLabel(category)} ${counts[category] ?: 0}",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (active) style.text else style.muted,
+                    maxLines = 1
+                )
+                Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(2.dp).background(if (active) style.accent else Color.Transparent))
             }
         }
     }
 }
 
-@Composable
-private fun categoryColor(category: FileCategory): Color {
-    val colors = LocalFileTypeColors.current
-    return when (category) {
-        FileCategory.ALL -> MaterialTheme.colorScheme.primary
-        FileCategory.FOLDERS -> colors.folder
-        FileCategory.IMAGES -> colors.image
-        FileCategory.VIDEO -> colors.video
-        FileCategory.AUDIO -> colors.audio
-        FileCategory.DOCUMENTS -> colors.document
-        FileCategory.ARCHIVES -> colors.archive
-    }
-}
 
 @Composable
 private fun ClipboardCard(payload: ClipboardPayload?, onPaste: () -> Unit, onCancel: () -> Unit) {
@@ -1937,19 +2296,22 @@ private fun FileRow(
     item: FileItem,
     vm: FileManagerViewModel,
     favorite: Boolean,
+    offline: Boolean,
     selected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    interaction: Modifier? = null
 ) {
     // Płaski wiersz bez karty: obramowanie każdego pliku zabierało miejsce
     // i męczyło wzrok, a podział niosą teraz kolorowe ikony typów.
+    val background by animateColorAsState(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent, label = "rowSelected")
     Row(
         Modifier
             .fillMaxWidth()
-            .background(if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .background(background)
+            .then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1970,8 +2332,7 @@ private fun FileRow(
                 maxLines = 1
             )
         }
-        val offlineEntries by vm.offlineEntries.collectAsStateWithLifecycle()
-        if (offlineEntries.any { it.source == item.uri.toString() }) {
+        if (offline) {
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Default.OfflinePin, stringResource(R.string.offline_make), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
         }
@@ -1979,11 +2340,18 @@ private fun FileRow(
             Spacer(Modifier.width(6.dp))
             Icon(Icons.Default.Star, null, Modifier.size(16.dp), tint = LocalFileTypeColors.current.folder)
         }
-        if (selectionMode) {
-            Checkbox(checked = selected, onCheckedChange = { onClick() })
-        } else {
-            IconButton(onClick = onMenu) {
-                Icon(Icons.Default.MoreVert, stringResource(R.string.common_options), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Menu wiersza zamienia się w pole wyboru — z małym zoomem, a nie skokiem.
+        AnimatedContent(
+            selectionMode,
+            transitionSpec = { (fadeIn(tween(150)) + scaleIn(tween(150), initialScale = .6f)).togetherWith(fadeOut(tween(90))) },
+            label = "rowTrailing"
+        ) { selecting ->
+            if (selecting) {
+                Checkbox(checked = selected, onCheckedChange = { onClick() })
+            } else {
+                IconButton(onClick = onMenu) {
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.common_options), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }
@@ -1995,40 +2363,57 @@ private fun FileTile(
     item: FileItem,
     vm: FileManagerViewModel,
     favorite: Boolean,
+    offline: Boolean,
     selected: Boolean,
     selectionMode: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    columns: Int,
+    interaction: Modifier? = null
 ) {
+    val color by animateColorAsState(if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow, label = "tileSelected")
+    // Zaznaczony kafelek lekko się cofa — widać zaznaczenie także na samym zdjęciu.
+    val scale by animateFloatAsState(if (selected) .94f else 1f, spring(dampingRatio = .7f, stiffness = 600f), label = "tileScale")
     Surface(
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = color,
         shape = RoundedCornerShape(14.dp),
         border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = .5f)) else null,
-        modifier = Modifier.aspectRatio(.9f).combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        modifier = Modifier.aspectRatio(.9f).graphicsLayer { scaleX = scale; scaleY = scale }.then(interaction ?: Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
     ) {
         Column(Modifier.padding(6.dp)) {
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 FileVisual(item, Modifier.fillMaxSize(), thumbnail = true, vm = vm)
-                if (favorite) {
+                if (favorite || offline) {
+                    // Te same znaki co w wierszu listy — kafelek nie może wiedzieć mniej.
                     Surface(
                         modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface.copy(alpha = .88f)
                     ) {
-                        Icon(Icons.Default.Star, null, Modifier.padding(4.dp).size(14.dp), tint = LocalFileTypeColors.current.folder)
+                        Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            if (offline) Icon(Icons.Default.OfflinePin, stringResource(R.string.offline_make), Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                            if (favorite) Icon(Icons.Default.Star, null, Modifier.size(14.dp), tint = LocalFileTypeColors.current.folder)
+                        }
                     }
                 }
-                if (selectionMode) {
-                    Checkbox(checked = selected, onCheckedChange = { onClick() }, modifier = Modifier.align(Alignment.TopStart))
-                }
+                TileCheckbox(selectionMode, selected, onClick, Modifier.align(Alignment.TopStart))
             }
             Spacer(Modifier.height(6.dp))
+            // Przy szerokich kafelkach (2–3 kolumny) dwie linie — długie nazwy
+            // zdjęć i dokumentów różnią się zwykle dopiero na końcu.
+            // Nazwy plików nie mają spacji, więc tekst łamał się gdziekolwiek
+            // („Zdjęcie_urlop_06.jp” / „g”). Miejsca łamania po „_” i „-” oraz
+            // przed rozszerzeniem; dwie linie zawsze zarezerwowane, żeby zdjęcia
+            // w rzędzie miały tę samą wysokość.
+            val twoLines = columns <= 3
             Text(
-                item.name,
-                maxLines = 1,
+                if (twoLines) breakableName(item.name) else item.name,
+                maxLines = if (twoLines) 2 else 1,
+                minLines = if (twoLines) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodySmall,
+                lineHeight = 15.sp,
                 modifier = Modifier.padding(horizontal = 2.dp)
             )
             if (!item.isDirectory) {
@@ -2043,8 +2428,28 @@ private fun FileTile(
     }
 }
 
+/** Nazwa z miejscami łamania (znak zerowej szerokości) po „_”, „-” i przed rozszerzeniem. */
+internal fun breakableName(name: String): String {
+    val dot = name.lastIndexOf('.').takeIf { it > 0 } ?: name.length
+    val base = name.substring(0, dot).replace("_", "_\u200B").replace("-", "-\u200B")
+    return if (dot < name.length) base + "\u200B" + name.substring(dot) else base
+}
+
+/** Pole wyboru kafelka — wyskakuje z małego zoomu, gdy zaczyna się zaznaczanie. */
 @Composable
-private fun FileVisual(
+private fun TileCheckbox(visible: Boolean, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    AnimatedVisibility(
+        visible,
+        enter = fadeIn() + scaleIn(initialScale = .6f),
+        exit = fadeOut() + scaleOut(targetScale = .6f),
+        modifier = modifier
+    ) {
+        Checkbox(checked = selected, onCheckedChange = { onClick() })
+    }
+}
+
+@Composable
+internal fun FileVisual(
     item: FileItem,
     modifier: Modifier,
     thumbnail: Boolean,
@@ -2054,22 +2459,35 @@ private fun FileVisual(
     crop: Boolean = false
 ) {
     val tint = fileTint(item)
+    // Żywe karty folderów i miniatury mówiące więcej niż ikona — tylko dla
+    // plików w telefonie; zdalne i z chmury SAF zostają przy ikonie.
+    if (thumbnail && vm != null && LocalFiles.isLocal(item.uri)) {
+        val ext = item.name.substringAfterLast('.', "").lowercase(Locale.ROOT)
+        val icon: @Composable () -> Unit = { FileIconTile(item, Modifier.fillMaxSize()) }
+        when {
+            item.isDirectory -> { FolderLiveCard(item, vm, modifier, compact = crop); return }
+            isPdf(item) && item.size in 1..PDF_THUMB_LIMIT -> { PdfPageThumb(item, modifier, icon); return }
+            item.mimeType.startsWith("audio/") -> { AudioArtThumb(item, modifier, icon); return }
+            !crop && ext in Syntax.CODE_EXTENSIONS && item.size in 1..CODE_THUMB_LIMIT -> { CodeThumb(item, modifier); return }
+        }
+    }
     val rasterImage = thumbnail && item.mimeType.startsWith("image/") && !item.name.endsWith(".svg", true) && !item.mimeType.contains("svg")
     val svgImage = thumbnail && item.mimeType.startsWith("image/") && (item.name.endsWith(".svg", true) || item.mimeType.contains("svg"))
     val videoThumbnails = LocalContext.current.armaApp.videoThumbnails
     val video = thumbnail && vm != null && videoThumbnails.supports(item)
 
     if (rasterImage && vm != null) {
-        var bitmap by remember(item.uri, item.lastModified) { mutableStateOf<Bitmap?>(null) }
-        var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
-        LaunchedEffect(item.uri, item.lastModified) {
+        // Ikona wiersza (40 dp) nie potrzebuje 640 px — mniejsza miniatura to
+        // kilka razy więcej zdjęć w tej samej pamięci podręcznej. Duża, jeśli
+        // już jest (z siatki), nadaje się też do wiersza.
+        val full = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
+        val key = if (crop) ThumbnailCache.small(full) else full
+        var bitmap by remember(key) { mutableStateOf(ThumbnailCache.get(key) ?: if (crop) ThumbnailCache.get(full) else null) }
+        var failed by remember(key) { mutableStateOf(false) }
+        val appear by rememberAppear(bitmap != null, key)
+        LaunchedEffect(key) {
+            if (bitmap != null) return@LaunchedEffect
             failed = false
-            val key = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
-            val cached = ThumbnailCache.get(key)
-            if (cached != null) {
-                bitmap = cached
-                return@LaunchedEffect
-            }
             // Pobranie kilkudziesięciu megabajtów z serwera po to, by pokazać
             // kafelek wielkości paznokcia, kosztuje więcej, niż daje.
             if ((vm.isRemote(item.uri) || vm.isArchive(item.uri)) && item.size > REMOTE_THUMBNAIL_LIMIT) {
@@ -2077,7 +2495,7 @@ private fun FileVisual(
                 return@LaunchedEffect
             }
             bitmap = runCatching {
-                ThumbnailCache.throttled { vm.decodeImage(item, targetMaxSide = 640) }
+                ThumbnailCache.throttled { vm.decodeImage(item, targetMaxSide = if (crop) 256 else 640) }
             }
                 .onSuccess { decoded -> ThumbnailCache.put(key, decoded) }
                 .onFailure { failed = true }
@@ -2085,15 +2503,16 @@ private fun FileVisual(
         }
         Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                if (appear < 1f && !failed) ThumbPlaceholder(tint, if (crop) null else Icons.Default.Image)
                 bitmap?.let {
                     Image(
                         bitmap = it.asImageBitmap(),
                         contentDescription = item.name,
-                        modifier = if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp),
+                        modifier = (if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp))
+                            .graphicsLayer { alpha = appear },
                         contentScale = if (crop) ContentScale.Crop else ContentScale.Fit
                     )
                 }
-                if (bitmap == null && !failed) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 if (failed) Icon(Icons.Default.Image, null, Modifier.fillMaxSize(.5f), tint = tint)
             }
         }
@@ -2101,6 +2520,7 @@ private fun FileVisual(
         val key = ThumbnailCache.key(item.uri.toString(), item.lastModified, item.size)
         var bitmap by remember(item.uri, item.lastModified) { mutableStateOf(ThumbnailCache.get(key)) }
         var failed by remember(item.uri, item.lastModified) { mutableStateOf(false) }
+        val appear by rememberAppear(bitmap != null, key)
         LaunchedEffect(item.uri, item.lastModified) {
             if (bitmap != null) return@LaunchedEffect
             bitmap = videoThumbnails.load(item)
@@ -2113,11 +2533,12 @@ private fun FileVisual(
                     Image(
                         bitmap = shown.asImageBitmap(),
                         contentDescription = item.name,
-                        modifier = if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp),
+                        modifier = (if (crop) Modifier.fillMaxSize() else Modifier.fillMaxSize().padding(4.dp))
+                            .graphicsLayer { alpha = appear },
                         contentScale = if (crop) ContentScale.Crop else ContentScale.Fit
                     )
                     // Znak odtwarzania odróżnia film od zdjęcia.
-                    Surface(shape = CircleShape, color = Color.Black.copy(alpha = .45f), modifier = Modifier.fillMaxSize(.42f).widthIn(max = 36.dp).aspectRatio(1f)) {
+                    Surface(shape = CircleShape, color = Color.Black.copy(alpha = .45f), modifier = Modifier.fillMaxSize(.42f).widthIn(max = 36.dp).aspectRatio(1f).graphicsLayer { alpha = appear }) {
                         Icon(Icons.Default.PlayArrow, null, Modifier.padding(2.dp), tint = Color.White)
                     }
                 } else {
@@ -2147,14 +2568,24 @@ private fun FileVisual(
                 Icon(Icons.Default.Folder, null, Modifier.fillMaxSize(.9f), tint = tint)
             }
         } else {
-            Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = tint.copy(alpha = .16f)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(fileIcon(item), null, Modifier.fillMaxSize(.55f), tint = tint)
-                }
-            }
+            FileIconTile(item, modifier)
         }
     }
 }
+
+/** Zwykła ikona typu pliku na kolorowym tle. */
+@Composable
+private fun FileIconTile(item: FileItem, modifier: Modifier) {
+    val tint = fileTint(item)
+    Surface(modifier = modifier, shape = RoundedCornerShape(10.dp), color = tint.copy(alpha = .16f)) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(fileIcon(item), null, Modifier.fillMaxSize(.55f), tint = tint)
+        }
+    }
+}
+
+private const val PDF_THUMB_LIMIT = 60L * 1024 * 1024
+private const val CODE_THUMB_LIMIT = 5L * 1024 * 1024
 
 @Composable
 private fun fileTint(item: FileItem): Color {
@@ -2176,7 +2607,7 @@ private fun fileTint(item: FileItem): Color {
     }
 }
 
-private fun fileIcon(item: FileItem): ImageVector {
+internal fun fileIcon(item: FileItem): ImageVector {
     val ext = item.name.substringAfterLast('.', "").lowercase(Locale.ROOT)
     return when {
         item.isDirectory -> Icons.Default.Folder
@@ -2222,6 +2653,7 @@ private fun MultiSelectionTopBar(
     onClose: () -> Unit,
     onSelectAll: () -> Unit,
     onFavorite: () -> Unit,
+    onShelf: () -> Unit,
     onCopy: () -> Unit,
     onCut: () -> Unit,
     onArchive: () -> Unit,
@@ -2236,10 +2668,17 @@ private fun MultiSelectionTopBar(
 ) {
     var more by remember { mutableStateOf(false) }
     TopAppBar(
+        // Pasek leży wewnątrz treści, pod paskiem stanu — bez własnego odstępu na niego.
+        windowInsets = WindowInsets(0, 0, 0, 0),
+        // Zakrywa pasek kart i cały rząd przycisków folderu — inaczej spod paska
+        // wystawały przycięte ikony.
+        expandedHeight = 84.dp,
         title = { Text(stringResource(R.string.selected_count, count), fontWeight = FontWeight.SemiBold) },
         navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.viewer_close_app)) } },
         actions = {
             IconButton(onClick = onFavorite) { Icon(Icons.Default.StarBorder, stringResource(R.string.nav_favorites)) }
+            // Szuflada zbiera zaznaczenie z wielu folderów — w odróżnieniu od kopiowania.
+            IconButton(onClick = onShelf) { Icon(Icons.Default.Inbox, stringResource(R.string.shelf_add)) }
             IconButton(onClick = onCopy) { Icon(Icons.Default.ContentCopy, stringResource(R.string.common_copy)) }
             if (!readOnly) IconButton(onClick = onCut) { Icon(Icons.Default.ContentCut, stringResource(R.string.common_cut)) }
             Box {
@@ -2280,6 +2719,7 @@ private fun PreviewSheet(
     onNavigate: (FileItem) -> Unit,
     onDismiss: () -> Unit,
     onFavorite: () -> Unit,
+    audioSiblings: List<FileItem> = emptyList(),
     onDetails: () -> Unit,
     onShare: () -> Unit,
     onOpenExternal: () -> Unit,
@@ -2310,8 +2750,10 @@ private fun PreviewSheet(
         sheetMaxWidth = androidx.compose.ui.unit.Dp.Unspecified,
         modifier = Modifier.fillMaxHeight(.96f)
     ) {
+        // Odstęp na klawiaturę: przy edycji tekstu pole się skraca, a „Zapisz”
+        // zostaje nad klawiaturą zamiast pod nią.
         Column(
-            Modifier.fillMaxSize().padding(horizontal = 16.dp).navigationBarsPadding(),
+            Modifier.fillMaxSize().padding(horizontal = 16.dp).navigationBarsPadding().imePadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2333,6 +2775,9 @@ private fun PreviewSheet(
                 }
                 item.mimeType.startsWith("image/") -> {
                     val position = siblings.indexOfFirst { it.uri == item.uri }
+                    LaunchedEffect(item.uri) {
+                        vm.prefetchImages(listOfNotNull(siblings.getOrNull(position + 1), siblings.getOrNull(position - 1)).takeIf { position >= 0 }.orEmpty(), 4096)
+                    }
                     val step: (Int) -> Unit = { delta ->
                         val next = siblings.getOrNull(position + delta)
                         if (next != null) onNavigate(next)
@@ -2352,13 +2797,17 @@ private fun PreviewSheet(
                         ImageViewer(
                             key = item.uri to item.lastModified,
                             name = item.name,
-                            load = { vm.decodeImage(item, targetMaxSide = 4096) },
+                            load = { vm.decodeImage(item, targetMaxSide = 4096, foreground = true) },
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             onNavigate = step,
                             canNavigate = siblings.size > 1,
-                            positionLabel = if (position >= 0) "${position + 1} / ${siblings.size}" else ""
+                            positionLabel = if (position >= 0) "${position + 1} / ${siblings.size}" else "",
+                            hasNeighbor = { delta -> position >= 0 && siblings.getOrNull(position + delta) != null }
                         )
                     }
+                }
+                item.mimeType.startsWith("audio/") -> {
+                    AudioPreview(item, vm, audioSiblings, onDismiss, Modifier.fillMaxWidth().weight(1f))
                 }
                 // Arkusz (xlsx, CSV) jako tabela. CSV wciąż da się edytować jako tekst
                 // przez „Otwórz w innej aplikacji” — tu tylko do oglądania.
@@ -2382,9 +2831,10 @@ private fun PreviewSheet(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    vm.writeText(item.uri, draft)
-                                    text = draft
-                                    editing = false
+                                    if (vm.writeText(item.uri, draft)) {
+                                        text = draft
+                                        editing = false
+                                    }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -2400,8 +2850,9 @@ private fun PreviewSheet(
                             load = { vm.readDocument(item) },
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         )
-                        // Plik w archiwum można tylko czytać.
-                        if (!vm.isArchive(item.uri)) FilledTonalButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
+                        // Plik w archiwum można tylko czytać. Bez wczytanego tekstu
+                        // edycja zaczęłaby się od pustego pola i zapis by go wyczyścił.
+                        if (!vm.isArchive(item.uri)) FilledTonalButton(onClick = { editing = true }, enabled = text != null, modifier = Modifier.fillMaxWidth()) {
                             Icon(Icons.Default.Edit, null)
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.accounts_edit))
@@ -2427,6 +2878,71 @@ private fun PreviewSheet(
     }
 }
 
+/**
+ * Nagranie w podglądzie. Z telefonu gra od razu, a pozostałe nagrania folderu
+ * są kolejką; z serwera najpierw pobiera się do pamięci podręcznej (z postępem).
+ */
+@Composable
+private fun AudioPreview(item: FileItem, vm: FileManagerViewModel, siblings: List<FileItem>, onDismiss: () -> Unit, modifier: Modifier) {
+    val local = item.uri.scheme == "file" || item.uri.scheme == "content"
+    if (local) {
+        val tracks = siblings.filter { it.uri.scheme == "file" || it.uri.scheme == "content" }.ifEmpty { listOf(item) }
+        pl.arma.viewer.audio.AudioPlayer(
+            playlist = tracks.map { pl.arma.viewer.audio.AudioTrack(it.uri, it.name) },
+            startIndex = tracks.indexOfFirst { it.uri == item.uri }.coerceAtLeast(0),
+            modifier = modifier,
+            onCurrentChanged = { index -> tracks.getOrNull(index)?.let(vm::addRecent) }
+        )
+        return
+    }
+    var uri by remember(item.uri) { mutableStateOf<Uri?>(null) }
+    LaunchedEffect(item.uri) {
+        try {
+            uri = vm.prepareMedia(item)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            vm.showError(e)
+            onDismiss()
+        }
+    }
+    val ready = uri
+    if (ready == null) {
+        Box(modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    } else {
+        pl.arma.viewer.audio.AudioPlayer(listOf(pl.arma.viewer.audio.AudioTrack(ready, item.name)), 0, modifier)
+    }
+}
+
+@Composable
+private fun DownloadDialog(download: FileManagerViewModel.Download, onCancel: () -> Unit) {
+    AlertDialog(
+        // Zamknięcie okna nie przerywa pobierania po cichu — tylko przycisk.
+        onDismissRequest = {},
+        properties = DialogProperties(dismissOnClickOutside = false),
+        icon = { Icon(Icons.Default.CloudDownload, null) },
+        title = { Text(stringResource(R.string.download_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(download.name, maxLines = 2, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
+                if (download.total > 0) {
+                    val fraction = (download.done.toFloat() / download.total).coerceIn(0f, 1f)
+                    LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+                    Text(
+                        stringResource(R.string.download_progress, formatSize(download.done), formatSize(download.total)) + " · ${(fraction * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(formatSize(download.done), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.common_stop)) } }
+    )
+}
+
 @Composable
 private fun LandscapeImageViewer(
     item: FileItem,
@@ -2437,6 +2953,9 @@ private fun LandscapeImageViewer(
 ) {
     val position = siblings.indexOfFirst { it.uri == item.uri }
     val step: (Int) -> Unit = { delta -> siblings.getOrNull(position + delta)?.let(onNavigate) }
+    LaunchedEffect(item.uri) {
+        vm.prefetchImages(listOfNotNull(siblings.getOrNull(position + 1), siblings.getOrNull(position - 1)).takeIf { position >= 0 }.orEmpty(), 4096)
+    }
     val label = if (siblings.size > 1 && position >= 0) "${item.name} · ${position + 1} / ${siblings.size}" else item.name
     if (item.name.endsWith(".svg", true) || item.mimeType.contains("svg")) {
         var uri by remember(item.uri) { mutableStateOf<Uri?>(null) }
@@ -2448,7 +2967,7 @@ private fun LandscapeImageViewer(
     var error by remember(item.uri, item.lastModified) { mutableStateOf<String?>(null) }
     LaunchedEffect(item.uri, item.lastModified) {
         error = null
-        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096) }
+        bitmap = runCatching { vm.decodeImage(item, targetMaxSide = 4096, foreground = true) }
             .onFailure { error = it.message ?: text(R.string.err_image_open) }
             .getOrNull()
     }
@@ -2459,7 +2978,8 @@ private fun LandscapeImageViewer(
         onDismiss = onDismiss,
         onNavigate = step,
         canNavigate = siblings.size > 1 && position >= 0,
-        position = label
+        position = label,
+        hasNeighbor = { delta -> position >= 0 && siblings.getOrNull(position + delta) != null }
     )
 }
 
@@ -2555,7 +3075,7 @@ private fun NameDialog(
                 shape = RoundedCornerShape(16.dp)
             )
         },
-        confirmButton = { TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text("OK") } },
+        confirmButton = { TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text(stringResource(android.R.string.ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
     )
 }
@@ -2661,47 +3181,11 @@ private fun ArchivePasswordDialog(name: String, wrong: Boolean, onDismiss: () ->
                 )
             }
         },
-        confirmButton = { TextButton(enabled = password.isNotEmpty(), onClick = { onConfirm(password) }) { Text("OK") } },
+        confirmButton = { TextButton(enabled = password.isNotEmpty(), onClick = { onConfirm(password) }) { Text(stringResource(android.R.string.ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } }
     )
 }
 
-@Composable
-private fun EmptyStorage(onPick: () -> Unit) {
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.background))
-        ),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            modifier = Modifier.padding(24.dp).fillMaxWidth(),
-            shape = RoundedCornerShape(30.dp),
-            tonalElevation = 2.dp
-        ) {
-            Column(
-                Modifier.padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                    Icon(Icons.Default.FolderOpen, null, Modifier.padding(18.dp).size(58.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-                Text(stringResource(R.string.welcome_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(
-                    stringResource(R.string.welcome_text),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Button(onClick = onPick, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.FolderOpen, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.welcome_pick))
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun EmptyFolder(filtered: Boolean, tab: Tab) {
@@ -2729,12 +3213,62 @@ private fun EmptyFolder(filtered: Boolean, tab: Tab) {
 
 @Composable
 private fun RowScope.NavItem(value: Tab, selected: Tab, icon: ImageVector, label: String, onClick: () -> Unit) {
-    NavigationBarItem(
-        selected = value == selected,
-        onClick = onClick,
-        icon = { Icon(icon, null) },
-        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+    val style = LocalArmaStyle.current
+    val active = value == selected
+    val color by androidx.compose.animation.animateColorAsState(if (active) style.text else style.muted, label = "navText")
+    // Napis z podkreśleniem akcentem, jak w makiecie „Wspólny język”; ikona tylko dla czytnika ekranu.
+    // Samo podkreślenie rysuje pasek — jedna kreska przesuwa się między zakładkami.
+    Column(
+        Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(ArmaStyle.ControlRadius))
+            .selectable(selected = active, role = androidx.compose.ui.semantics.Role.Tab, onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(Modifier.padding(top = 6.dp).height(2.dp))
+    }
+}
+
+/**
+ * Dolna nawigacja: cienka kreska u góry i cztery napisy — bez pigułek Material.
+ * Podkreślenie akcentem jedzie do wybranej zakładki ze sprężyną, zamiast
+ * znikać w jednej i rosnąć w drugiej.
+ */
+@Composable
+private fun ArmaNavBar(selected: Int, count: Int, content: @Composable RowScope.() -> Unit) {
+    val style = LocalArmaStyle.current
+    val position by androidx.compose.animation.core.animateFloatAsState(
+        selected.toFloat(),
+        if (style.calm) tween(120) else spring(dampingRatio = .78f, stiffness = 420f),
+        label = "navIndicator"
     )
+    Column(Modifier.background(MaterialTheme.colorScheme.background).navigationBarsPadding()) {
+        HorizontalDivider(color = style.hairline)
+        Box(Modifier.fillMaxWidth().height(60.dp)) {
+            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, content = content)
+            val line = 28.dp
+            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                val cell = size.width / count
+                val width = line.toPx()
+                // Pod napisem: środek komórki, 6 dp pod tekstem — tam, gdzie stał dawny odstęp.
+                val y = size.height / 2 + 12.dp.toPx()
+                drawRect(
+                    style.accent,
+                    topLeft = Offset(cell * position + (cell - width) / 2, y),
+                    size = Size(width, 2.dp.toPx())
+                )
+            }
+        }
+    }
 }
 
 private fun openItem(
@@ -2828,7 +3362,7 @@ private fun folderLabel(uri: Uri?): String {
     }.getOrDefault(uri.lastPathSegment ?: text(R.string.folder_label_folder))
 }
 
-private fun meta(item: FileItem): String {
+internal fun meta(item: FileItem): String {
     val date = formatDate(item.lastModified)
     return if (item.isDirectory) {
         date.ifBlank { text(R.string.detail_folder) }
@@ -2855,7 +3389,14 @@ private fun isText(item: FileItem): Boolean =
 private suspend fun shareItems(context: Context, items: List<FileItem>, vm: FileManagerViewModel) {
     val files = items.filterNot { it.isDirectory }
     if (files.isEmpty()) return
-    val uris = files.map { vm.materializeUri(it) }
+    val uris = try {
+        files.map { vm.materializeUri(it) }
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        vm.showError(e)
+        return
+    }
     val intent = if (files.size == 1) {
         Intent(Intent.ACTION_SEND).apply {
             type = files.first().mimeType
@@ -2874,7 +3415,14 @@ private suspend fun shareItems(context: Context, items: List<FileItem>, vm: File
 
 private suspend fun openExternal(context: Context, item: FileItem, vm: FileManagerViewModel) {
     if (item.isDirectory) return
-    val uri = vm.materializeUri(item)
+    val uri = try {
+        vm.materializeUri(item)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        vm.showError(e)
+        return
+    }
     val intent = Intent(Intent.ACTION_VIEW).apply {
         setDataAndType(uri, item.mimeType)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)

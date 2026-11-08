@@ -108,4 +108,14 @@ class WebDavXmlTest {
     fun `odpowiedz bez zasobow daje pusta liste`() {
         assertTrue(WebDavXml.parse("<d:multistatus xmlns:d=\"DAV:\"/>").isEmpty())
     }
+
+    @Test
+    fun `nazwa z href, plus zostaje plusem`() {
+        fun name(href: String, display: String? = null) = WebDavXml.nameOf(WebDavXml.Response(href, false, 0, 0, display))
+        assertEquals("a+b.pdf", name("/dav/a+b.pdf"))
+        assertEquals("zażółć gęślą.txt", name("/dav/za%C5%BC%C3%B3%C5%82%C4%87%20g%C4%99%C5%9Bl%C4%85.txt"))
+        assertEquals("doc.docx", name("https://host/sites/a/doc.docx", display = "Mój dokument"))
+        assertEquals("Folder", name("/dav/Folder/"))
+        assertEquals("100%.txt", name("/dav/100%25.txt"))
+    }
 }

@@ -1,67 +1,23 @@
 package pl.arma.files.ui.theme
 
+import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-
-private val Light = lightColorScheme(
-    primary = Color(0xFF2E6B52),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFCDEEDC),
-    onPrimaryContainer = Color(0xFF0B2C20),
-    secondary = Color(0xFF5A5F66),
-    secondaryContainer = Color(0xFFDCEBE2),
-    onSecondaryContainer = Color(0xFF16201A),
-    tertiary = Color(0xFF8A6A1E),
-    tertiaryContainer = Color(0xFFF7E3B5),
-    // Tło i powierzchnie są neutralnie szare. Zieleń zostaje tylko jako akcent;
-    // wcześniej przenikała wszystko i ekran zlewał się w jedną plamę.
-    background = Color(0xFFF6F7F8),
-    surface = Color(0xFFF6F7F8),
-    onSurface = Color(0xFF1A1C1E),
-    surfaceVariant = Color(0xFFE4E6E9),
-    onSurfaceVariant = Color(0xFF5B6067),
-    // Pełna drabinka powierzchni. Niezdefiniowane odcienie Material zastępuje
-    // własną, fioletową paletą bazową — a wtedy elementy używające akurat tych
-    // odcieni odcinają się kolorem od reszty aplikacji.
-    surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFF0F1F3),
-    surfaceContainer = Color(0xFFEDEFF1),
-    surfaceContainerHigh = Color(0xFFE6E8EB),
-    surfaceContainerHighest = Color(0xFFDFE2E5),
-    outline = Color(0xFF7A8088),
-    outlineVariant = Color(0xFFD9DCE0)
-)
-
-private val Dark = darkColorScheme(
-    primary = Color(0xFF8FDCB6),
-    onPrimary = Color(0xFF0B3A26),
-    primaryContainer = Color(0xFF1E4D39),
-    onPrimaryContainer = Color(0xFFC6F2DA),
-    secondary = Color(0xFFB9BEC6),
-    secondaryContainer = Color(0xFF26372E),
-    onSecondaryContainer = Color(0xFFCFEBDB),
-    tertiary = Color(0xFFE6C77A),
-    tertiaryContainer = Color(0xFF4F4120),
-    background = Color(0xFF111213),
-    surface = Color(0xFF111213),
-    onSurface = Color(0xFFE4E5E7),
-    surfaceVariant = Color(0xFF2A2C2F),
-    onSurfaceVariant = Color(0xFFA3A8AF),
-    surfaceContainerLowest = Color(0xFF0C0D0E),
-    surfaceContainerLow = Color(0xFF18191B),
-    surfaceContainer = Color(0xFF1D1F21),
-    surfaceContainerHigh = Color(0xFF26282B),
-    surfaceContainerHighest = Color(0xFF303236),
-    outline = Color(0xFF80868E),
-    outlineVariant = Color(0xFF34373B)
-)
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 
 /**
  * Kolory typów plików. Na liście to one niosą informację — folder, zdjęcie
@@ -115,10 +71,52 @@ private val DarkFileColors = FileTypeColors(
 
 val LocalFileTypeColors = staticCompositionLocalOf { DarkFileColors }
 
+/**
+ * Zaokrąglenia Material z wartości stylu ARMA — okna, arkusze i menu mają te
+ * same promienie co arkusz Głębi i karty, zamiast domyślnych 28 dp i 4 dp.
+ */
+private val ArmaShapes = Shapes(
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(ArmaStyle.ControlRadius),
+    medium = RoundedCornerShape(ArmaStyle.CardRadius),
+    large = RoundedCornerShape(ArmaStyle.ShelfRadius),
+    extraLarge = RoundedCornerShape(ArmaStyle.SheetRadius)
+)
+
+/**
+ * Motyw aplikacji: Noc albo Papier według ustawienia „Wygląd” (Automatyczny
+ * idzie za trybem ciemnym systemu). Kolory Material, krój pisma i ikony
+ * paska stanu pochodzą z jednego stylu ARMA.
+ */
 @Composable
 fun ArmaFilesTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
-    CompositionLocalProvider(LocalFileTypeColors provides if (dark) DarkFileColors else LightFileColors) {
-        MaterialTheme(colorScheme = if (dark) Dark else Light, content = content)
+    val context = LocalContext.current
+    val store = remember(context) { (context.applicationContext as? pl.arma.files.ArmaFilesApp)?.appearance }
+    val appearance = store?.state?.collectAsState()?.value ?: Appearance()
+    val night = when (appearance.mode) {
+        AppearanceMode.AUTO -> isSystemInDarkTheme()
+        AppearanceMode.NIGHT -> true
+        AppearanceMode.PAPER -> false
+    }
+    val style = remember(appearance, night) { styleFor(appearance, night) }
+    val scheme = remember(style) { colorSchemeFor(style) }
+    val typography = remember { armaTypography() }
+    // Motyw wybrany wbrew systemowi: ikony paska stanu muszą iść za motywem, nie za systemem.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            (view.context as? Activity)?.window?.let { window ->
+                WindowCompat.getInsetsController(window, view).apply {
+                    isAppearanceLightStatusBars = !night
+                    isAppearanceLightNavigationBars = !night
+                }
+            }
+        }
+    }
+    CompositionLocalProvider(
+        LocalFileTypeColors provides if (night) DarkFileColors else LightFileColors,
+        LocalArmaStyle provides style
+    ) {
+        MaterialTheme(colorScheme = scheme, typography = typography, shapes = ArmaShapes, content = content)
     }
 }

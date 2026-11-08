@@ -152,4 +152,11 @@
         <item quantity="one">%1$d Zeile</item>
         <item quantity="other">%1$d Zeilen</item>
     </plurals>
+    <string name="viewer_audio_play">Abspielen</string>
+    <string name="viewer_audio_pause">Pause</string>
+    <string name="viewer_audio_next">Weiter</string>
+    <string name="viewer_audio_previous">Zurück</string>
+    <string name="viewer_audio_error">Aufnahme kann nicht abgespielt werden (%1$s)</string>
+    <string name="viewer_text_formatted">Formatierte Ansicht</string>
+    <string name="viewer_text_source">Quelltext</string>
 </resources>

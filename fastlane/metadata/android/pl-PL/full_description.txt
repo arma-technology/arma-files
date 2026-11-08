@@ -1,7 +1,7 @@
 ARMA Files to menedżer plików dla ludzi, którzy pracują z rysunkami i dokumentacją — na budowie, w biurze projektowym i w domu. Otwiera PDF, DWG i DXF bez wychodzenia z aplikacji i pozwala na nich mierzyć.
 
 <b>Pliki</b>
-• ekran „Mój komputer”: przypięte foldery, pamięć wbudowana, karta SD i pendrive, serwery sieciowe
+• ekran „Moje urządzenie”: przypięte foldery, pamięć wbudowana, karta SD i pendrive, serwery sieciowe
 • kopiowanie i przenoszenie w tle między dowolnymi miejscami, kosz, ZIP, zmiana nazwy, SHA-256
 • karty i dwa panele obok siebie
 • Ostatnie i Ulubione, sortowanie zapamiętywane dla każdego folderu

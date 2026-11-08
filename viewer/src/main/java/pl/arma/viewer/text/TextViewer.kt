@@ -21,7 +21,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WrapText
@@ -86,7 +88,13 @@ fun TextViewer(name: String, key: Any?, load: suspend () -> TextDocument, modifi
     var showOutline by remember(key) { mutableStateOf(false) }
 
     val profile = remember(name) { TextProfile.of(name) }
+    val markdown = profile.kind == TextProfile.Kind.MARKDOWN
+    // Markdown otwiera się sformatowany; źródło jednym przyciskiem. Wyszukiwanie
+    // działa na wierszach źródła, więc na czas szukania widać źródło.
+    var formatted by remember { mutableStateOf(true) }
+    val showFormatted = markdown && formatted && !searching
     val listState = rememberLazyListState()
+    val markdownState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val readFailed = stringResource(R.string.viewer_text_read_failed)
     val notText = stringResource(R.string.viewer_text_binary)
@@ -102,6 +110,7 @@ fun TextViewer(name: String, key: Any?, load: suspend () -> TextDocument, modifi
     val outline = remember(document, profile) {
         document?.let { TextOutline.of(it.text, profile) } ?: emptyList()
     }
+    val blocks = remember(document, markdown) { if (markdown) document?.let { Markdown.parse(it.text) }.orEmpty() else emptyList() }
     val matches = remember(lines, query) {
         if (query.isBlank()) emptyList()
         else lines.indices.filter { lines[it].contains(query, ignoreCase = true) }
@@ -133,8 +142,26 @@ fun TextViewer(name: String, key: Any?, load: suspend () -> TextDocument, modifi
                         onDismiss = { showOutline = false },
                         onPick = { line ->
                             showOutline = false
-                            scope.launch { listState.animateScrollToItem(line) }
+                            if (showFormatted) {
+                                // Nagłówek w widoku sformatowanym: po treści, a gdy się nie zgadza — po kolejności.
+                                val entry = outline.indexOfFirst { it.line == line }
+                                val headings = blocks.indices.filter { blocks[it] is Markdown.Heading }
+                                val target = blocks.indices.firstOrNull { (blocks[it] as? Markdown.Heading)?.text?.trim() == outline.getOrNull(entry)?.title?.trim() }
+                                    ?: headings.getOrNull(entry)
+                                if (target != null) scope.launch { markdownState.animateScrollToItem(target) }
+                            } else {
+                                scope.launch { listState.animateScrollToItem(line) }
+                            }
                         }
+                    )
+                }
+            }
+            if (markdown) {
+                IconButton(onClick = { formatted = !formatted; if (formatted) { searching = false; query = "" } }) {
+                    Icon(
+                        if (showFormatted) Icons.Default.Code else Icons.Default.Article,
+                        stringResource(if (showFormatted) R.string.viewer_text_source else R.string.viewer_text_formatted),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -145,7 +172,7 @@ fun TextViewer(name: String, key: Any?, load: suspend () -> TextDocument, modifi
                     tint = if (searching) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = { wrap = !wrap }) {
+            if (!showFormatted) IconButton(onClick = { wrap = !wrap }) {
                 Icon(
                     Icons.Default.WrapText,
                     stringResource(R.string.viewer_text_wrap),
@@ -207,6 +234,8 @@ fun TextViewer(name: String, key: Any?, load: suspend () -> TextDocument, modifi
                 document == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(Modifier.size(26.dp), strokeWidth = 2.dp)
                 }
+
+                showFormatted -> MarkdownView(blocks, markdownState)
 
                 else -> {
                     val horizontal = rememberScrollState()

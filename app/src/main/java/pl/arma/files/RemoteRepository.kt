@@ -100,6 +100,10 @@ class RemoteRepository(
             // Zmieniony klucz albo certyfikat wymaga decyzji użytkownika —
             // niezależnie od tego, która operacja go wykryła.
             pl.arma.files.net.ServerIdentityAlerts.reportIfPresent(e)
+            // „The system cannot find the path specified” z jCIFS po ludzku i po polsku.
+            if (e is jcifs.smb.SmbException && e.ntStatus in SMB_NOT_FOUND) {
+                throw java.io.FileNotFoundException(text(R.string.offline_missing)).apply { initCause(e) }
+            }
             throw e
         }
     }
@@ -171,3 +175,6 @@ class RemoteRepository(
         runCatching { backend(account.type).disconnect(account.id) }
     }
 }
+
+/** NT_STATUS_OBJECT_NAME_NOT_FOUND i NT_STATUS_OBJECT_PATH_NOT_FOUND. */
+private val SMB_NOT_FOUND = setOf(0xC0000034.toInt(), 0xC000003A.toInt())

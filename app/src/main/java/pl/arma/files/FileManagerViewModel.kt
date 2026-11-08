@@ -29,6 +29,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -60,10 +63,13 @@ import pl.arma.viewer.text.TextReader
 /** Nazwy domyślnych kafelków zapisane w ustawieniach od pierwszych wersji. */
 private const val DOWNLOADS_KEY = "Pobrane"
 private const val PHOTOS_KEY = "Zdjęcia"
+/** Ile miejsc pamięta Wstecz w jednej karcie. */
+private const val NAV_HISTORY = 50
 
 class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = (app as ArmaFilesApp).repository
     private val prefs = StoragePrefs(app)
+    private val paneStore = PaneStore(app)
     private val networkPrefs = NetworkPrefs(app)
     private val engine = (app as ArmaFilesApp).engine
     private val trash = (app as ArmaFilesApp).trash
@@ -157,7 +163,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     val offlineEntries: StateFlow<List<OfflineStore.Entry>> = offlineStore.entries
     val offlineProgress: StateFlow<Map<String, OfflineStore.Progress>> = offlineStore.progress
 
-    /** Folder bieżącej karty pokazany z kopii offline — czas tej kopii; null, gdy z serwera. */
+    /** Nowe rozbieżności znalezione w tle — identyfikator wpisu; aplikacja pyta, którą wersję zachować. */
+    val newOfflineConflicts: kotlinx.coroutines.flow.SharedFlow<String> = offlineStore.newConflicts
+
+    /** Folder bieżącej karty pokazany z kopii offline, bo serwer nie odpowiada — czas tej kopii; null w pozostałych przypadkach. */
     private val _offlineSince = MutableStateFlow<Long?>(null)
     val offlineSince: StateFlow<Long?> = _offlineSince.asStateFlow()
 
@@ -205,20 +214,49 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun openRemoteFolder(uri: Uri) {
         val source = _sources.value.firstOrNull { it.rootUri?.scheme == uri.scheme && it.rootUri?.authority == uri.authority }
         val pane = active()
+        if (pane.currentDir == uri) return
+        pane.rememberPlace()
         pane.source = source?.type ?: SourceType.SMB
         pane.root = source?.rootUri ?: uri.buildUpon().path("/").build()
         pane.currentDir = uri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
-    suspend fun offlineItem(entry: OfflineStore.Entry): FileItem? = withContext(Dispatchers.IO) { repo.itemInfo(entry.uri) }
+    suspend fun offlineItem(entry: OfflineStore.Entry): FileItem? = withContext(Dispatchers.IO) {
+        try {
+            repo.itemInfo(entry.uri)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            showError(e)
+            null
+        }
+    }
+
+    /**
+     * Błąd z akcji wywołanej w interfejsie (udostępnij, otwórz) jako komunikat.
+     * Wyjątek wypuszczony z korutyny interfejsu zamykał całą aplikację — np.
+     * przy pliku z Ulubionych usuniętym w międzyczasie na serwerze.
+     */
+    fun showError(e: Throwable) {
+        _error.value = e.message?.takeIf { it.isNotBlank() } ?: text(R.string.err_open_read)
+    }
 
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
 
     private val _clipboard = MutableStateFlow<ClipboardPayload?>(null)
     val clipboard: StateFlow<ClipboardPayload?> = _clipboard.asStateFlow()
+
+    /**
+     * Szuflada: pliki zbierane z różnych folderów (i różnych źródeł), które
+     * potem wyciąga się jednym ruchem w folderze docelowym. W odróżnieniu od
+     * schowka nie zastępuje się przy każdym dodaniu i przeżywa zamknięcie
+     * aplikacji.
+     */
+    private val shelfStore = ShelfStore(app)
+    private val _shelf = MutableStateFlow(shelfStore.load())
+    val shelf: StateFlow<List<FileItem>> = _shelf.asStateFlow()
 
     private val _deviceStorages = MutableStateFlow<List<DeviceStorage>>(emptyList())
     val deviceStorages: StateFlow<List<DeviceStorage>> = _deviceStorages.asStateFlow()
@@ -238,10 +276,95 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         var root: Uri? = null
         var currentDir: Uri? = null
         var source: SourceType = SourceType.LOCAL
+        /** Katalog, z którego pochodzi [files] — w trakcie wczytywania to jeszcze poprzedni. */
+        var filesDir: Uri? = null
+            private set
         var files: List<FileItem> = emptyList()
-        val navStack = ArrayDeque<Uri>()
+            set(value) {
+                field = value
+                filesDir = currentDir
+            }
+        /** Wczytywanie zawartości [currentDir]; nowe przejście je przerywa. */
+        var loadJob: Job? = null
+        /** Historia „wstecz”: poprzednie miejsca razem ze źródłem, także ekran główny. */
+        val navStack = ArrayDeque<NavEntry>()
         /** Czas synchronizacji kopii offline, gdy lista pochodzi z niej, a nie z serwera. */
         var offlineSince: Long? = null
+    }
+
+    /** Miejsce w historii karty; [dir] == null to ekran „Moje urządzenie”. */
+    private data class NavEntry(val root: Uri?, val source: SourceType, val dir: Uri?)
+
+    /**
+     * Zapamiętuje bieżące miejsce przed przejściem gdzie indziej — Wstecz ma
+     * wracać tam, skąd się przyszło (do wyników, przypiętego folderu, ekranu
+     * głównego), a nie do folderu nadrzędnego.
+     */
+    private fun Pane.rememberPlace() {
+        abandonLoad()
+        val here = NavEntry(root, source, currentDir)
+        if (navStack.lastOrNull() == here) return
+        navStack.addLast(here)
+        while (navStack.size > NAV_HISTORY) navStack.removeFirst()
+    }
+
+    /**
+     * Przerywa wczytywanie folderu (np. wolnego serwera). Gdy na ekranie wciąż
+     * jest poprzedni folder, karta do niego wraca — nowe przejście zaczyna się
+     * wtedy od miejsca, które użytkownik widzi, a Wstecz nie prowadzi do
+     * folderu, który się nigdy nie wczytał.
+     */
+    private fun Pane.abandonLoad() {
+        val job = loadJob ?: return
+        loadJob = null
+        job.cancel()
+        if (filesDir == currentDir) return
+        val previous = navStack.lastOrNull()
+        when {
+            previous != null && previous.dir == filesDir -> {
+                navStack.removeAt(navStack.lastIndex)
+                root = previous.root
+                source = previous.source
+                currentDir = previous.dir
+            }
+            // Folder przywrócony po uruchomieniu, bez historii — zostaje ekran główny.
+            navStack.isEmpty() -> {
+                currentDir = null
+                root = null
+                source = SourceType.LOCAL
+                files = emptyList()
+            }
+        }
+    }
+
+    /** Czy aktywna karta wczytuje folder — ekran pokazuje wtedy „Przerwij”. */
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
+
+    /**
+     * Wczytywanie poza [viewModelScope]: odczyt z serwera blokuje wątek i nie
+     * reaguje na anulowanie, a karta ma przestać czekać od razu po „Przerwij”
+     * albo wejściu do innego folderu. Porzucony odczyt kończy się w tle.
+     */
+    private val listingScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+
+    /** „Przerwij” przy wczytywaniu folderu. */
+    fun cancelLoading() {
+        val pane = active()
+        pane.abandonLoad()
+        // Nic jeszcze nie było wczytane (karta przywrócona po uruchomieniu) —
+        // zamiast pustego folderu krok wstecz.
+        if (pane.filesDir != pane.currentDir) {
+            val previous = pane.navStack.removeLastOrNull()
+            if (previous != null) restorePlace(pane, previous) else goComputerHome()
+            return
+        }
+        syncPanes()
+    }
+
+    /** Usuwa z historii wszystkich kart miejsca, które przestały istnieć. */
+    private fun forgetPlaces(gone: (Uri) -> Boolean) {
+        panes.forEach { pane -> pane.navStack.removeAll { entry -> listOfNotNull(entry.root, entry.dir).any(gone) } }
     }
 
     private val panes = mutableListOf(Pane(java.util.UUID.randomUUID().toString()))
@@ -302,6 +425,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         _currentSource.value = current.source
         _files.value = current.files
         _offlineSince.value = current.offlineSince
+        // Zadanie startuje leniwie — przed startem isActive jest false, więc patrzymy na samo istnienie.
+        _loading.value = current.loadJob != null
 
         val other = secondary()
         _secondaryFiles.value = other?.files.orEmpty()
@@ -319,6 +444,44 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         updateWatchers()
+        savePanes()
+    }
+
+    private fun savePanes() {
+        fun PaneStore.Place.toEntry() = NavEntry(root, source, dir)
+        paneStore.save(
+            PaneStore.Saved(
+                panes.map { pane ->
+                    PaneStore.SavedPane(
+                        pane.id,
+                        PaneStore.Place(pane.root, pane.source, pane.currentDir),
+                        pane.navStack.map { PaneStore.Place(it.root, it.source, it.dir) }
+                    )
+                },
+                activePaneId
+            )
+        )
+    }
+
+    /**
+     * Karty z poprzedniego uruchomienia. Aktywna wczytuje się od razu, pozostałe
+     * przy przełączeniu. Folder, którego nie da się już odczytać (odłączony
+     * pendrive, wyłączone konto), cicho wraca do ekranu głównego.
+     */
+    private fun restorePanes() {
+        val saved = paneStore.load() ?: return
+        panes.clear()
+        saved.panes.forEach { s ->
+            val pane = Pane(s.id)
+            pane.root = s.place.root
+            pane.source = s.place.source
+            pane.currentDir = s.place.dir
+            s.history.forEach { pane.navStack.addLast(NavEntry(it.root, it.source, it.dir)) }
+            panes += pane
+        }
+        activePaneId = saved.activeId.takeIf { id -> panes.any { it.id == id } } ?: panes.first().id
+        val pane = active()
+        if (pane.currentDir != null) refreshPane(pane, restoring = true)
     }
 
     /** Pozycje list (pierwszy widoczny element i przesunięcie) dla folderów w kartach. */
@@ -347,6 +510,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun updateWatchers() {
         val wanted = if (!foreground) emptyMap() else listOfNotNull(active(), secondary())
+            // Folder w trakcie wczytywania nie jest jeszcze obserwowany — odpytywanie
+            // dokładało kolejne równoległe listowania wolnego serwera.
+            .filter { it.loadJob == null }
             .mapNotNull { pane -> pane.currentDir?.let { pane.id to it } }
             .toMap()
         watches.entries.removeAll { (id, watch) ->
@@ -367,7 +533,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val pane = panes.firstOrNull { it.id == paneId } ?: return
         if (pane.currentDir != dir) return
         val fresh = runCatching { repo.listChildren(dir) }.getOrNull() ?: return
-        val since = if (repo.servedOffline(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+        val since = if (repo.servedOffline(dir) && offlineStore.unreachable(dir)) offlineStore.syncedAt(dir) ?: 0L else null
         if (pane.currentDir == dir && (fresh != pane.files || since != pane.offlineSince)) {
             pane.files = fresh
             pane.offlineSince = since
@@ -388,7 +554,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Otwiera nową kartę na ekranie „Mój komputer" i przełącza się na nią. */
+    /** Otwiera nową kartę na ekranie „Moje urządzenie" i przełącza się na nią. */
     fun openTab() {
         val pane = Pane(java.util.UUID.randomUUID().toString())
         panes += pane
@@ -431,7 +597,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         refreshPane(copy)
     }
 
-    /** Przypina katalog otwarty w karcie do ekranu „Mój komputer". */
+    /** Przypina katalog otwarty w karcie do ekranu „Moje urządzenie". */
     fun pinTabFolder(id: String) {
         val pane = panes.firstOrNull { it.id == id } ?: return
         val dir = pane.currentDir ?: run {
@@ -520,7 +686,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openDirectoryInSecondary(item: FileItem) {
         val pane = secondary() ?: return
-        pane.currentDir?.let(pane.navStack::addLast)
+        pane.rememberPlace()
         pane.currentDir = item.uri
         refreshPane(pane)
     }
@@ -528,11 +694,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun secondaryGoBack() {
         val pane = secondary() ?: return
         val previous = pane.navStack.removeLastOrNull() ?: return
-        pane.currentDir = previous
-        refreshPane(pane)
+        restorePlace(pane, previous)
     }
 
     init {
+        restorePanes()
         syncPanes()
         loadSavedCollections()
         updateSources()
@@ -541,6 +707,20 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         // Same statystyki indeksu to jedno zapytanie agregujące — tanie, a
         // dzięki temu ekran główny od razu wie, czy indeks w ogóle istnieje.
         analyzeStorage()
+        // Foldery z kopii offline pokazują nową zawartość zaraz po synchronizacji
+        // w tle, a pasek „serwer niedostępny” znika, gdy serwer się odezwie.
+        viewModelScope.launch {
+            // Także liczba rozbieżności: po wyborze wersji lista ma pokazać wynik.
+            offlineStore.entries.map { list -> list.map { listOf(it.id, it.lastSync, it.error, it.conflicts.size) } }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    listOfNotNull(active(), secondary()).forEach { pane ->
+                        val dir = pane.currentDir ?: return@forEach
+                        if (repo.servedOffline(dir)) quietRefresh(pane.id, dir)
+                    }
+                }
+        }
         // Statystyki indeksu (liczba plików, analiza) odświeżamy po każdym
         // zakończonym budowaniu — także tym uruchomionym w tle.
         viewModelScope.launch {
@@ -601,6 +781,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (!stillUsed) repo.releaseTreePermission(tree)
         updateSources()
         loadSavedCollections()
+        if (leaving != null) forgetPlaces { it.toString().startsWith(leaving.toString()) }
         if (leaving != null && _root.value == leaving) goComputerHome()
         // Chmura po nazwie usługi; folder lokalny po nazwie folderu, o ile
         // dostawca ją podał (Dropbox jej nie podaje — zostaje „Podłączony”).
@@ -627,6 +808,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (enabled) return
         val current = _root.value
         val leaving = _sources.value.firstOrNull(matches)?.rootUri
+        if (leaving != null) forgetPlaces { it.toString().startsWith(leaving.toString()) }
         if (current == null || leaving == null || current != leaving) return
 
         val fallback = _sources.value.firstOrNull { it.type == SourceType.LOCAL && it.configured }
@@ -690,11 +872,13 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteAccount(id: String) {
         accounts.get(id)?.let(repo::disconnectRemote)
         accounts.delete(id)
+        forgetPlaces { it.authority == id && RemoteRepository.isRemoteScheme(it.scheme) }
         // Usunięte konto może być otwarte w kilku kartach naraz.
         panes.filter { it.root?.authority == id }.forEach { pane ->
             pane.navStack.clear()
-            pane.files = emptyList()
+            pane.loadJob?.cancel()
             pane.currentDir = null
+            pane.files = emptyList()
             pane.root = null
             pane.source = SourceType.LOCAL
         }
@@ -711,10 +895,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val pane = active()
+        if (pane.currentDir != rootUri) pane.rememberPlace()
         pane.source = source.type
         pane.root = rootUri
         pane.currentDir = rootUri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -745,10 +929,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val pane = active()
+        if (pane.currentDir != rootUri) pane.rememberPlace()
         pane.source = type
         pane.root = rootUri
         pane.currentDir = rootUri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -757,39 +941,68 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         secondary()?.let(::refreshPane)
     }
 
-    private fun refreshPane(pane: Pane) {
+    private fun refreshPane(pane: Pane, restoring: Boolean = false) {
+        pane.loadJob?.cancel()
+        pane.loadJob = null
         val dir = pane.currentDir ?: run { syncPanes(); return }
-        viewModelScope.launch {
-            _busy.value = true
-            runCatching { repo.listChildren(dir) }
-                .onSuccess {
-                    pane.files = it
-                    pane.offlineSince = if (repo.servedOffline(dir)) offlineStore.syncedAt(dir) ?: 0L else null
+        val job = viewModelScope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) {
+            val self = coroutineContext[Job]
+            try {
+                val listed = try {
+                    Result.success(listingScope.async { repo.listChildren(dir) }.await())
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Result.failure(e)
                 }
-                .onFailure {
-                    if (it is ArchivePasswordException) askPassword(dir, it.wrong) { refreshPane(pane) }
-                    else if (!pl.arma.files.net.ServerIdentityAlerts.isIdentityChange(it)) {
-                        _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty())
+                // Karta mogła w międzyczasie przejść gdzie indziej — stara lista nie
+                // może nadpisać nowego folderu.
+                if (pane.currentDir != dir) return@launch
+                listed
+                    .onSuccess {
+                        pane.files = it
+                        pane.offlineSince = if (repo.servedOffline(dir) && offlineStore.unreachable(dir)) offlineStore.syncedAt(dir) ?: 0L else null
                     }
-                }
-            _busy.value = false
-            syncPanes()
+                    .onFailure {
+                        if (restoring) {
+                            pane.navStack.clear()
+                            pane.currentDir = null
+                            pane.files = emptyList()
+                            pane.root = null
+                            pane.source = SourceType.LOCAL
+                        } else if (it is ArchivePasswordException) askPassword(dir, it.wrong) { refreshPane(pane) }
+                        else if (!pl.arma.files.net.ServerIdentityAlerts.isIdentityChange(it)) {
+                            _error.value = text(R.string.err_cannot_read_folder, it.message.orEmpty())
+                        }
+                    }
+            } finally {
+                if (pane.loadJob === self) pane.loadJob = null
+                syncPanes()
+            }
         }
+        pane.loadJob = job
+        syncPanes()
+        job.start()
     }
 
     fun openDirectory(item: FileItem) {
         val pane = active()
-        pane.currentDir?.let(pane.navStack::addLast)
+        pane.rememberPlace()
         pane.currentDir = item.uri
         refreshPane(pane)
     }
 
     fun goBack(): Boolean {
         val pane = active()
+        // Wstecz w trakcie wczytywania: przerywa je i zostaje w folderze, który widać.
+        if (pane.loadJob != null && pane.filesDir != pane.currentDir) {
+            pane.abandonLoad()
+            syncPanes()
+            if (pane.filesDir == pane.currentDir) return true
+        }
         val previous = pane.navStack.removeLastOrNull()
         if (previous != null) {
-            pane.currentDir = previous
-            refreshPane(pane)
+            restorePlace(pane, previous)
             return true
         }
         if (pane.currentDir != null) {
@@ -799,11 +1012,44 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         return false
     }
 
+    /** Czy Wstecz ma dokąd wrócić w bieżącej karcie. */
+    fun canGoBack(): Boolean = active().let { it.navStack.isNotEmpty() || it.currentDir != null }
+
+    private fun restorePlace(pane: Pane, place: NavEntry) {
+        pane.loadJob?.cancel()
+        pane.loadJob = null
+        pane.root = place.root
+        pane.source = place.source
+        pane.currentDir = place.dir
+        if (place.dir == null) {
+            pane.files = emptyList()
+            pane.offlineSince = null
+            syncPanes()
+            refreshDeviceLocations()
+        } else {
+            refreshPane(pane)
+        }
+    }
+
+    /** Ekran „Moje urządzenie” z paska nawigacji — Wstecz wraca potem do folderu. */
+    fun showHome() {
+        val pane = active()
+        if (pane.currentDir == null) return
+        pane.rememberPlace()
+        pane.currentDir = null
+        pane.files = emptyList()
+        pane.root = null
+        pane.source = SourceType.LOCAL
+        syncPanes()
+        refreshDeviceLocations()
+    }
+
     fun goComputerHome() {
         val pane = active()
         pane.navStack.clear()
-        pane.files = emptyList()
+        pane.loadJob?.cancel()
         pane.currentDir = null
+        pane.files = emptyList()
         pane.root = null
         pane.source = SourceType.LOCAL
         syncPanes()
@@ -816,10 +1062,11 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val pane = active()
+        if (pane.currentDir == uri) return
+        pane.rememberPlace()
         pane.source = SourceType.LOCAL
         pane.root = uri
         pane.currentDir = uri
-        pane.navStack.clear()
         refreshPane(pane)
     }
 
@@ -827,7 +1074,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun openPath(uri: Uri) {
         val pane = active()
         if (pane.currentDir == uri) return
-        pane.currentDir?.let(pane.navStack::addLast)
+        pane.rememberPlace()
         pane.currentDir = uri
         refreshPane(pane)
     }
@@ -835,8 +1082,9 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun goRoot() {
         val pane = active()
         pane.root?.let {
+            if (pane.currentDir == it) return
+            pane.rememberPlace()
             pane.currentDir = it
-            pane.navStack.clear()
             refreshPane(pane)
         }
     }
@@ -860,10 +1108,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun rename(item: FileItem, name: String) {
         launchOperation(success = text(R.string.notice_renamed)) {
-            val newUri = repo.rename(item, validatedName(name))
+            val newName = validatedName(name)
+            val newUri = repo.rename(item, newName)
             if (newUri != null) {
                 prefs.replaceUri(item.uri, newUri)
-                prefs.saveMeta(item.copy(uri = newUri, name = newUri.lastPathSegment ?: item.name))
+                // Nie lastPathSegment: w adresie SAF to „primary:Download/nowy.txt”.
+                prefs.saveMeta(item.copy(uri = newUri, name = newName))
             }
             refresh()
             loadSavedCollections()
@@ -885,6 +1135,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun delete(items: List<FileItem>) {
         if (items.isEmpty()) return
+        dropFromDuplicates(items)
         viewModelScope.launch {
             val groups = items.groupBy { trashRootFor(it.uri)?.toString() }
             groups.forEach { (rootUri, group) ->
@@ -916,9 +1167,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrNull()
     }
 
+    /** Usunięte kopie znikają z listy duplikatów; zbiór z jednym plikiem przestaje nim być. */
+    private fun dropFromDuplicates(items: List<FileItem>) {
+        val gone = items.map { it.uri.toString() }.toSet()
+        _duplicates.update { sets ->
+            sets.map { set -> set.copy(files = set.files.filterNot { it.uri.toString() in gone }) }.filter { it.files.size > 1 }
+        }
+    }
+
     /** Usuwa bezpowrotnie, z pominięciem kosza. */
     fun deleteForever(items: List<FileItem>) {
         if (items.isEmpty()) return
+        dropFromDuplicates(items)
         enqueue(OperationKind.DELETE, items, null)
     }
 
@@ -1063,6 +1323,72 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearClipboard() { _clipboard.value = null }
 
+    fun addToShelf(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        val known = _shelf.value.map { it.uri.toString() }.toSet()
+        val added = items.filter { it.uri.toString() !in known }
+        _shelf.value = _shelf.value + added
+        shelfStore.save(_shelf.value)
+        _notice.value = text(R.string.shelf_added, added.size)
+    }
+
+    fun removeFromShelf(item: FileItem) {
+        _shelf.value = _shelf.value.filterNot { it.uri == item.uri }
+        shelfStore.save(_shelf.value)
+    }
+
+    fun clearShelf() {
+        _shelf.value = emptyList()
+        shelfStore.save(emptyList())
+    }
+
+    /** Czy bieżący folder przyjmie zawartość szuflady. */
+    fun canDropHere(): Boolean = _currentDir.value?.let { !ArchiveRepository.isArchive(it) } == true
+
+    /**
+     * Wyciąga szufladę do bieżącego folderu. Wpisy z archiwów zawsze się
+     * wypakowuje (źródła nie da się usunąć), resztę kopiuje albo przenosi.
+     */
+    fun dropShelf(move: Boolean) {
+        val items = _shelf.value
+        if (items.isEmpty()) return
+        val target = writableDir() ?: run { _error.value = text(R.string.shelf_no_target); return }
+        val (packed, plain) = items.partition { ArchiveRepository.isArchive(it.uri) }
+        if (packed.isNotEmpty()) enqueue(OperationKind.EXTRACT, packed, target)
+        if (plain.isNotEmpty()) enqueue(if (move) OperationKind.MOVE else OperationKind.COPY, plain, target)
+        clearShelf()
+    }
+
+    /**
+     * Zawartość folderu bez wchodzenia do niego — do żywych kart i szybkiego
+     * podglądu. Foldery najpierw, potem pliki od najnowszych.
+     */
+    suspend fun peekFolder(item: FileItem): List<FileItem> =
+        repo.listChildren(item.uri).sortedWith(compareBy<FileItem> { !it.isDirectory }.thenByDescending { it.lastModified })
+
+    /** Korzeń archiwum do zajrzenia bez otwierania; hasło → [ArchivePasswordException]. */
+    suspend fun peekArchive(item: FileItem): List<FileItem> = withContext(Dispatchers.IO) {
+        val root = repo.archives.rootOf(item.uri, item.name)
+        repo.archives.ensureReadable(root)
+        repo.listChildren(root).sortedWith(compareBy<FileItem> { !it.isDirectory }.thenBy { it.name.lowercase() })
+    }
+
+    suspend fun listArchiveFolder(uri: Uri): List<FileItem> =
+        repo.listChildren(uri).sortedWith(compareBy<FileItem> { !it.isDirectory }.thenBy { it.name.lowercase() })
+
+    /** Wyciąga pojedyncze wpisy z archiwum do folderu, w którym leży archiwum. */
+    fun extractFromArchive(entries: List<FileItem>) {
+        if (entries.isEmpty()) return
+        val target = writableDir() ?: return
+        enqueue(OperationKind.EXTRACT, entries, target)
+    }
+
+    /** Folder, do którego prowadzi „wstecz” — warstwa pod bieżącą w widoku głębi. */
+    fun backTarget(): Uri? = active().navStack.lastOrNull()?.dir
+
+    /** Ile poziomów „wstecz” ma bieżący folder — głębokość warstwy. */
+    fun navDepth(): Int = active().navStack.size
+
     fun paste() {
         val clip = _clipboard.value ?: return
         val target = writableDir() ?: return
@@ -1161,7 +1487,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             secondary()?.currentDir ?: run { _error.value = text(R.string.err_pane_no_folder); return }
         } else {
             val pane = active()
-            (listOfNotNull(pane.currentDir) + pane.navStack.reversed())
+            (listOfNotNull(pane.currentDir) + pane.navStack.reversed().mapNotNull { it.dir })
                 .firstOrNull { !ArchiveRepository.isArchive(it) }
                 ?: run { _error.value = text(R.string.err_archive_read_only); return }
         }
@@ -1195,7 +1521,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val target = if (toOtherPane) {
             secondary()?.currentDir ?: run { _error.value = text(R.string.err_pane_no_folder); return }
         } else {
-            active().navStack.reversed().firstOrNull { !ArchiveRepository.isArchive(it) }
+            active().navStack.reversed().mapNotNull { it.dir }.firstOrNull { !ArchiveRepository.isArchive(it) }
                 ?: run { _error.value = text(R.string.err_archive_read_only); return }
         }
         if (ArchiveRepository.isArchive(target)) {
@@ -1253,7 +1579,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         loadSavedCollections()
     }
 
-    suspend fun readText(uri: Uri) = repo.readText(uri)
+    /**
+     * Tekst do edycji albo null, gdy pliku nie da się przeczytać (np. usunięty
+     * na serwerze). Komunikat pokazuje wtedy czytnik — wyjątek z efektu
+     * w interfejsie zamykał całą aplikację.
+     */
+    suspend fun readText(uri: Uri): String? = try {
+        repo.readText(uri)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
 
     /** Wczytuje plik do czytnika: kodowanie, obcięcie i spis treści. */
     suspend fun readDocument(item: FileItem): TextDocument = withContext(Dispatchers.IO) {
@@ -1261,7 +1598,16 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         if (TextReader.looksBinary(bytes)) throw pl.arma.viewer.text.NotTextException()
         TextReader.read(bytes, totalBytes = item.size, limit = TextReader.DEFAULT_LIMIT)
     }
-    suspend fun writeText(uri: Uri, text: String) = repo.writeText(uri, text)
+    /** Zapisuje tekst; przy błędzie pokazuje komunikat i zwraca false. */
+    suspend fun writeText(uri: Uri, text: String): Boolean = try {
+        repo.writeText(uri, text)
+        true
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        _error.value = e.message ?: text(R.string.err_open_write)
+        false
+    }
     suspend fun sha256(uri: Uri) = repo.sha256(uri)
 
     suspend fun materializeUri(item: FileItem): Uri = withContext(Dispatchers.IO) {
@@ -1269,8 +1615,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val cache = File(getApplication<Application>().cacheDir, "remote_files").apply { mkdirs() }
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "file" }
         val file = File(cache, "${item.uri.toString().hashCode()}_$safe")
-        repo.openInput(item.uri).use { input -> file.outputStream().use { output -> input.copyTo(output) } }
-        getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
+        // Ten sam plik otwierany drugi raz nie jest pobierany od nowa.
+        val fresh = item.size > 0 && item.lastModified > 0 && file.length() == item.size && file.lastModified() >= item.lastModified
+        if (!fresh) {
+            download(item, file, foreground = true)
+            getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
+        }
         FileProvider.getUriForFile(
             getApplication(),
             "${getApplication<Application>().packageName}.files",
@@ -1278,8 +1628,40 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    suspend fun decodeImage(item: FileItem, targetMaxSide: Int = 2400): Bitmap = withContext(Dispatchers.IO) {
-        val file = preparePreviewFile(item, "image_preview")
+    /**
+     * Ostatnio zdekodowane zdjęcia, do ćwierci pamięci aplikacji. Dzięki temu
+     * sąsiednie zdjęcie, wczytane zawczasu przez [prefetchImages], pokazuje
+     * się od razu po przesunięciu zamiast po chwili pustego pola.
+     */
+    private val imageCache = object : android.util.LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 4).toInt()) {
+        override fun sizeOf(key: String, value: Bitmap) = value.byteCount
+    }
+    private val prefetching = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+
+    private fun imageKey(item: FileItem, targetMaxSide: Int) = "${item.uri}|${item.lastModified}|$targetMaxSide"
+
+    /** Dekoduje w tle zdjęcia, do których prawdopodobnie zaraz przejdziemy. */
+    fun prefetchImages(items: List<FileItem>, targetMaxSide: Int) {
+        items.filterNot { pl.arma.viewer.image.ImageDecoding.isSvg(it.name, it.mimeType) }.forEach { item ->
+            val key = imageKey(item, targetMaxSide)
+            if (imageCache.get(key) != null || !prefetching.add(key)) return@forEach
+            viewModelScope.launch {
+                try { runCatching { decodeImage(item, targetMaxSide) } } finally { prefetching.remove(key) }
+            }
+        }
+    }
+
+    /** [foreground]: otwarte przez użytkownika — pobieranie z sieci pokazuje postęp. */
+    suspend fun decodeImage(item: FileItem, targetMaxSide: Int = 2400, foreground: Boolean = false): Bitmap = withContext(Dispatchers.IO) {
+        // Miniatury mają własną pamięć podręczną; tu tylko pełne podglądy.
+        if (targetMaxSide < 2400) return@withContext decodeImageUncached(item, targetMaxSide, foreground)
+        val key = imageKey(item, targetMaxSide)
+        imageCache.get(key)?.let { return@withContext it }
+        decodeImageUncached(item, targetMaxSide, foreground).also { imageCache.put(key, it) }
+    }
+
+    private suspend fun decodeImageUncached(item: FileItem, targetMaxSide: Int, foreground: Boolean): Bitmap = withContext(Dispatchers.IO) {
+        val file = preparePreviewFile(item, "image_preview", foreground)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val source = ImageDecoder.createSource(file)
             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
@@ -1308,11 +1690,84 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun prepareImageUri(item: FileItem): Uri = withContext(Dispatchers.IO) {
         if (item.uri.scheme == "content" || item.uri.scheme == "file") return@withContext item.uri
-        val file = preparePreviewFile(item, "image_preview")
+        val file = preparePreviewFile(item, "image_preview", foreground = true)
         FileProvider.getUriForFile(getApplication(), "${getApplication<Application>().packageName}.files", file)
     }
 
-    private fun preparePreviewFile(item: FileItem, folderName: String): File {
+    /**
+     * Film albo nagranie z serwera jako plik lokalny dla odtwarzacza — ExoPlayer
+     * nie czyta adresów SMB/FTP/SFTP. Pobieranie pokazuje postęp i da się przerwać.
+     */
+    suspend fun prepareMedia(item: FileItem): Uri = withContext(Dispatchers.IO) {
+        if (item.uri.scheme == "file" || item.uri.scheme == "content") return@withContext item.uri
+        Uri.fromFile(preparePreviewFile(item, "media_preview", foreground = true))
+    }
+
+    /** Pobieranie widoczne na ekranie: nazwa, ile już jest i ile ma być (0 = nie wiadomo). */
+    data class Download(val id: Long, val uri: Uri, val name: String, val done: Long, val total: Long)
+
+    private val _downloads = MutableStateFlow<List<Download>>(emptyList())
+    val downloads: StateFlow<List<Download>> = _downloads.asStateFlow()
+    private val downloadJobs = java.util.concurrent.ConcurrentHashMap<Long, Job>()
+    private val downloadIds = java.util.concurrent.atomic.AtomicLong()
+
+    /** Przerywa pobieranie — korutyna, która na nie czeka, kończy się anulowaniem. */
+    fun cancelDownload(id: Long) {
+        downloadJobs.remove(id)?.cancel()
+        _downloads.update { list -> list.filterNot { it.id == id } }
+    }
+
+    /**
+     * Kopiuje plik do [target] przez plik `.part`. [foreground]: użytkownik czeka
+     * na ten plik, więc po krótkiej chwili pojawia się okno z postępem
+     * i przyciskiem „Przerwij” (szybkie pobrania nie mrugają oknem).
+     */
+    private suspend fun download(item: FileItem, target: File, foreground: Boolean) {
+        val context = kotlin.coroutines.coroutineContext
+        val temp = File(target.parentFile, "${target.name}.part")
+        runCatching { temp.delete() }
+        val id = downloadIds.incrementAndGet()
+        val startedAt = System.nanoTime()
+        var shown = false
+        var lastUpdate = 0L
+        if (foreground) context[Job]?.let { downloadJobs[id] = it }
+        try {
+            repo.openInput(item.uri).use { input ->
+                temp.outputStream().buffered(256 * 1024).use { output ->
+                    val buffer = ByteArray(128 * 1024)
+                    var done = 0L
+                    while (true) {
+                        context.ensureActive()
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        output.write(buffer, 0, read)
+                        done += read
+                        if (!foreground) continue
+                        val now = System.nanoTime()
+                        if (!shown && now - startedAt < DOWNLOAD_DIALOG_DELAY_NS) continue
+                        if (shown && now - lastUpdate < 100_000_000L) continue
+                        shown = true
+                        lastUpdate = now
+                        val entry = Download(id, item.uri, item.name, done, item.size.coerceAtLeast(0))
+                        _downloads.update { list -> list.filterNot { it.id == id } + entry }
+                    }
+                }
+            }
+            context.ensureActive()
+            if (!temp.renameTo(target)) {
+                temp.copyTo(target, overwrite = true)
+                temp.delete()
+            }
+        } catch (e: Throwable) {
+            runCatching { temp.delete() }
+            throw e
+        } finally {
+            downloadJobs.remove(id)
+            _downloads.update { list -> list.filterNot { it.id == id } }
+        }
+    }
+
+    private suspend fun preparePreviewFile(item: FileItem, folderName: String, foreground: Boolean = false): File {
         if (item.uri.scheme == "file") return File(item.uri.path ?: error(text(R.string.err_no_path)))
         val cache = File(getApplication<Application>().cacheDir, folderName).apply { mkdirs() }
         val safe = item.name.replace(Regex("[^A-Za-z0-9._-]"), "_").takeLast(90).ifBlank { "preview.bin" }
@@ -1320,13 +1775,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         val file = File(cache, "${signature}_$safe")
         val metadataKnown = item.size > 0 && item.lastModified > 0
         if (!metadataKnown || !file.exists() || file.length() == 0L || (item.size > 0 && file.length() != item.size)) {
-            val temp = File(cache, "${file.name}.part")
-            runCatching { temp.delete() }
-            repo.openInput(item.uri).use { input -> temp.outputStream().buffered().use { output -> input.copyTo(output) } }
-            if (!temp.renameTo(file)) {
-                temp.copyTo(file, overwrite = true)
-                temp.delete()
-            }
+            download(item, file, foreground)
             getApplication<ArmaFilesApp>().cacheJanitor.trimAsync()
         } else {
             // Czas użycia, nie pobrania — limit wieku liczy się od ostatniego otwarcia.
@@ -1337,7 +1786,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Plik lokalny dla przeglądarki PDF/CAD; z sieci pobierany do pamięci podręcznej. */
     suspend fun prepareDocument(item: FileItem): File = withContext(Dispatchers.IO) {
-        preparePreviewFile(item, "doc_preview")
+        preparePreviewFile(item, "doc_preview", foreground = true)
     }
 
     /**
@@ -1450,6 +1899,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 pane.files = emptyList()
             }
         }
+        forgetPlaces(::onRemoved)
         if (onRemoved(_clipboard.value?.items?.firstOrNull()?.uri)) _clipboard.value = null
         _searchResults.value = _searchResults.value.filterNot { onRemoved(it.uri) }
         syncPanes()
@@ -1496,6 +1946,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        listingScope.cancel()
         val context = getApplication<Application>()
         when (val watcher = volumeWatcher) {
             is android.content.BroadcastReceiver -> runCatching { context.unregisterReceiver(watcher) }
@@ -1508,24 +1959,6 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         super.onCleared()
-    }
-
-    private val _pinnedStats = MutableStateFlow<Map<String, Pair<Int, Long>>>(emptyMap())
-    /** Liczba plików i zajętość przypiętych folderów, prosto z indeksu. */
-    val pinnedStats: StateFlow<Map<String, Pair<Int, Long>>> = _pinnedStats.asStateFlow()
-
-    private fun loadPinnedStats() {
-        viewModelScope.launch {
-            val stats = withContext(Dispatchers.IO) {
-                // Zero przy braku indeksu wyglądało jak pusty folder; wtedy
-                // karta pokazuje ścieżkę.
-                _pinnedFolders.value.associate { folder ->
-                    val uri = folder.rootUri.toString()
-                    uri to (index.countUnder(uri) to index.bytesUnder(uri))
-                }.filterValues { (count, _) -> count > 0 }
-            }
-            _pinnedStats.value = stats
-        }
     }
 
     private fun loadPinned() {
@@ -1541,10 +1974,12 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 id = uri,
                 label = displayPinnedLabel(uri, label),
                 rootUri = parsed,
-                subtitle = parsed.path ?: label
+                // Ścieżka dokumentu SAF („/tree/primary:…/document/…”) nic nie mówi — pokazujemy jej część po dwukropku.
+                subtitle = if (parsed.scheme == "content") {
+                    runCatching { DocumentsContract.getDocumentId(parsed).substringAfter(':') }.getOrNull()?.ifBlank { null } ?: label
+                } else parsed.path ?: label
             )
         }
-        loadPinnedStats()
     }
 
     /**
@@ -1598,7 +2033,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    /** Przypina bieżący katalog albo wskazany folder do ekranu „Mój komputer". */
+    /** Przypina bieżący katalog albo wskazany folder do ekranu „Moje urządzenie". */
     fun pinFolder(item: FileItem) {
         val current = prefs.pinned().orEmpty()
         val uri = item.uri.toString()
@@ -1614,7 +2049,66 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     fun unpinFolder(id: String) {
         prefs.setPinned(prefs.pinned().orEmpty().filterNot { it.first == id })
         loadPinned()
+        // Folder przypięty przez SAF trzymał trwałe uprawnienie — oddajemy je,
+        // gdy nic innego z niego nie korzysta.
+        val uri = Uri.parse(id)
+        if (uri.scheme == "content") {
+            val tree = runCatching { DocumentsContract.buildTreeDocumentUri(uri.authority, DocumentsContract.getTreeDocumentId(uri)) }.getOrNull()
+            if (tree != null && !treeInUse(tree)) repo.releaseTreePermission(tree)
+        }
     }
+
+    private fun treeInUse(tree: Uri): Boolean =
+        prefs.treeUri == tree ||
+            listOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX).any { networkPrefs.cloudTree(it) == tree } ||
+            prefs.pinned().orEmpty().any { (pinned, _) ->
+                val parsed = Uri.parse(pinned)
+                parsed.scheme == "content" && runCatching { DocumentsContract.getTreeDocumentId(parsed) }.getOrNull() == DocumentsContract.getTreeDocumentId(tree)
+            }
+
+    /**
+     * Folder wybrany w systemowym oknie wyboru, przypięty na górze ekranu
+     * głównego obok Pobranych i Zdjęć. Folder z pamięci telefonu albo karty SD
+     * przypinamy jako zwykłą ścieżkę (działa przy pełnym dostępie, liczy się
+     * w indeksie), inny — np. z aplikacji chmury — przez trwałe uprawnienie SAF.
+     */
+    fun pinTree(tree: Uri) {
+        val local = localFolderForTree(tree)
+        if (local != null && hasBroadStorageAccess()) {
+            val name = _deviceStorages.value.firstOrNull { it.rootUri == Uri.fromFile(local) }?.label ?: local.name
+            pinFolder(FileItem(Uri.fromFile(local), name, DIRECTORY_MIME, 0, local.lastModified(), true))
+            return
+        }
+        runCatching {
+            repo.persistTreePermission(tree)
+            pinFolder(FileItem(repo.treeToDocumentUri(tree), treeName(tree), DIRECTORY_MIME, 0, 0, true))
+        }.onFailure { _error.value = it.message ?: text(R.string.err_access_failed) }
+    }
+
+    /** Folder podłączony na dole („Podłączone”) przenosi się do przypiętych na górze. */
+    fun pinSource(source: StorageSource) {
+        if (source.type != SourceType.LOCAL) return
+        val tree = prefs.treeUri ?: return
+        pinTree(tree)
+        prefs.treeUri = null
+        if (!treeInUse(tree)) repo.releaseTreePermission(tree)
+        updateSources()
+        loadSavedCollections()
+    }
+
+    /** Ścieżka folderu z pamięci telefonu lub karty SD wskazanego przez SAF; null dla innych dostawców. */
+    private fun localFolderForTree(tree: Uri): java.io.File? {
+        if (tree.authority != "com.android.externalstorage.documents") return null
+        val id = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull() ?: return null
+        val volume = id.substringBefore(':')
+        val base = if (volume == "primary") Environment.getExternalStorageDirectory() else java.io.File("/storage/$volume")
+        return java.io.File(base, id.substringAfter(':', "")).takeIf { it.isDirectory }
+    }
+
+    private fun treeName(tree: Uri): String =
+        runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+            ?.substringAfter(':')?.trimEnd('/')?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+            ?: attachedLabel(tree)
 
     /** Zmiana kolejności przypiętych kafelków po przeciągnięciu. */
     fun movePinned(fromIndex: Int, toIndex: Int) {
@@ -1833,6 +2327,18 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         return parent.removePrefix("/storage/emulated/0")
     }
 
+    /** Gdzie leży plik, po ludzku: nazwa nośnika albo konta i folder w nim. */
+    fun locationLabel(item: FileItem): String {
+        if (RemoteRepository.isRemoteScheme(item.uri.scheme)) return searchLocation(item)
+        val parent = item.uri.path.orEmpty().substringBeforeLast('/')
+        val storage = _deviceStorages.value
+            .filter { it.rootUri.scheme == item.uri.scheme && parent.startsWith(it.rootUri.path.orEmpty().trimEnd('/')) }
+            .maxByOrNull { it.rootUri.path.orEmpty().length }
+            ?: return parent
+        val inside = parent.removePrefix(storage.rootUri.path.orEmpty().trimEnd('/')).trim('/')
+        return if (inside.isEmpty()) storage.label else "${storage.label} › ${inside.replace("/", " › ")}"
+    }
+
     /** Kategoria licząca się dla całej pamięci, nie tylko dla otwartego katalogu. */
     fun browseCategory(category: IndexCategory) {
         viewModelScope.launch {
@@ -1842,6 +2348,10 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Kafelki mapy pamięci dla folderu [dir] — z indeksu, bez chodzenia po dysku. */
+    suspend fun storageMap(dir: Uri): List<pl.arma.files.index.MapEntry> =
+        withContext(Dispatchers.IO) { runCatching { index.mapChildren(dir.toString()) }.getOrDefault(emptyList()) }
+
     fun analyzeStorage() {
         _analyzing.value = true
         viewModelScope.launch {
@@ -1849,6 +2359,7 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
                 val monthsAgo = System.currentTimeMillis() - 180L * 24 * 60 * 60 * 1000
                 StorageAnalysis(
                     usageByCategory = index.usageByCategory(),
+                    usageByStorage = _deviceStorages.value.associate { it.id to index.usageByCategoryUnder(it.rootUri.toString()) },
                     stats = index.stats(),
                     largestFiles = index.largestFiles(30).map(::toFileItem).filter { onPresentVolume(it.uri) },
                     largestFolders = index.largestFolders(20).filter { onPresentVolume(Uri.parse(it.parentUri)) },
@@ -1983,6 +2494,8 @@ class FileManagerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private companion object {
+        /** Okno postępu pobierania dopiero po tym czasie — krótkie pobrania go nie pokazują. */
+        const val DOWNLOAD_DIALOG_DELAY_NS = 400_000_000L
         const val SEARCH_LIMIT = 500
         const val REMOTE_SEARCH_DIRS = 3_000
         const val REMOTE_SEARCH_MS = 90_000L

@@ -19,6 +19,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import kotlinx.coroutines.launch
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -79,7 +81,8 @@ fun ImageViewer(
     modifier: Modifier = Modifier,
     onNavigate: (Int) -> Unit = {},
     canNavigate: Boolean = false,
-    positionLabel: String = ""
+    positionLabel: String = "",
+    hasNeighbor: (Int) -> Boolean = { canNavigate }
 ) = ImageViewer(
     key = file.path to file.lastModified(),
     name = file.name,
@@ -87,14 +90,17 @@ fun ImageViewer(
     modifier = modifier,
     onNavigate = onNavigate,
     canNavigate = canNavigate,
-    positionLabel = positionLabel
+    positionLabel = positionLabel,
+    hasNeighbor = hasNeighbor
 )
 
 /**
  * Obraz z powiększaniem (szczypanie, przyciski), przesuwaniem i przewijaniem
  * do sąsiednich zdjęć gestem w bok; przycisk pełnego ekranu otwiera
  * [FullscreenImageViewer]. [load] dekoduje obraz (np. [ImageDecoding.decode]),
- * a [key] mówi, kiedy dekodować ponownie.
+ * a [key] mówi, kiedy dekodować ponownie. [hasNeighbor] mówi, czy w danym
+ * kierunku (+1 następne, -1 poprzednie) jest zdjęcie — na końcu listy obraz
+ * stawia opór zamiast wyjeżdżać.
  */
 @Composable
 fun ImageViewer(
@@ -104,13 +110,14 @@ fun ImageViewer(
     modifier: Modifier = Modifier,
     onNavigate: (Int) -> Unit = {},
     canNavigate: Boolean = false,
-    positionLabel: String = ""
+    positionLabel: String = "",
+    hasNeighbor: (Int) -> Boolean = { canNavigate }
 ) {
     var bitmap by remember(key) { mutableStateOf<Bitmap?>(null) }
     var error by remember(key) { mutableStateOf<String?>(null) }
-    var scale by remember(key) { mutableFloatStateOf(1f) }
-    var offsetX by remember(key) { mutableFloatStateOf(0f) }
-    var offsetY by remember(key) { mutableFloatStateOf(0f) }
+    val zoom = remember(key) { ZoomState() }
+    val swipe = remember { SwipeState() }
+    val scope = rememberCoroutineScope()
     var fullscreen by remember(key) { mutableStateOf(false) }
     val openFailed = stringResource(R.string.viewer_image_open_failed)
 
@@ -131,38 +138,17 @@ fun ImageViewer(
             // zostawiało pusty pas pod spodem i wyglądało na źle ułożone.
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 bitmap?.let { image ->
-                    Image(
-                        bitmap = image.asImageBitmap(),
-                        contentDescription = name,
-                        contentScale = ContentScale.Fit,
-                        alignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp)
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                translationX = offsetX
-                                translationY = offsetY
-                            }
-                            .imageGestures(
-                                key = key ?: name,
-                                canNavigate = canNavigate,
-                                scale = { scale },
-                                onTransform = { pan, zoom ->
-                                    val next = (scale * zoom).coerceIn(1f, 8f)
-                                    scale = next
-                                    if (next > 1.01f) {
-                                        val shift = 2200f * (next - 1f)
-                                        offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
-                                        offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
-                                    } else {
-                                        offsetX = 0f
-                                        offsetY = 0f
-                                    }
-                                },
-                                onNavigate = onNavigate
-                            )
+                    ZoomableImage(
+                        image = image,
+                        name = name,
+                        key = key ?: name,
+                        state = zoom,
+                        canNavigate = canNavigate,
+                        hasNeighbor = hasNeighbor,
+                        onNavigate = onNavigate,
+                        modifier = Modifier.fillMaxSize().clipToBounds(),
+                        imageModifier = Modifier.padding(4.dp),
+                        swipe = swipe
                     )
                 }
                 if (bitmap == null && error == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -182,13 +168,14 @@ fun ImageViewer(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                IconButton(onClick = {
-                    scale = (scale - .25f).coerceAtLeast(1f)
-                    if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_image_zoom_out)) }
-                Text("${(scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
-                IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) { Icon(Icons.Default.ZoomIn, stringResource(R.string.viewer_image_zoom_in)) }
-                IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) { Icon(Icons.Default.FitScreen, stringResource(R.string.viewer_image_zoom_fit)) }
+                IconButton(onClick = { scope.launch { zoom.zoomTo(zoom.scale / 1.5f) } }) {
+                    Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_image_zoom_out))
+                }
+                Text("${(zoom.scale * 100).toInt()}%", style = MaterialTheme.typography.labelLarge)
+                IconButton(onClick = { scope.launch { zoom.zoomTo(zoom.scale * 1.5f) } }) {
+                    Icon(Icons.Default.ZoomIn, stringResource(R.string.viewer_image_zoom_in))
+                }
+                IconButton(onClick = { scope.launch { zoom.reset() } }) { Icon(Icons.Default.FitScreen, stringResource(R.string.viewer_image_zoom_fit)) }
                 IconButton(onClick = { fullscreen = true }, enabled = bitmap != null) {
                     Icon(Icons.Default.Fullscreen, stringResource(R.string.viewer_image_fullscreen))
                 }
@@ -204,7 +191,8 @@ fun ImageViewer(
                 onDismiss = { fullscreen = false },
                 onNavigate = onNavigate,
                 canNavigate = canNavigate,
-                position = positionLabel
+                position = positionLabel,
+                hasNeighbor = hasNeighbor
             )
         }
     }
@@ -255,36 +243,6 @@ fun SvgImageViewer(model: Any?, name: String, modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * Powiększanie, przesuwanie i przewijanie zdjęć w jednym geście. Dwa osobne
- * detektory się wykluczały: szczypanie zjadało ruch palca, zanim przewijanie
- * go zobaczyło, i zdjęcia nie dało się zmienić.
- */
-internal fun Modifier.imageGestures(
-    key: Any,
-    canNavigate: Boolean,
-    scale: () -> Float,
-    onTransform: (pan: Offset, zoom: Float) -> Unit,
-    onNavigate: (Int) -> Unit
-): Modifier = pointerInput(key, canNavigate) {
-    awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
-        var dragged = 0f
-        var pinched = false
-        do {
-            val event = awaitPointerEvent()
-            if (event.changes.count { it.pressed } >= 2) pinched = true
-            val zoom = event.calculateZoom()
-            val pan = event.calculatePan()
-            if (pinched || scale() > 1.01f) onTransform(pan, zoom) else dragged += pan.x
-            event.changes.forEach { if (it.positionChanged()) it.consume() }
-        } while (event.changes.any { it.pressed })
-        if (canNavigate && !pinched && scale() <= 1.01f && kotlin.math.abs(dragged) > 120f) {
-            onNavigate(if (dragged < 0) 1 else -1)
-        }
-    }
-}
-
 /** Obraz na całym ekranie, z narzędziami na nim i przewijaniem do sąsiednich zdjęć. */
 @Composable
 fun FullscreenImageViewer(
@@ -294,11 +252,12 @@ fun FullscreenImageViewer(
     onNavigate: (Int) -> Unit = {},
     canNavigate: Boolean = false,
     position: String = "",
-    error: String? = null
+    error: String? = null,
+    hasNeighbor: (Int) -> Boolean = { canNavigate }
 ) {
-    var scale by remember(name) { mutableFloatStateOf(1f) }
-    var offsetX by remember(name) { mutableFloatStateOf(0f) }
-    var offsetY by remember(name) { mutableFloatStateOf(0f) }
+    val zoom = remember(name) { ZoomState() }
+    val swipe = remember { SwipeState() }
+    val scope = rememberCoroutineScope()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -311,37 +270,16 @@ fun FullscreenImageViewer(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (error == null) CircularProgressIndicator() else Text(error, color = Color.White)
                     }
-                } else Image(
-                    bitmap = image.asImageBitmap(),
-                    contentDescription = name,
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationX = offsetX
-                            translationY = offsetY
-                        }
-                        .imageGestures(
-                            key = name,
-                            canNavigate = canNavigate,
-                            scale = { scale },
-                            onTransform = { pan, zoom ->
-                                val next = (scale * zoom).coerceIn(1f, 8f)
-                                scale = next
-                                if (next > 1.01f) {
-                                    val shift = 3200f * (next - 1f)
-                                    offsetX = (offsetX + pan.x).coerceIn(-shift, shift)
-                                    offsetY = (offsetY + pan.y).coerceIn(-shift, shift)
-                                } else {
-                                    offsetX = 0f
-                                    offsetY = 0f
-                                }
-                            },
-                            onNavigate = onNavigate
-                        )
+                } else ZoomableImage(
+                    image = image,
+                    name = name,
+                    key = name,
+                    state = zoom,
+                    canNavigate = canNavigate,
+                    hasNeighbor = hasNeighbor,
+                    onNavigate = onNavigate,
+                    modifier = Modifier.fillMaxSize(),
+                    swipe = swipe
                 )
 
                 Surface(
@@ -383,15 +321,14 @@ fun FullscreenImageViewer(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        IconButton(onClick = {
-                            scale = (scale - .25f).coerceAtLeast(1f)
-                            if (scale <= 1.01f) { offsetX = 0f; offsetY = 0f }
-                        }) { Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_image_zoom_out), tint = Color.White) }
-                        Text("${(scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
-                        IconButton(onClick = { scale = (scale + .25f).coerceAtMost(8f) }) {
+                        IconButton(onClick = { scope.launch { zoom.zoomTo(zoom.scale / 1.5f) } }) {
+                            Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_image_zoom_out), tint = Color.White)
+                        }
+                        Text("${(zoom.scale * 100).toInt()}%", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                        IconButton(onClick = { scope.launch { zoom.zoomTo(zoom.scale * 1.5f) } }) {
                             Icon(Icons.Default.ZoomIn, stringResource(R.string.viewer_image_zoom_in), tint = Color.White)
                         }
-                        IconButton(onClick = { scale = 1f; offsetX = 0f; offsetY = 0f }) {
+                        IconButton(onClick = { scope.launch { zoom.reset() } }) {
                             Icon(Icons.Default.FitScreen, stringResource(R.string.viewer_image_zoom_fit), tint = Color.White)
                         }
                         IconButton(onClick = onDismiss) {
@@ -422,14 +359,9 @@ fun FullscreenSvgViewer(model: Any, name: String, onDismiss: () -> Unit) {
                     contentDescription = name,
                     contentScale = ContentScale.Fit,
                     alignment = Alignment.Center,
+                    // Gest przed warstwą: na powiększonej ruch palca przychodził podzielony przez skalę.
                     modifier = Modifier
                         .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationX = offsetX
-                            translationY = offsetY
-                        }
                         .pointerInput(name) {
                             detectTransformGestures { _, pan, zoom, _ ->
                                 val next = (scale * zoom).coerceIn(1f, 8f)
@@ -443,6 +375,12 @@ fun FullscreenSvgViewer(model: Any, name: String, onDismiss: () -> Unit) {
                                     offsetY = 0f
                                 }
                             }
+                        }
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offsetX
+                            translationY = offsetY
                         }
                 )
 

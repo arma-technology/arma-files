@@ -154,4 +154,11 @@
         <item quantity="few">%1$d vrstice</item>
         <item quantity="other">%1$d vrstic</item>
     </plurals>
+    <string name="viewer_audio_play">Predvajaj</string>
+    <string name="viewer_audio_pause">Premor</string>
+    <string name="viewer_audio_next">Naslednji</string>
+    <string name="viewer_audio_previous">Prejšnji</string>
+    <string name="viewer_audio_error">Posnetka ni mogoče predvajati (%1$s)</string>
+    <string name="viewer_text_formatted">Oblikovan prikaz</string>
+    <string name="viewer_text_source">Izvor</string>
 </resources>

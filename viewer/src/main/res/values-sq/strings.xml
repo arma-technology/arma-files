@@ -152,4 +152,11 @@
         <item quantity="one">%1$d rresht</item>
         <item quantity="other">%1$d rreshta</item>
     </plurals>
+    <string name="viewer_audio_play">Luaj</string>
+    <string name="viewer_audio_pause">Pauzë</string>
+    <string name="viewer_audio_next">Tjetra</string>
+    <string name="viewer_audio_previous">E mëparshmja</string>
+    <string name="viewer_audio_error">Regjistrimi nuk mund të luhet (%1$s)</string>
+    <string name="viewer_text_formatted">Pamje e formatuar</string>
+    <string name="viewer_text_source">Burimi</string>
 </resources>

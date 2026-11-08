@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Fullscreen
@@ -63,7 +63,7 @@ private val TabShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
 private val TabHeight = 40.dp
 
 private fun tabIcon(tab: TabInfo): ImageVector = when {
-    tab.atHome -> Icons.Default.Computer
+    tab.atHome -> Icons.Default.PhoneAndroid
     tab.source == SourceType.SMB -> Icons.Default.Dns
     tab.source == SourceType.FTP -> Icons.Default.Storage
     tab.source in setOf(SourceType.GOOGLE_DRIVE, SourceType.ONEDRIVE, SourceType.DROPBOX) ->

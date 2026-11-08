@@ -44,6 +44,18 @@ data class IndexedFile(
     val category: IndexCategory
 )
 
+/**
+ * Jeden kafelek mapy pamięci: podfolder (z sumą wszystkiego pod nim) albo plik.
+ * [segment] to człon adresu file:// — zakodowany, jak w kolumnie uri.
+ */
+data class MapEntry(
+    val segment: String,
+    val isDirectory: Boolean,
+    val bytes: Long,
+    val files: Int,
+    val category: IndexCategory
+)
+
 /** Katalog wraz z sumą rozmiarów tego, co w nim leży — dla analizatora. */
 data class FolderUsage(
     val parentUri: String,

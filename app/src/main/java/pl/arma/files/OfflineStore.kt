@@ -8,7 +8,10 @@ import android.net.Uri
 import android.os.Environment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -35,6 +38,9 @@ import java.security.MessageDigest
  * Plik usunięty w telefonie wraca z serwera — usunięcie kopii nie kasuje
  * niczego na serwerze. Plik usunięty na serwerze znika z kopii, chyba że był
  * w telefonie zmieniony (wtedy to też rozbieżność).
+ *
+ * Co ma kopię, otwiera się z kopii — od razu, bez czekania na serwer — a serwer
+ * jest sprawdzany w tle przez [refreshSoon], nie przy każdym dotknięciu.
  */
 class OfflineStore(
     private val context: Context,
@@ -92,12 +98,21 @@ class OfflineStore(
     private val _progress = MutableStateFlow<Map<String, Progress>>(emptyMap())
     val progress: StateFlow<Map<String, Progress>> = _progress.asStateFlow()
 
+    /** Wpisy, w których synchronizacja znalazła nowe rozbieżności — aplikacja pyta o decyzję. */
+    private val _newConflicts = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    val newConflicts: SharedFlow<String> = _newConflicts.asSharedFlow()
+
+    /** Ostatnia próba synchronizacji w tle i liczba kolejnych porażek, dla każdego wpisu. */
+    private val attempts = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Int>>()
+
     init {
         // Po powrocie zasięgu kopie, których nie udało się zsynchronizować, próbują od razu.
         val connectivity = context.getSystemService(ConnectivityManager::class.java)
         runCatching {
             connectivity?.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
+                    // Nowa sieć to nowa szansa na serwer — bez czekania na koniec przerwy.
+                    attempts.clear()
                     if (_entries.value.any { it.error != null }) syncAll(automatic = true)
                 }
             })
@@ -154,7 +169,7 @@ class OfflineStore(
     }
 
     private fun dirName(entry: Entry, location: Location) =
-        if (location == Location.APP) entry.id else entry.name.replace('/', '_').ifBlank { entry.id }
+        if (location == Location.APP) entry.id else entry.name.replace('/', '_').takeIf(LocalNames::isSafe) ?: entry.id
 
     private fun uniqueDir(root: File, name: String): File {
         var candidate = File(root, name)
@@ -257,8 +272,8 @@ class OfflineStore(
     }
 
     private fun localFor(entry: Entry, relative: String): File {
-        val base = if (entry.isDirectory) File(entry.dir) else File(entry.dir, entry.name)
-        return relative.split('/').filter { it.isNotEmpty() }.fold(base) { dir, name -> File(dir, name) }
+        val base = if (entry.isDirectory) File(entry.dir) else LocalNames.child(File(entry.dir), entry.name)
+        return relative.split('/').filter { it.isNotEmpty() }.fold(base) { dir, name -> LocalNames.child(dir, name) }
     }
 
     /** Czy [uri] jest zapisany offline sam w sobie (nie tylko jako zawartość folderu). */
@@ -269,6 +284,78 @@ class OfflineStore(
 
     /** Kiedy ostatnio udało się zsynchronizować kopię obejmującą [uri]. */
     fun syncedAt(uri: Uri): Long? = covering(uri)?.first?.lastSync?.takeIf { it > 0 }
+
+    /** Serwer kopii obejmującej [uri] jest poza zasięgiem: brak sieci albo ostatnia synchronizacja go nie dosięgła. */
+    fun unreachable(uri: Uri): Boolean {
+        val entry = covering(uri)?.first ?: return false
+        val network = context.getSystemService(ConnectivityManager::class.java)?.activeNetwork
+        return entry.error != null || network == null
+    }
+
+    /**
+     * Kopia została właśnie pokazana — sprawdza serwer w tle, ale nie przy
+     * każdym dotknięciu: po udanej synchronizacji najwcześniej po [FRESH_MS],
+     * po nieudanej coraz rzadziej (1, 2, 4… do [MAX_BACKOFF_MS]). Powrót sieci
+     * zeruje przerwę.
+     *
+     * Przez każdą sieć, także przy „Tylko przez Wi-Fi”: to ustawienie dotyczy
+     * synchronizacji automatycznej w tle, a tu użytkownik właśnie ogląda
+     * folder — bez tego na danych komórkowych kopia nigdy by się nie odświeżyła.
+     */
+    fun refreshSoon(uri: Uri) {
+        val entry = covering(uri)?.first ?: return
+        if (context.getSystemService(ConnectivityManager::class.java)?.activeNetwork == null) return
+        val now = System.currentTimeMillis()
+        val (last, failures) = attempts[entry.id] ?: (0L to 0)
+        val wait = if (failures == 0) FRESH_MS else minOf(BACKOFF_MS shl (failures - 1).coerceAtMost(8), MAX_BACKOFF_MS)
+        if (now - last < wait) return
+        attempts[entry.id] = now to failures
+        sync(entry.id)
+    }
+
+    /**
+     * Zapis do kopii pliku spod [uri]; po zamknięciu strumienia zmiana od razu
+     * jedzie na serwer (albo czeka na niego, gdy go nie ma).
+     */
+    fun writer(uri: Uri): java.io.OutputStream? {
+        val (entry, relative) = covering(uri) ?: return null
+        val file = localFor(entry, relative).takeIf { it.isFile } ?: return null
+        return object : java.io.FileOutputStream(file, false) {
+            private var closed = false
+            override fun close() {
+                super.close()
+                if (closed) return
+                closed = true
+                syncAfterChange(uri)
+            }
+        }
+    }
+
+    private val pending = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+
+    /**
+     * Coś w obrębie kopii zmieniło się w aplikacji (zapis, usunięcie, nowy
+     * folder, przeniesienie na serwerze) — synchronizacja rusza od razu po
+     * ostatniej z serii zmian, bez czekania na przerwę z [refreshSoon]. Gdy
+     * poprzednia jeszcze trwa, ta czeka na nią, żeby żadna zmiana nie przepadła.
+     */
+    fun syncAfterChange(uri: Uri) {
+        val entry = covering(uri)?.first ?: return
+        pending.remove(entry.id)?.cancel()
+        pending[entry.id] = scope.launch {
+            kotlinx.coroutines.delay(1_500)
+            pending.remove(entry.id)
+            attempts.remove(entry.id)
+            while (entry.id in _progress.value) kotlinx.coroutines.delay(500)
+            runSync(entry.id)
+        }
+    }
+
+    /** Usunięte na serwerze z aplikacji znika też z kopii — bez czekania na synchronizację. */
+    fun deletedOnServer(uri: Uri) {
+        localFile(uri)?.deleteRecursively()
+        syncAfterChange(uri)
+    }
 
     fun list(parent: Uri): List<FileItem>? {
         val dir = localFile(parent)?.takeIf { it.isDirectory } ?: return null
@@ -371,10 +458,14 @@ class OfflineStore(
                         )
                     }
                 }
+                val failures = attempts[id]?.second ?: 0
+                attempts[id] = System.currentTimeMillis() to (if (result.isSuccess) 0 else failures + 1)
                 if (result.isSuccess) {
                     val updated = _entries.value.first { it.id == id }
                     // Powiadamiamy tylko o nowych rozbieżnościach; rozwiązane znikają.
-                    conflicts.filter { it.path !in previous }.forEach { notifier.show(updated, it) }
+                    val fresh = conflicts.filter { it.path !in previous }
+                    fresh.forEach { notifier.show(updated, it) }
+                    if (fresh.isNotEmpty()) _newConflicts.tryEmit(id)
                     entry.conflicts.filter { old -> conflicts.none { it.path == old.path } }.forEach { notifier.cancel(entry, it) }
                 }
             } finally {
@@ -411,7 +502,8 @@ class OfflineStore(
 
     private fun mirrorDir(entry: Entry, remoteDir: Uri, relative: String, states: MutableMap<String, Base>, conflicts: MutableList<Conflict>): Long {
         val local = localFor(entry, relative).apply { mkdirs() }
-        val children = repo.remoteList(remoteDir)
+        // Nazwa „..” albo z ukośnikiem z listingu serwera nie trafia do kopii w telefonie.
+        val children = repo.remoteList(remoteDir).filter { LocalNames.isSafe(it.name) }
         val remoteNames = children.map { it.name }.toSet()
         var total = 0L
         children.forEach { child ->
@@ -514,7 +606,11 @@ class OfflineStore(
 
     private fun advance(entry: Entry, bytes: Long) {
         _progress.update { map ->
-            val current = map[entry.id] ?: Progress(0, 0)
+            // Tylko w trwającej synchronizacji. Pobranie przy wyborze wersji
+            // ([resolve]) dopisywało tu wpis, którego nikt potem nie usuwał:
+            // wpis wisiał jako „Synchronizacja…”, a każda następna była
+            // pomijana jako już trwająca.
+            val current = map[entry.id] ?: return@update map
             map + (entry.id to Progress(current.files + 1, current.bytes + bytes))
         }
     }
@@ -592,5 +688,11 @@ class OfflineStore(
     private companion object {
         const val PART = ".offline-part"
         const val LOCK_WAIT_MS = 120_000L
+        /** Kopia sprawdzona z powodzeniem — następne sprawdzenie w tle najwcześniej po minucie. */
+        const val FRESH_MS = 60_000L
+        /** Serwer nie odpowiedział — przerwa zaczyna się od minuty i rośnie dwukrotnie… */
+        const val BACKOFF_MS = 60_000L
+        /** …aż do kwadransa. */
+        const val MAX_BACKOFF_MS = 15 * 60_000L
     }
 }

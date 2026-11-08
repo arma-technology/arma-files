@@ -23,6 +23,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -90,6 +96,13 @@ fun FullscreenVideoPlayer(
     // Stan przycisków odtwarzacza podaje sam PlayerView — założone „widoczne”
     // zostawało na ekranie, gdy przyciski schowały się bez zgłoszenia zmiany.
     var controls by remember { mutableStateOf(false) }
+    // Chowanie przycisków po chwili odtwarzania liczymy sami. Licznik PlayerView
+    // potrafił nie ruszyć (np. po pokazaniu przycisków, zanim film zaczął grać)
+    // i pasek z przyciskami zostawał, dopóki nie stuknęło się w ekran.
+    var playing by remember { mutableStateOf(false) }
+    var touching by remember { mutableStateOf(false) }
+    var touchedAt by remember { mutableStateOf(0L) }
+    val view = remember { arrayOfNulls<PlayerView>(1) }
 
     val player = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -130,6 +143,10 @@ fun FullscreenVideoPlayer(
                 }
             }
 
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                playing = isPlaying
+            }
+
             override fun onPlayerError(failure: PlaybackException) {
                 error = failure.errorCodeName
             }
@@ -160,13 +177,38 @@ fun FullscreenVideoPlayer(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         HiddenSystemBars()
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
+        LaunchedEffect(controls, playing, touching, touchedAt) {
+            if (controls && playing && !touching) {
+                delay(CONTROLS_TIMEOUT_MS)
+                view[0]?.hideController()
+            }
+        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                // Podgląd dotyku bez zabierania go odtwarzaczowi: każde dotknięcie
+                // (przewijanie paska, pauza) odkłada chowanie przycisków.
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                        touching = true
+                        do {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                        } while (event.changes.any { it.pressed })
+                        touching = false
+                        touchedAt = System.nanoTime()
+                    }
+                }
+        ) {
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
                         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                         this.player = player
+                        view[0] = this
                         keepScreenOn = true
+                        controllerShowTimeoutMs = CONTROLS_TIMEOUT_MS.toInt()
                         // Z animacją przyciski nie znikają, tylko zwijają się do cienkiego
                         // paska postępu i widok zostaje VISIBLE — pasek z nazwą nie wiedziałby,
                         // że ma się schować.
@@ -214,6 +256,8 @@ fun FullscreenVideoPlayer(
         }
     }
 }
+
+private const val CONTROLS_TIMEOUT_MS = 3_000L
 
 /**
  * Miejsce, na którym przerwano film. Krótkie fragmenty na początku i końcu

@@ -1,7 +1,7 @@
 ARMA Files is a file manager for people who work with drawings and documentation — on site, in the design office and at home. It opens PDF, DWG and DXF without leaving the app and lets you measure on them.
 
 <b>Files</b>
-• “My computer” screen: pinned folders, internal storage, SD card and USB drives, network servers
+• “My device” screen: pinned folders, internal storage, SD card and USB drives, network servers
 • background copy and move between any locations, trash, ZIP, rename, SHA-256
 • tabs and two panes side by side
 • Recent and Favourites, sort order remembered per folder

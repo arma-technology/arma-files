@@ -276,6 +276,71 @@ class FileIndexDb(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, D
         }
     }
 
+    /**
+     * Zawartość [dirUri] dla mapy pamięci: każdy podfolder z sumą rozmiarów
+     * wszystkiego, co w nim leży (także głębiej), i każdy plik osobno. Kolor
+     * kafelka to kategoria, która zajmuje w nim najwięcej miejsca.
+     *
+     * Zakres `uri >= „dir/” AND uri < „dir0”` („0” to znak po „/”) idzie po
+     * indeksie unikalnym kolumny uri — bez przeglądania całej tabeli.
+     */
+    fun mapChildren(dirUri: String): List<MapEntry> {
+        val prefix = dirUri.trimEnd('/') + "/"
+        val upper = prefix.dropLast(1) + "0"
+        val rows = readableDatabase.rawQuery(
+            """
+            SELECT head, is_sub, category, SUM(size), COUNT(*) FROM (
+                SELECT CASE WHEN instr(rest, '/') > 0 THEN substr(rest, 1, instr(rest, '/') - 1) ELSE rest END AS head,
+                       instr(rest, '/') > 0 AS is_sub, category, size
+                FROM (SELECT substr(uri, ?) AS rest, category, size FROM files
+                      WHERE is_dir = 0 AND uri >= ? AND uri < ?)
+            )
+            GROUP BY head, is_sub, category
+            """.trimIndent(),
+            arrayOf((prefix.length + 1).toString(), prefix, upper)
+        )
+        class Acc(var bytes: Long = 0, var files: Int = 0, val byCategory: MutableMap<IndexCategory, Long> = mutableMapOf())
+        val acc = linkedMapOf<Pair<String, Boolean>, Acc>()
+        rows.use { cursor ->
+            while (cursor.moveToNext()) {
+                val key = cursor.getString(0) to (cursor.getInt(1) != 0)
+                val category = runCatching { IndexCategory.valueOf(cursor.getString(2)) }.getOrDefault(IndexCategory.OTHER)
+                val bytes = cursor.getLong(3)
+                val entry = acc.getOrPut(key) { Acc() }
+                entry.bytes += bytes
+                entry.files += cursor.getInt(4)
+                entry.byCategory[category] = (entry.byCategory[category] ?: 0L) + bytes
+            }
+        }
+        return acc.map { (key, value) ->
+            MapEntry(
+                segment = key.first,
+                isDirectory = key.second,
+                bytes = value.bytes,
+                files = value.files,
+                category = value.byCategory.maxByOrNull { it.value }?.key ?: IndexCategory.OTHER
+            )
+        }.sortedByDescending { it.bytes }
+    }
+
+    /** Jak [usageByCategory], ale tylko pliki spod [rootUri] — osobno dla każdego nośnika. */
+    fun usageByCategoryUnder(rootUri: String): Map<IndexCategory, Long> {
+        val prefix = rootUri.trimEnd('/') + "/"
+        return readableDatabase.rawQuery(
+            // substr zamiast LIKE: „_” i „%” w ścieżce nie są wtedy znakami wzorca.
+            "SELECT category, SUM(size) FROM files WHERE is_dir = 0 AND substr(uri, 1, ?) = ? GROUP BY category",
+            arrayOf(prefix.length.toString(), prefix)
+        ).use { cursor ->
+            buildMap {
+                while (cursor.moveToNext()) {
+                    val category = runCatching { IndexCategory.valueOf(cursor.getString(0)) }
+                        .getOrDefault(IndexCategory.OTHER)
+                    put(category, (get(category) ?: 0L) + cursor.getLong(1))
+                }
+            }
+        }
+    }
+
     /** Liczba plików w katalogu razem z podkatalogami. */
     fun countUnder(parentUri: String): Int = readableDatabase.rawQuery(
         "SELECT COUNT(*) FROM files WHERE is_dir = 0 AND (parent_uri = ? OR uri LIKE ?)",

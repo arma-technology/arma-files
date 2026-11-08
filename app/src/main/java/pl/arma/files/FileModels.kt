@@ -27,7 +27,7 @@ data class TabInfo(
     val secondary: Boolean = false,
     /** Źródło otwarte w karcie — decyduje o ikonie na pasku. */
     val source: SourceType = SourceType.LOCAL,
-    /** Karta stoi na ekranie „Mój komputer", bez otwartego katalogu. */
+    /** Karta stoi na ekranie „Moje urządzenie", bez otwartego katalogu. */
     val atHome: Boolean = false
 )
 
@@ -35,6 +35,8 @@ data class TabInfo(
 data class StorageAnalysis(
     val stats: pl.arma.files.index.IndexStats? = null,
     val usageByCategory: Map<pl.arma.files.index.IndexCategory, Long> = emptyMap(),
+    /** Rozbicie zajętości na kategorie dla każdego nośnika ([DeviceStorage.id]). */
+    val usageByStorage: Map<String, Map<pl.arma.files.index.IndexCategory, Long>> = emptyMap(),
     val largestFiles: List<FileItem> = emptyList(),
     val largestFolders: List<pl.arma.files.index.FolderUsage> = emptyList(),
     val oldFiles: List<FileItem> = emptyList()
