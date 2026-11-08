@@ -1,93 +1,111 @@
 # ARMA Files
 
-Menedżer plików dla Androida z przeglądarką PDF i rysunków CAD. Pamięć
-urządzenia, karty SD i pendrive'y, Google Drive, OneDrive, Dropbox, FTP/FTPS, SFTP, SMB
-i WebDAV
-w jednym miejscu, z podglądem większości plików bez wychodzenia z aplikacji.
+**English** | [Polski](README.pl.md)
 
-Historia zmian: [CHANGELOG.md](CHANGELOG.md) · plan: [ROADMAP.md](ROADMAP.md) · [prywatność](PRIVACY.md)
+A file manager for Android with a built-in PDF and CAD viewer. Device storage,
+SD cards and USB drives, Google Drive, OneDrive, Dropbox, FTP/FTPS, SFTP, SMB
+and WebDAV in one place, with previews for most files without leaving the app.
 
-## Co potrafi
+**[Download the latest version (APK)](https://github.com/arma-technology/arma-files/releases/latest)** · requires Android 8.0 or newer
 
-**Pliki**
-- ekran „Moje urządzenie”: przypięte foldery, pamięć wbudowana, karty SD,
-  podłączone zasoby sieciowe i chmurowe
-- kopiowanie i przenoszenie między dowolnymi źródłami w tle, kosz,
-  zmiana nazwy, SHA-256, Ostatnie i Ulubione
-- **archiwa** otwierane jak foldery i rozpakowywane w tle: ZIP (także
-  z hasłem ZipCrypto/AES), 7z (także z hasłem), RAR i RAR5, tar oraz
+Changelog: [CHANGELOG.md](CHANGELOG.md) (in Polish) · roadmap: [ROADMAP.md](ROADMAP.md) · [privacy](PRIVACY.md)
+
+## Features
+
+**Browsing**
+- **Depth**: each folder opens as a layer over the previous one, cards show
+  live contents, long-press opens a quick preview, an action wheel copies,
+  shares and deletes without menus, and a drawer collects files from different
+  folders and drops them where you need them
+- Night and Paper themes with an accent colour, layer blur and a
+  “Calm motion” setting that shortens or turns off animations
+- “My device” screen: pinned folders, internal storage, SD cards, connected
+  network and cloud locations
+- Back returns to where you came from; tabs and history survive a restart
+
+**Files**
+- copy and move between any sources in the background, trash, rename,
+  SHA-256, Recent and Favourites
+- **archives** open like folders and extract in the background: ZIP (including
+  ZipCrypto/AES passwords), 7z (including passwords), RAR and RAR5, tar and
   tar.gz/bz2/xz/zst/lz4/br, gz, bz2, xz, zst, lzma, ISO, CAB, LHA, XAR, ar/deb,
-  cpio, arj; na żądanie także APK, DOCX, ODT, EPUB i inne oparte na ZIP;
-  tworzenie ZIP (z hasłem AES-256), 7z, tar, tar.gz, tar.xz, tar.zst
-- indeks plików z wyszukiwaniem i statystykami folderów
-- sortowanie zapamiętywane osobno dla każdego folderu
+  cpio, arj; on request also APK, DOCX, ODT, EPUB and other ZIP-based files;
+  create ZIP (with AES-256 password), 7z, tar, tar.gz, tar.xz, tar.zst
+- **storage map**: a drive shown as rectangles sized by the space they take,
+  zoom into folders
+- **duplicate finder**: where each copy lives, thumbnails, delete to trash
+- offline files open instantly from the local copy, the server is checked in
+  the background
+- file index with search and folder statistics; sort order remembered per folder
 
-**Podglądy**
-- obrazy (także SVG) i pliki tekstowe z rozpoznawaniem kodowania; pozostałe
-  typy otwiera aplikacja systemowa
-- **PDF**: powiększenie do 6400%, wyszukiwanie tekstu, warstwy, komentarze
-  (oglądanie, dodawanie, zapis), pomiary
-- **CAD**: DXF natywnie, DWG przez [LibreDWG](https://www.gnu.org/software/libredwg/);
-  warstwy, rodzaje linii, kreskowania, wymiary, wyszukiwanie tekstu
-- **pomiary w PDF i CAD**: przyciąganie do końców, przecięć, środków
-  i prostopadłej, tryb osi do mierzenia odległości od ściany; skala odczytana
-  z pliku, z tabelki rysunkowej albo z kalibracji
+**Viewers**
+- images (including SVG) with finger-following pan and zoom, text files with
+  encoding detection, Markdown, spreadsheets (xlsx, CSV) as tables
+- audio and video player (Media3) with cover art, queue and many formats;
+  network files download with a progress bar
+- **PDF**: zoom up to 6400%, text search, layers, comments (view, add, save),
+  measurements
+- **CAD**: DXF natively, DWG through [LibreDWG](https://www.gnu.org/software/libredwg/);
+  layers, line types, hatches, dimensions, text search
+- **measurements in PDF and CAD**: snapping to endpoints, intersections,
+  midpoints and perpendiculars, axis mode for distances from a wall; scale
+  read from the file, the title block or calibration
 
-**Języki:** angielski, polski, albański, białoruski, bośniacki, bułgarski,
-chorwacki, czeski, estoński, litewski, łotewski, macedoński, niderlandzki,
-niemiecki, rosyjski, rumuński, serbski, słowacki, słoweński, ukraiński,
-węgierski. Poprawki tłumaczeń są mile widziane — pliki `res/values-*/strings.xml`.
+**Languages:** English, Polish, Albanian, Belarusian, Bosnian, Bulgarian,
+Croatian, Czech, Estonian, Lithuanian, Latvian, Macedonian, Dutch, German,
+Russian, Romanian, Serbian, Slovak, Slovenian, Ukrainian, Hungarian.
+Translation fixes are welcome — see the `res/values-*/strings.xml` files.
 
-Przeglądarka PDF i CAD to osobne moduły (`viewer/`, `dwg/`), które można
-przenieść do innej aplikacji — opis w [viewer/README.md](viewer/README.md).
+The PDF and CAD viewer are separate modules (`viewer/`, `dwg/`) that can be
+reused in another app — see [viewer/README.md](viewer/README.md).
 
-## Budowanie
+## Building
 
-Wymagania: JDK 17, Android SDK 36, NDK 28.2 i CMake 3.31 (dla modułów `dwg`
-i `libarchive`), [Git LFS](https://git-lfs.com) — skompilowane biblioteki
-LibreDWG i libarchive są w LFS.
+Requirements: JDK 17, Android SDK 36, NDK 28.2 and CMake 3.31 (for the `dwg`
+and `libarchive` modules), [Git LFS](https://git-lfs.com) — the prebuilt
+LibreDWG and libarchive libraries are stored in LFS.
 
 ```bash
 git lfs install
 git clone https://github.com/arma-technology/arma-files.git
 cd arma-files
 ./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
-scripts/test.sh                # testy jednostkowe
+scripts/test.sh                # unit tests
 ```
 
-Biblioteki można zbudować samodzielnie: `dwg/build-libredwg.sh`,
+The libraries can be built from source: `dwg/build-libredwg.sh`,
 `libarchive/build-libarchive.sh`.
 
-Opcjonalnie w `local.properties` (plik poza repozytorium):
+Optional settings in `local.properties` (kept out of the repository):
 
-| Klucz | Do czego |
+| Key | Purpose |
 |---|---|
-| `storeFile`, `storePassword`, `keyAlias`, `keyPassword` | podpis wydania |
-| `sourceUrl` | adres kodu źródłowego pokazywany w aplikacji (dla forków) |
+| `storeFile`, `storePassword`, `keyAlias`, `keyPassword` | release signing |
+| `sourceUrl` | source code URL shown in the app (for forks) |
 
-## Uprawnienia
+## Permissions
 
-Na Androidzie 11+ aplikacja prosi o „Dostęp do wszystkich plików”
-(`MANAGE_EXTERNAL_STORAGE`), bo zarządzanie plikami to jej podstawowa funkcja.
-Bez niego działa w trybie ograniczonym przez systemowy wybór folderów (SAF).
-Hasła do FTP/SFTP/SMB są szyfrowane AES-GCM kluczem z Android Keystore.
+On Android 11+ the app asks for “All files access” (`MANAGE_EXTERNAL_STORAGE`),
+because managing files is its core function. Without it, the app works in a
+limited mode through the system folder picker (SAF). FTP/SFTP/SMB passwords are
+encrypted with AES-GCM using a key from the Android Keystore.
 
-## Zgłaszanie błędów
+## Reporting bugs
 
-Błędy i pomysły zgłaszaj w Issues. Przy błędzie podglądu najbardziej pomaga
-plik, na którym występuje — jeśli nie może być publiczny, wystarczy opis,
-wersja aplikacji i model telefonu.
+Report bugs and ideas in [Issues](https://github.com/arma-technology/arma-files/issues),
+in English or Polish. For viewer bugs, the file that triggers the problem helps
+most — if it can't be public, a description, the app version and the phone
+model are enough.
 
-## Licencja
+## License
 
 Copyright © ARMA
 
-Program jest wolnym oprogramowaniem: możesz go rozpowszechniać i modyfikować
-na warunkach [GNU General Public License](LICENSE) w wersji 3 lub (według
-Twojego wyboru) dowolnej późniejszej. Rozpowszechniany jest bez jakiejkolwiek
-gwarancji.
+This program is free software: you can redistribute it and/or modify it under
+the terms of the [GNU General Public License](LICENSE) version 3 or (at your
+option) any later version. It is distributed without any warranty.
 
-Dołączone biblioteki mają licencje zgodne z GPL-3.0: LibreDWG (GPL-3.0+),
+Bundled libraries are under GPL-3.0-compatible licenses: LibreDWG (GPL-3.0+),
 PdfBox-Android, AndroidX, Coil, OkHttp, Commons Net, SSHJ, Commons Compress,
 zip4j (Apache 2.0), jcifs-ng (LGPL-2.1), SLF4J, Brotli (MIT), libarchive,
 zstd-jni (BSD-2-Clause), XZ for Java (0BSD).
