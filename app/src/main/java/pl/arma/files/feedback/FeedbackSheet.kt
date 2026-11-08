@@ -68,7 +68,8 @@ fun rememberDeviceInfo(): DeviceInfo {
             appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
             android = "${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})",
             model = DeviceInfo.modelName(Build.MANUFACTURER, Build.MODEL),
-            language = locale.toLanguageTag()
+            // Bez rozszerzeń Unicode z ustawień regionu („pl-PL-u-fw-mon-mu-celsius”).
+            language = locale.stripExtensions().toLanguageTag()
         )
     }
 }
