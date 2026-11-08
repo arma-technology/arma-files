@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.1
+
+- Ustawienia → O aplikacji: przycisk „Dodaj sugestię funkcjonalności lub
+  zgłoś błąd” — krótki formularz (błąd albo pomysł, tytuł, opis, opcjonalnie
+  dane urządzenia: wersja aplikacji, Androida, model i język), który otwiera
+  gotowe zgłoszenie na GitHubie; formularz jest przetłumaczony na wszystkie
+  języki aplikacji
+
 ## 0.11.0
 
 - **Głębia**: nowy sposób przeglądania — folder otwiera się jako warstwa nad
