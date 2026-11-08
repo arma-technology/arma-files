@@ -555,4 +555,31 @@ výběrem karty v liště nahoře.</string>
     <string name="common_stop">Přerušit</string>
     <string name="download_title">Stahování</string>
     <string name="download_progress">%1$s z %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Navrhnout funkci nebo nahlásit chybu</string>
+    <string name="feedback_heading">Nahlásit chybu nebo navrhnout nápad</string>
+    <string name="feedback_type_bug">Chyba</string>
+    <string name="feedback_type_feature">Nápad</string>
+    <string name="feedback_field_title">Název</string>
+    <string name="feedback_field_description">Popis</string>
+    <string name="feedback_description_hint_bug">Co se stalo? Popište kroky a co jste očekávali.</string>
+    <string name="feedback_description_hint_feature">Co by aplikace mohla dělat a s čím by to pomohlo?</string>
+    <string name="feedback_field_email">E-mail (nepovinné)</string>
+    <string name="feedback_email_note">Jen pokud chcete odpověď. Dostanou ho pouze autoři aplikace, nikdy se neobjeví ve veřejném hlášení.</string>
+    <string name="feedback_include_device">Přiložit údaje o zařízení</string>
+    <string name="feedback_send">Odeslat</string>
+    <string name="feedback_sending">Odesílání…</string>
+    <string name="feedback_open_github">Otevřít na GitHubu</string>
+    <string name="feedback_github_note">Hlášení se otevře na GitHubu s vyplněným textem. Je potřeba účet GitHub.</string>
+    <string name="feedback_public_note">Hlášení bude na GitHubu veřejné, bez vaší e-mailové adresy.</string>
+    <string name="feedback_sent">Děkujeme! Hlášení #%1$d bylo přijato.</string>
+    <string name="feedback_view">Zobrazit hlášení</string>
+    <string name="feedback_close">Zavřít</string>
+    <string name="feedback_rate_limited">Příliš mnoho hlášení v krátké době. Zkuste to prosím později.</string>
+    <string name="feedback_unavailable">Odeslání se nezdařilo. Zkontrolujte připojení nebo otevřete hlášení na GitHubu.</string>
+    <string name="feedback_invalid">Server hlášení odmítl. Zkontrolujte název, popis a e-mailovou adresu.</string>
+    <string name="feedback_title_error">3 až 120 znaků</string>
+    <string name="feedback_description_error">Alespoň 10 znaků</string>
+    <string name="feedback_email_error">Neplatná e-mailová adresa</string>
 </resources>

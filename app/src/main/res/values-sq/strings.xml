@@ -541,4 +541,31 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="common_stop">Ndalo</string>
     <string name="download_title">Po shkarkohet</string>
     <string name="download_progress">%1$s nga %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Sugjero një veçori ose raporto një gabim</string>
+    <string name="feedback_heading">Raporto një gabim ose sugjero një ide</string>
+    <string name="feedback_type_bug">Gabim</string>
+    <string name="feedback_type_feature">Ide</string>
+    <string name="feedback_field_title">Titulli</string>
+    <string name="feedback_field_description">Përshkrimi</string>
+    <string name="feedback_description_hint_bug">Çfarë ndodhi? Përshkruaj hapat dhe çfarë prisje.</string>
+    <string name="feedback_description_hint_feature">Çfarë mund të bënte aplikacioni dhe si do të ndihmonte?</string>
+    <string name="feedback_field_email">Email (opsionale)</string>
+    <string name="feedback_email_note">Vetëm nëse dëshiron përgjigje. Shkon vetëm te autorët e aplikacionit, kurrë në raportin publik.</string>
+    <string name="feedback_include_device">Përfshi të dhënat e pajisjes</string>
+    <string name="feedback_send">Dërgo</string>
+    <string name="feedback_sending">Po dërgohet…</string>
+    <string name="feedback_open_github">Hape në GitHub</string>
+    <string name="feedback_github_note">Raporti do të hapet në GitHub me tekstin e plotësuar. Nevojitet një llogari GitHub.</string>
+    <string name="feedback_public_note">Raporti do të jetë publik në GitHub, pa adresën tënde të email-it.</string>
+    <string name="feedback_sent">Faleminderit! Raporti #%1$d u mor.</string>
+    <string name="feedback_view">Shiko raportin</string>
+    <string name="feedback_close">Mbyll</string>
+    <string name="feedback_rate_limited">Shumë raporte në kohë të shkurtër. Provo përsëri më vonë.</string>
+    <string name="feedback_unavailable">Dërgimi dështoi. Kontrollo lidhjen ose hape raportin në GitHub.</string>
+    <string name="feedback_invalid">Serveri e refuzoi raportin. Kontrollo titullin, përshkrimin dhe adresën e email-it.</string>
+    <string name="feedback_title_error">Nga 3 deri në 120 karaktere</string>
+    <string name="feedback_description_error">Të paktën 10 karaktere</string>
+    <string name="feedback_email_error">Adresë email-i e pavlefshme</string>
 </resources>

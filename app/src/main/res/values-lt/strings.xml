@@ -555,4 +555,31 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="common_stop">Nutraukti</string>
     <string name="download_title">Atsisiunčiama</string>
     <string name="download_progress">%1$s iš %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Pasiūlyti funkciją arba pranešti apie klaidą</string>
+    <string name="feedback_heading">Pranešti apie klaidą arba pasiūlyti idėją</string>
+    <string name="feedback_type_bug">Klaida</string>
+    <string name="feedback_type_feature">Idėja</string>
+    <string name="feedback_field_title">Pavadinimas</string>
+    <string name="feedback_field_description">Aprašymas</string>
+    <string name="feedback_description_hint_bug">Kas nutiko? Aprašykite veiksmus ir ko tikėjotės.</string>
+    <string name="feedback_description_hint_feature">Ką programa galėtų daryti ir kuo tai padėtų?</string>
+    <string name="feedback_field_email">El. paštas (neprivaloma)</string>
+    <string name="feedback_email_note">Tik jei norite atsakymo. Jį gaus tik programos autoriai, viešame pranešime jo nebus.</string>
+    <string name="feedback_include_device">Pridėti įrenginio duomenis</string>
+    <string name="feedback_send">Siųsti</string>
+    <string name="feedback_sending">Siunčiama…</string>
+    <string name="feedback_open_github">Atidaryti GitHub</string>
+    <string name="feedback_github_note">Pranešimas atsidarys GitHub su įrašytu tekstu. Reikia GitHub paskyros.</string>
+    <string name="feedback_public_note">Pranešimas bus viešas GitHub, be jūsų el. pašto adreso.</string>
+    <string name="feedback_sent">Ačiū! Pranešimas #%1$d gautas.</string>
+    <string name="feedback_view">Peržiūrėti pranešimą</string>
+    <string name="feedback_close">Uždaryti</string>
+    <string name="feedback_rate_limited">Per daug pranešimų per trumpą laiką. Bandykite vėliau.</string>
+    <string name="feedback_unavailable">Nepavyko išsiųsti. Patikrinkite ryšį arba atidarykite pranešimą GitHub.</string>
+    <string name="feedback_invalid">Serveris atmetė pranešimą. Patikrinkite pavadinimą, aprašymą ir el. pašto adresą.</string>
+    <string name="feedback_title_error">Nuo 3 iki 120 simbolių</string>
+    <string name="feedback_description_error">Bent 10 simbolių</string>
+    <string name="feedback_email_error">Neteisingas el. pašto adresas</string>
 </resources>

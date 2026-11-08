@@ -555,4 +555,31 @@
     <string name="common_stop">Перапыніць</string>
     <string name="download_title">Спампоўванне</string>
     <string name="download_progress">%1$s з %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Прапанаваць функцыю або паведаміць пра памылку</string>
+    <string name="feedback_heading">Паведаміць пра памылку або прапанаваць ідэю</string>
+    <string name="feedback_type_bug">Памылка</string>
+    <string name="feedback_type_feature">Ідэя</string>
+    <string name="feedback_field_title">Загаловак</string>
+    <string name="feedback_field_description">Апісанне</string>
+    <string name="feedback_description_hint_bug">Што адбылося? Апішыце крокі і чаго вы чакалі.</string>
+    <string name="feedback_description_hint_feature">Што магла б рабіць праграма і чым бы гэта дапамагло?</string>
+    <string name="feedback_field_email">Эл. пошта (неабавязкова)</string>
+    <string name="feedback_email_note">Толькі калі хочаце атрымаць адказ. Адрас атрымаюць толькі аўтары праграмы, у публічную справаздачу ён не трапіць.</string>
+    <string name="feedback_include_device">Дадаць звесткі пра прыладу</string>
+    <string name="feedback_send">Адправіць</string>
+    <string name="feedback_sending">Адпраўка…</string>
+    <string name="feedback_open_github">Адкрыць на GitHub</string>
+    <string name="feedback_github_note">Справаздача адкрыецца на GitHub з запоўненым тэкстам. Патрэбны ўліковы запіс GitHub.</string>
+    <string name="feedback_public_note">Справаздача будзе публічнай на GitHub, без вашага адраса эл. пошты.</string>
+    <string name="feedback_sent">Дзякуй! Справаздача #%1$d атрымана.</string>
+    <string name="feedback_view">Паглядзець справаздачу</string>
+    <string name="feedback_close">Закрыць</string>
+    <string name="feedback_rate_limited">Занадта шмат справаздач за кароткі час. Паспрабуйце пазней.</string>
+    <string name="feedback_unavailable">Не ўдалося адправіць. Праверце злучэнне або адкрыйце справаздачу на GitHub.</string>
+    <string name="feedback_invalid">Сервер адхіліў справаздачу. Праверце загаловак, апісанне і адрас эл. пошты.</string>
+    <string name="feedback_title_error">Ад 3 да 120 знакаў</string>
+    <string name="feedback_description_error">Не менш за 10 знакаў</string>
+    <string name="feedback_email_error">Няправільны адрас эл. пошты</string>
 </resources>

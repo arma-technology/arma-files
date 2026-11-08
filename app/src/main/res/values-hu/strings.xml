@@ -541,4 +541,31 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="common_stop">Megszakítás</string>
     <string name="download_title">Letöltés</string>
     <string name="download_progress">%1$s / %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Funkció javaslása vagy hiba bejelentése</string>
+    <string name="feedback_heading">Hiba bejelentése vagy ötlet javaslása</string>
+    <string name="feedback_type_bug">Hiba</string>
+    <string name="feedback_type_feature">Ötlet</string>
+    <string name="feedback_field_title">Cím</string>
+    <string name="feedback_field_description">Leírás</string>
+    <string name="feedback_description_hint_bug">Mi történt? Írd le a lépéseket és azt, amit vártál.</string>
+    <string name="feedback_description_hint_feature">Mit tudhatna az alkalmazás, és miben segítene?</string>
+    <string name="feedback_field_email">E-mail (nem kötelező)</string>
+    <string name="feedback_email_note">Csak ha választ szeretnél. Kizárólag az alkalmazás készítőihez kerül, a nyilvános bejelentésbe soha.</string>
+    <string name="feedback_include_device">Eszközadatok csatolása</string>
+    <string name="feedback_send">Küldés</string>
+    <string name="feedback_sending">Küldés…</string>
+    <string name="feedback_open_github">Megnyitás a GitHubon</string>
+    <string name="feedback_github_note">A bejelentés a GitHubon nyílik meg a kitöltött szöveggel. GitHub-fiók szükséges.</string>
+    <string name="feedback_public_note">A bejelentés nyilvános lesz a GitHubon, az e-mail-címed nélkül.</string>
+    <string name="feedback_sent">Köszönjük! A(z) #%1$d bejelentés megérkezett.</string>
+    <string name="feedback_view">Bejelentés megtekintése</string>
+    <string name="feedback_close">Bezárás</string>
+    <string name="feedback_rate_limited">Túl sok bejelentés rövid idő alatt. Próbáld újra később.</string>
+    <string name="feedback_unavailable">A küldés nem sikerült. Ellenőrizd a kapcsolatot, vagy nyisd meg a bejelentést a GitHubon.</string>
+    <string name="feedback_invalid">A szerver elutasította a bejelentést. Ellenőrizd a címet, a leírást és az e-mail-címet.</string>
+    <string name="feedback_title_error">3–120 karakter</string>
+    <string name="feedback_description_error">Legalább 10 karakter</string>
+    <string name="feedback_email_error">Érvénytelen e-mail-cím</string>
 </resources>

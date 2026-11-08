@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tylko wersja debug: serwer zgłoszeń uruchomiony na komputerze
+     i podłączony przez „adb reverse” odpowiada po zwykłym HTTP na 127.0.0.1.
+     Wydanie nie ma tego wyjątku. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

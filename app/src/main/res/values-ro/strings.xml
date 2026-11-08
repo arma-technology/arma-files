@@ -548,4 +548,31 @@ alegând o filă din bara de sus.</string>
     <string name="common_stop">Oprește</string>
     <string name="download_title">Se descarcă</string>
     <string name="download_progress">%1$s din %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Sugerează o funcție sau raportează o eroare</string>
+    <string name="feedback_heading">Raportează o eroare sau propune o idee</string>
+    <string name="feedback_type_bug">Eroare</string>
+    <string name="feedback_type_feature">Idee</string>
+    <string name="feedback_field_title">Titlu</string>
+    <string name="feedback_field_description">Descriere</string>
+    <string name="feedback_description_hint_bug">Ce s-a întâmplat? Descrie pașii și ce te așteptai.</string>
+    <string name="feedback_description_hint_feature">Ce ar putea face aplicația și la ce ar ajuta?</string>
+    <string name="feedback_field_email">E-mail (opțional)</string>
+    <string name="feedback_email_note">Doar dacă vrei un răspuns. Ajunge numai la autorii aplicației, niciodată în raportul public.</string>
+    <string name="feedback_include_device">Include detaliile dispozitivului</string>
+    <string name="feedback_send">Trimite</string>
+    <string name="feedback_sending">Se trimite…</string>
+    <string name="feedback_open_github">Deschide pe GitHub</string>
+    <string name="feedback_github_note">Raportul se va deschide pe GitHub cu textul completat. Este nevoie de un cont GitHub.</string>
+    <string name="feedback_public_note">Raportul va fi public pe GitHub, fără adresa ta de e-mail.</string>
+    <string name="feedback_sent">Mulțumim! Raportul #%1$d a fost primit.</string>
+    <string name="feedback_view">Vezi raportul</string>
+    <string name="feedback_close">Închide</string>
+    <string name="feedback_rate_limited">Prea multe rapoarte într-un timp scurt. Încearcă din nou mai târziu.</string>
+    <string name="feedback_unavailable">Nu s-a putut trimite. Verifică conexiunea sau deschide raportul pe GitHub.</string>
+    <string name="feedback_invalid">Serverul a respins raportul. Verifică titlul, descrierea și adresa de e-mail.</string>
+    <string name="feedback_title_error">Între 3 și 120 de caractere</string>
+    <string name="feedback_description_error">Cel puțin 10 caractere</string>
+    <string name="feedback_email_error">Adresă de e-mail invalidă</string>
 </resources>

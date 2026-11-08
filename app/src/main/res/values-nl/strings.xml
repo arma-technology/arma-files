@@ -541,4 +541,31 @@ door bovenaan een tabblad te kiezen.</string>
     <string name="common_stop">Stoppen</string>
     <string name="download_title">Downloaden</string>
     <string name="download_progress">%1$s van %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Functie voorstellen of fout melden</string>
+    <string name="feedback_heading">Fout melden of idee voorstellen</string>
+    <string name="feedback_type_bug">Fout</string>
+    <string name="feedback_type_feature">Idee</string>
+    <string name="feedback_field_title">Titel</string>
+    <string name="feedback_field_description">Beschrijving</string>
+    <string name="feedback_description_hint_bug">Wat gebeurde er? Beschrijf de stappen en wat je verwachtte.</string>
+    <string name="feedback_description_hint_feature">Wat zou de app kunnen doen, en waarmee zou dat helpen?</string>
+    <string name="feedback_field_email">E-mail (optioneel)</string>
+    <string name="feedback_email_note">Alleen als je een antwoord wilt. Gaat alleen naar de makers van de app, nooit naar de openbare melding.</string>
+    <string name="feedback_include_device">Apparaatgegevens toevoegen</string>
+    <string name="feedback_send">Versturen</string>
+    <string name="feedback_sending">Bezig met versturen…</string>
+    <string name="feedback_open_github">Openen op GitHub</string>
+    <string name="feedback_github_note">De melding opent op GitHub met je tekst ingevuld. Een GitHub-account is nodig.</string>
+    <string name="feedback_public_note">De melding is openbaar op GitHub, zonder je e-mailadres.</string>
+    <string name="feedback_sent">Bedankt! Melding #%1$d is ontvangen.</string>
+    <string name="feedback_view">Melding bekijken</string>
+    <string name="feedback_close">Sluiten</string>
+    <string name="feedback_rate_limited">Te veel meldingen in korte tijd. Probeer het later opnieuw.</string>
+    <string name="feedback_unavailable">Versturen mislukt. Controleer de verbinding of open de melding op GitHub.</string>
+    <string name="feedback_invalid">De server heeft de melding geweigerd. Controleer titel, beschrijving en e-mailadres.</string>
+    <string name="feedback_title_error">3 tot 120 tekens</string>
+    <string name="feedback_description_error">Minstens 10 tekens</string>
+    <string name="feedback_email_error">Ongeldig e-mailadres</string>
 </resources>

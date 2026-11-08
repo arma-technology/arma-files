@@ -548,4 +548,31 @@ odabirom kartice na traci iznad.</string>
     <string name="common_stop">Prekini</string>
     <string name="download_title">Preuzimanje</string>
     <string name="download_progress">%1$s od %2$s</string>
+
+    <!-- Zgłoszenia z karty „O aplikacji” -->
+    <string name="feedback_button">Predloži funkciju ili prijavi pogrešku</string>
+    <string name="feedback_heading">Prijavi pogrešku ili predloži ideju</string>
+    <string name="feedback_type_bug">Pogreška</string>
+    <string name="feedback_type_feature">Ideja</string>
+    <string name="feedback_field_title">Naslov</string>
+    <string name="feedback_field_description">Opis</string>
+    <string name="feedback_description_hint_bug">Što se dogodilo? Opiši korake i što si očekivao.</string>
+    <string name="feedback_description_hint_feature">Što bi aplikacija mogla raditi i u čemu bi to pomoglo?</string>
+    <string name="feedback_field_email">E-pošta (neobavezno)</string>
+    <string name="feedback_email_note">Samo ako želiš odgovor. Ide isključivo autorima aplikacije, nikad u javnu prijavu.</string>
+    <string name="feedback_include_device">Priloži podatke o uređaju</string>
+    <string name="feedback_send">Pošalji</string>
+    <string name="feedback_sending">Slanje…</string>
+    <string name="feedback_open_github">Otvori na GitHubu</string>
+    <string name="feedback_github_note">Prijava će se otvoriti na GitHubu s upisanim tekstom. Potreban je GitHub račun.</string>
+    <string name="feedback_public_note">Prijava će biti javna na GitHubu, bez tvoje adrese e-pošte.</string>
+    <string name="feedback_sent">Hvala! Prijava #%1$d je zaprimljena.</string>
+    <string name="feedback_view">Pogledaj prijavu</string>
+    <string name="feedback_close">Zatvori</string>
+    <string name="feedback_rate_limited">Previše prijava u kratkom vremenu. Pokušaj ponovno kasnije.</string>
+    <string name="feedback_unavailable">Slanje nije uspjelo. Provjeri vezu ili otvori prijavu na GitHubu.</string>
+    <string name="feedback_invalid">Poslužitelj je odbio prijavu. Provjeri naslov, opis i adresu e-pošte.</string>
+    <string name="feedback_title_error">Od 3 do 120 znakova</string>
+    <string name="feedback_description_error">Najmanje 10 znakova</string>
+    <string name="feedback_email_error">Neispravna adresa e-pošte</string>
 </resources>
