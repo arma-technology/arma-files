@@ -1,0 +1,4 @@
+• Głębia: foldery jako warstwy, szybki podgląd, koło akcji i szuflada
+• wygląd Noc i Papier, mapa pamięci, wyszukiwanie duplikatów
+• odtwarzacz audio, podgląd Markdown, pobieranie z postępem
+• płynne animacje i przybliżanie zdjęć pod palcem

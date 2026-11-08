@@ -1,6 +1,78 @@
 # Changelog
 
-## 0.10.1 (w toku)
+## 0.11.0
+
+- **Głębia**: nowy sposób przeglądania — folder otwiera się jako warstwa nad
+  poprzednią, karty pokazują żywą zawartość, przytrzymanie pliku otwiera
+  szybki podgląd, a koło akcji (orbita) daje kopiowanie, udostępnianie
+  i usuwanie bez menu; szuflada zbiera pliki z różnych folderów i wrzuca je
+  jednym ruchem tam, gdzie trzeba („Do szuflady” także dla zaznaczenia)
+- wygląd Noc i Papier: Ustawienia → Wygląd (automatyczny według systemu, Noc,
+  Papier), kolor akcentu, rozmycie warstw, kolory z folderu, „Spokojny ruch”
+- odtwarzacz audio w podglądzie: okładka i opis z tagów, kolejka nagrań
+  z folderu; nagrania i filmy z serwera odtwarzane wbudowanym odtwarzaczem;
+  więcej formatów (m4a, aac, opus, amr, ac3, mka, mov, 3gp, avi, flv, mpg,
+  mts/m2ts)
+- okno pobierania z paskiem postępu i „Przerwij” dla plików z sieci;
+  ponowne otwarcie bierze kopię z pamięci podręcznej
+- Markdown sformatowany w podglądzie, z przełącznikiem na źródło
+- karty, foldery i historia „wstecz” zapamiętane między uruchomieniami;
+  wczytywanie folderu da się przerwać
+- krzyżyk i Wstecz wychodzą najpierw z pomiaru, komentowania albo
+  wyszukiwania, a dopiero potem zamykają plik
+- ekran „Mój komputer” nazywa się teraz „Moje urządzenie” (we wszystkich
+  językach), z ikoną telefonu
+- Wstecz wraca tam, skąd się przyszło: z zasobu, przypiętego folderu albo
+  folderu z wyników wyszukiwania do poprzedniego miejsca, także na ekran
+  główny (wcześniej otwarcie zasobu kasowało historię)
+- duplikaty: przy każdej kopii nośnik i folder, data i miniatura; dotknięcie
+  miniatury otwiera podgląd; kopie poza najstarszą zaznaczone do kosza,
+  usuwane jednym przyciskiem (z cofnięciem)
+- powiększony obraz przesuwa się razem z palcem (wcześniej przy 4× cztery
+  razy wolniej), powiększa się wokół palców, ma rzut z bezwładnością
+  i podwójne stuknięcie; przejście do sąsiedniego zdjęcia animowane, obraz
+  idzie za palcem
+- lista plików: wiersze i kafelki przesuwają się płynnie po sortowaniu
+  i zmianach w folderze
+- pliki offline otwierają się od razu z kopii, a serwer jest sprawdzany
+  w tle — nie przy każdym dotknięciu (po błędzie coraz rzadziej, do 15 min);
+  zapis trafia do kopii i od razu na serwer; nowa rozbieżność wersji od razu
+  pyta w aplikacji, którą wersję zachować
+- „Dodaj folder” w rzędzie przypiętych przypina wybrany folder na górze,
+  obok Pobranych i Zdjęć (wcześniej lądował na dole wśród podłączonych);
+  folder podłączony na dole ma w menu „Przypnij do „Moje urządzenie””
+- plik usunięty na serwerze (np. z Ulubionych) nie zamyka aplikacji —
+  pokazuje komunikat „Tego elementu nie ma już na serwerze.”
+- zmiana nazwy na nazwę istniejącego pliku nie nadpisuje go już bez śladu
+  (komunikat „już istnieje”); nazwy z serwerów („..”, ukośniki) nie mogą
+  wyprowadzić kopii ani plików offline poza folder docelowy
+- kategoria na ekranie głównym („Zdjęcia”, „Dokumenty”…) pokazuje swoje
+  pliki; wcześniej nic się nie działo, a następny otwarty folder pokazywał
+  listę kategorii zamiast swojej zawartości
+- wyszukiwanie globalne z folderu nie gubi wyników z polskimi znakami ani
+  ze słowami w innej kolejności; szukanie w folderze też bez polskich znaków;
+  wyniki da się zaznaczać; folder otwarty z wyników otwiera się jako folder
+- WebDAV: pliki z „+” w nazwie otwierają się (wcześniej 404), nazwa z adresu
+  zamiast etykiety serwera
+- po zmianie nazwy w folderze SAF Ulubione i Ostatnie pokazują nazwę, nie adres
+- pasek zajętości nośnika z kolorowymi odcinkami kategorii, osobno dla
+  każdego nośnika (wcześniej karta SD pokazywała rozbicie całej pamięci)
+- okno usuwania: „Do kosza” jako główny przycisk, „Usuń na zawsze” osobno
+  i w kolorze błędu; kafelki mają znak offline i nazwę w dwóch liniach
+- animacje: podkreślenie w dolnej nawigacji przesuwa się między zakładkami,
+  pasek zaznaczenia wsuwa się z góry, miniatury wyłaniają się z pulsującego
+  podkładu zamiast kółek ładowania, akcje orbity rozchodzą się po kolei,
+  plik wrzucony do szuflady leci do niej, szybki podgląd wyrasta spod palca
+  i znika płynnie, uchwyt arkusza Głębi zamyka poziom szybkim machnięciem;
+  „Spokojny ruch” skraca albo wyłącza każdą z nich
+- **mapa pamięci**: przycisk na karcie nośnika pokazuje pamięć jako
+  prostokąty o polu proporcjonalnym do zajętego miejsca, w kolorze kategorii,
+  która w folderze zajmuje najwięcej; dotknięcie folderu płynnie go
+  przybliża, Wstecz oddala, przytrzymanie otwiera folder, dotknięcie pliku —
+  podgląd; to, czego indeks nie widzi (system, dane aplikacji), to jeden
+  szary kafelek
+
+## 0.10.1
 
 - aplikacja jest wolnym oprogramowaniem na licencji GPL-3.0-or-later; w
   Ustawieniach karta „O aplikacji” z licencją, linkiem do kodu i listą bibliotek
@@ -108,58 +180,6 @@ Połączenia sieciowe (sprawdzone na serwerach testowych i na telefonie):
   Google i audytu przy publikacji); Google Drive działa przez aplikację Dysk
   w Ustawieniach → Źródła plików
 - edytor połączenia: błąd testu na czerwono, arkusz nie opada do połowy
-- ekran „Mój komputer” nazywa się teraz „Moje urządzenie” (we wszystkich
-  językach), z ikoną telefonu
-- Wstecz wraca tam, skąd się przyszło: z zasobu, przypiętego folderu albo
-  folderu z wyników wyszukiwania do poprzedniego miejsca, także na ekran
-  główny (wcześniej otwarcie zasobu kasowało historię)
-- duplikaty: przy każdej kopii nośnik i folder, data i miniatura; dotknięcie
-  miniatury otwiera podgląd; kopie poza najstarszą zaznaczone do kosza,
-  usuwane jednym przyciskiem (z cofnięciem)
-- powiększony obraz przesuwa się razem z palcem (wcześniej przy 4× cztery
-  razy wolniej), powiększa się wokół palców, ma rzut z bezwładnością
-  i podwójne stuknięcie; przejście do sąsiedniego zdjęcia animowane, obraz
-  idzie za palcem
-- lista plików: wiersze i kafelki przesuwają się płynnie po sortowaniu
-  i zmianach w folderze
-- pliki offline otwierają się od razu z kopii, a serwer jest sprawdzany
-  w tle — nie przy każdym dotknięciu (po błędzie coraz rzadziej, do 15 min);
-  zapis trafia do kopii i od razu na serwer; nowa rozbieżność wersji od razu
-  pyta w aplikacji, którą wersję zachować
-- „Dodaj folder” w rzędzie przypiętych przypina wybrany folder na górze,
-  obok Pobranych i Zdjęć (wcześniej lądował na dole wśród podłączonych);
-  folder podłączony na dole ma w menu „Przypnij do „Moje urządzenie””
-- plik usunięty na serwerze (np. z Ulubionych) nie zamyka aplikacji —
-  pokazuje komunikat „Tego elementu nie ma już na serwerze.”
-- zmiana nazwy na nazwę istniejącego pliku nie nadpisuje go już bez śladu
-  (komunikat „już istnieje”); nazwy z serwerów („..”, ukośniki) nie mogą
-  wyprowadzić kopii ani plików offline poza folder docelowy
-- kategoria na ekranie głównym („Zdjęcia”, „Dokumenty”…) pokazuje swoje
-  pliki; wcześniej nic się nie działo, a następny otwarty folder pokazywał
-  listę kategorii zamiast swojej zawartości
-- wyszukiwanie globalne z folderu nie gubi wyników z polskimi znakami ani
-  ze słowami w innej kolejności; szukanie w folderze też bez polskich znaków;
-  wyniki da się zaznaczać; folder otwarty z wyników otwiera się jako folder
-- WebDAV: pliki z „+” w nazwie otwierają się (wcześniej 404), nazwa z adresu
-  zamiast etykiety serwera
-- po zmianie nazwy w folderze SAF Ulubione i Ostatnie pokazują nazwę, nie adres
-- pasek zajętości nośnika z kolorowymi odcinkami kategorii, osobno dla
-  każdego nośnika (wcześniej karta SD pokazywała rozbicie całej pamięci)
-- okno usuwania: „Do kosza” jako główny przycisk, „Usuń na zawsze” osobno
-  i w kolorze błędu; kafelki mają znak offline i nazwę w dwóch liniach
-- animacje: podkreślenie w dolnej nawigacji przesuwa się między zakładkami,
-  pasek zaznaczenia wsuwa się z góry, miniatury wyłaniają się z pulsującego
-  podkładu zamiast kółek ładowania, akcje orbity rozchodzą się po kolei,
-  plik wrzucony do szuflady leci do niej, szybki podgląd wyrasta spod palca
-  i znika płynnie, uchwyt arkusza Głębi zamyka poziom szybkim machnięciem;
-  „Spokojny ruch” skraca albo wyłącza każdą z nich
-- **mapa pamięci**: przycisk na karcie nośnika pokazuje pamięć jako
-  prostokąty o polu proporcjonalnym do zajętego miejsca, w kolorze kategorii,
-  która w folderze zajmuje najwięcej; dotknięcie folderu płynnie go
-  przybliża, Wstecz oddala, przytrzymanie otwiera folder, dotknięcie pliku —
-  podgląd; to, czego indeks nie widzi (system, dane aplikacji), to jeden
-  szary kafelek
-
 ## 0.10.0
 
 Przeglądarka PDF i CAD (moduły `:viewer` i `:dwg`):

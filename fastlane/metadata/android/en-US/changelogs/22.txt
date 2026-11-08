@@ -1,0 +1,4 @@
+• Depth: folders as layers, quick preview, action wheel and drawer
+• Night and Paper looks, storage map, duplicate finder
+• audio player, Markdown preview, downloads with progress
+• smooth animations and photo zoom that follows your fingers
