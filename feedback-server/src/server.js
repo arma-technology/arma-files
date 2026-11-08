@@ -97,6 +97,7 @@ function createHandler(deps) {
         token: config.GITHUB_TOKEN,
         report: result.report,
         label: config.GITHUB_LABEL || 'from-app',
+        apiBase: config.GITHUB_API || undefined,
       });
     } catch (e) {
       log.error(`[feedback] GitHub: ${e.message}`);
