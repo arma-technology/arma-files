@@ -97,7 +97,16 @@ Hasła do FTP/SFTP/SMB są szyfrowane AES-GCM kluczem z Android Keystore.
 Błędy i pomysły zgłaszaj w [Issues](https://github.com/arma-technology/arma-files/issues),
 po polsku albo po angielsku. Przy błędzie podglądu najbardziej pomaga plik,
 na którym występuje — jeśli nie może być publiczny, wystarczy opis, wersja
-aplikacji i model telefonu.
+aplikacji i model telefonu. Zgłoszenie można też wysłać z aplikacji: *Ustawienia →
+O aplikacji → Dodaj sugestię funkcjonalności lub zgłoś błąd*.
+
+## Wsparcie
+
+ARMA Files jest darmowa, ma otwarty kod i nie ma reklam. Jeśli Ci się przydaje,
+możesz wesprzeć jej rozwój na [Ko-fi](https://ko-fi.com/armatechnology) — ten sam
+link jest w aplikacji w *Ustawienia → O aplikacji* i w menu ⋮.
+
+[![Wesprzyj ARMA Files na Ko-fi](https://img.shields.io/badge/Ko--fi-wesprzyj%20ARMA%20Files-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/armatechnology)
 
 ## Licencja
 

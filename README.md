@@ -95,7 +95,16 @@ encrypted with AES-GCM using a key from the Android Keystore.
 Report bugs and ideas in [Issues](https://github.com/arma-technology/arma-files/issues),
 in English or Polish. For viewer bugs, the file that triggers the problem helps
 most — if it can't be public, a description, the app version and the phone
-model are enough.
+model are enough. You can also report straight from the app: *Settings → About →
+Suggest a feature or report a bug*.
+
+## Support
+
+ARMA Files is free, open source and has no ads. If it's useful to you, you can
+support its development on [Ko-fi](https://ko-fi.com/armatechnology) — the same
+link is in the app under *Settings → About* and in the ⋮ menu.
+
+[![Support ARMA Files on Ko-fi](https://img.shields.io/badge/Ko--fi-support%20ARMA%20Files-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/armatechnology)
 
 ## License
 
