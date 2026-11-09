@@ -568,4 +568,6 @@ duke zgjedhur një skedë në shiritin sipër.</string>
     <string name="feedback_title_error">Nga 3 deri në 120 karaktere</string>
     <string name="feedback_description_error">Të paktën 10 karaktere</string>
     <string name="feedback_email_error">Adresë email-i e pavlefshme</string>
+    <string name="donate_button">Na qeras një kafe</string>
+    <string name="donate_note">ARMA Files është falas dhe pa reklama. Nëse të ndihmon, mund të mbështesësh zhvillimin e saj.</string>
 </resources>

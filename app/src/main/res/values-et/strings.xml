@@ -568,4 +568,6 @@ valides ülal ribal vahelehe.</string>
     <string name="feedback_title_error">3 kuni 120 märki</string>
     <string name="feedback_description_error">Vähemalt 10 märki</string>
     <string name="feedback_email_error">Vigane e-posti aadress</string>
+    <string name="donate_button">Osta meile kohv</string>
+    <string name="donate_note">ARMA Files on tasuta ja reklaamideta. Kui see on sulle kasulik, saad selle arendust toetada.</string>
 </resources>

@@ -575,4 +575,6 @@ odabirom kartice na traci iznad.</string>
     <string name="feedback_title_error">Od 3 do 120 znakova</string>
     <string name="feedback_description_error">Najmanje 10 znakova</string>
     <string name="feedback_email_error">Neispravna adresa e-pošte</string>
+    <string name="donate_button">Počasti nas kavom</string>
+    <string name="donate_note">ARMA Files je besplatna i bez oglasa. Ako ti pomaže, možeš podržati njezin razvoj.</string>
 </resources>

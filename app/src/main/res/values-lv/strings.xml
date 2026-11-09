@@ -575,4 +575,6 @@ izvēloties cilni joslā augšā.</string>
     <string name="feedback_title_error">No 3 līdz 120 rakstzīmēm</string>
     <string name="feedback_description_error">Vismaz 10 rakstzīmes</string>
     <string name="feedback_email_error">Nederīga e-pasta adrese</string>
+    <string name="donate_button">Uzsauciet mums kafiju</string>
+    <string name="donate_note">ARMA Files ir bez maksas un bez reklāmām. Ja tā jums noder, varat atbalstīt tās izstrādi.</string>
 </resources>

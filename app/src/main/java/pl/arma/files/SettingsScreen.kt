@@ -619,6 +619,18 @@ private fun AboutCard() {
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.feedback_button))
             }
+            if (BuildConfig.DONATE_URL.isNotBlank()) {
+                Text(
+                    stringResource(R.string.donate_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                FilledTonalButton(onClick = { uriHandler.openUri(BuildConfig.DONATE_URL) }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.LocalCafe, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.donate_button))
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = { uriHandler.openUri(BuildConfig.SOURCE_URL) }, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Code, null)

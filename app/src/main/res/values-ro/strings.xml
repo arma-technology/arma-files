@@ -575,4 +575,6 @@ alegând o filă din bara de sus.</string>
     <string name="feedback_title_error">Între 3 și 120 de caractere</string>
     <string name="feedback_description_error">Cel puțin 10 caractere</string>
     <string name="feedback_email_error">Adresă de e-mail invalidă</string>
+    <string name="donate_button">Cumpără-ne o cafea</string>
+    <string name="donate_note">ARMA Files este gratuită și fără reclame. Dacă îți este utilă, poți sprijini dezvoltarea ei.</string>
 </resources>

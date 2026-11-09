@@ -569,4 +569,6 @@ by picking a tab in the bar above.</string>
     <string name="feedback_title_error">3 to 120 characters</string>
     <string name="feedback_description_error">At least 10 characters</string>
     <string name="feedback_email_error">Invalid email address</string>
+    <string name="donate_button">Buy us a coffee</string>
+    <string name="donate_note">ARMA Files is free and ad-free. If it helps you, you can support its development.</string>
 </resources>

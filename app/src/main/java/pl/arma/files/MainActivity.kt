@@ -2143,6 +2143,15 @@ private fun FolderHeader(
                     leadingIcon = { Icon(Icons.Default.FolderOpen, null) },
                     onClick = { more = false; onPickRoot() }
                 )
+                if (BuildConfig.DONATE_URL.isNotBlank()) {
+                    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.donate_button)) },
+                        leadingIcon = { Icon(Icons.Default.LocalCafe, null) },
+                        onClick = { more = false; uriHandler.openUri(BuildConfig.DONATE_URL) }
+                    )
+                }
             }
         }
     }

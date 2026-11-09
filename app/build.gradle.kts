@@ -23,6 +23,11 @@ val sourceUrl: String = local("sourceUrl")
 // otwiera gotowe zgłoszenie na GitHubie zamiast wysyłać je bezpośrednio.
 val feedbackUrl: String = local("feedbackUrl") ?: ""
 
+// Link „Postaw nam kawę” w „O aplikacji” i menu ⋮. Pusty = ukryty, np. dla
+// wersji w Google Play, która nie pozwala kierować do płatności spoza sklepu:
+// -PdonateUrl=
+val donateUrl: String = local("donateUrl") ?: "https://ko-fi.com/armatechnology"
+
 android {
     namespace = "pl.arma.files"
     compileSdk = 36
@@ -36,6 +41,7 @@ android {
 
         buildConfigField("String", "SOURCE_URL", "\"$sourceUrl\"")
         buildConfigField("String", "FEEDBACK_URL", "\"$feedbackUrl\"")
+        buildConfigField("String", "DONATE_URL", "\"$donateUrl\"")
     }
 
     signingConfigs {

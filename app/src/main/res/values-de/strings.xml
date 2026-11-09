@@ -568,4 +568,6 @@ indem du oben einen Tab auswählst.</string>
     <string name="feedback_title_error">3 bis 120 Zeichen</string>
     <string name="feedback_description_error">Mindestens 10 Zeichen</string>
     <string name="feedback_email_error">Ungültige E-Mail-Adresse</string>
+    <string name="donate_button">Spendier uns einen Kaffee</string>
+    <string name="donate_note">ARMA Files ist kostenlos und werbefrei. Wenn dir die App hilft, kannst du ihre Entwicklung unterstützen.</string>
 </resources>

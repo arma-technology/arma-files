@@ -582,4 +582,6 @@ výberom karty v lište hore.</string>
     <string name="feedback_title_error">3 až 120 znakov</string>
     <string name="feedback_description_error">Aspoň 10 znakov</string>
     <string name="feedback_email_error">Neplatná e-mailová adresa</string>
+    <string name="donate_button">Kúpte nám kávu</string>
+    <string name="donate_note">ARMA Files je zadarmo a bez reklám. Ak vám pomáha, môžete podporiť jej vývoj.</string>
 </resources>

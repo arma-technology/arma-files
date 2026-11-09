@@ -582,4 +582,6 @@ wybierając kartę z paska powyżej.</string>
     <string name="feedback_title_error">Od 3 do 120 znaków</string>
     <string name="feedback_description_error">Co najmniej 10 znaków</string>
     <string name="feedback_email_error">Nieprawidłowy adres e-mail</string>
+    <string name="donate_button">Postaw nam kawę</string>
+    <string name="donate_note">ARMA Files jest darmowa i bez reklam. Jeśli Ci się przydaje, możesz wesprzeć jej rozwój.</string>
 </resources>

@@ -568,4 +568,6 @@
     <string name="feedback_title_error">От 3 до 120 знака</string>
     <string name="feedback_description_error">Поне 10 знака</string>
     <string name="feedback_email_error">Невалиден имейл адрес</string>
+    <string name="donate_button">Почерпи ни кафе</string>
+    <string name="donate_note">ARMA Files е безплатно и без реклами. Ако ти е полезно, можеш да подкрепиш разработката му.</string>
 </resources>

@@ -582,4 +582,6 @@ výběrem karty v liště nahoře.</string>
     <string name="feedback_title_error">3 až 120 znaků</string>
     <string name="feedback_description_error">Alespoň 10 znaků</string>
     <string name="feedback_email_error">Neplatná e-mailová adresa</string>
+    <string name="donate_button">Kupte nám kávu</string>
+    <string name="donate_note">ARMA Files je zdarma a bez reklam. Pokud vám pomáhá, můžete podpořit její vývoj.</string>
 </resources>

@@ -582,4 +582,6 @@
     <string name="feedback_title_error">Ад 3 да 120 знакаў</string>
     <string name="feedback_description_error">Не менш за 10 знакаў</string>
     <string name="feedback_email_error">Няправільны адрас эл. пошты</string>
+    <string name="donate_button">Пачастуйце нас кавай</string>
+    <string name="donate_note">ARMA Files бясплатная і без рэкламы. Калі праграма вам карысная, вы можаце падтрымаць яе распрацоўку.</string>
 </resources>

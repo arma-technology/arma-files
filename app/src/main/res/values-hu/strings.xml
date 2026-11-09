@@ -568,4 +568,6 @@ a fenti sávon egy lap kiválasztásával.</string>
     <string name="feedback_title_error">3–120 karakter</string>
     <string name="feedback_description_error">Legalább 10 karakter</string>
     <string name="feedback_email_error">Érvénytelen e-mail-cím</string>
+    <string name="donate_button">Hívj meg minket egy kávéra</string>
+    <string name="donate_note">Az ARMA Files ingyenes és reklámmentes. Ha hasznos számodra, támogathatod a fejlesztését.</string>
 </resources>

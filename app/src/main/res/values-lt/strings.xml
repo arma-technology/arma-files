@@ -582,4 +582,6 @@ pasirinkę skirtuką viršutinėje juostoje.</string>
     <string name="feedback_title_error">Nuo 3 iki 120 simbolių</string>
     <string name="feedback_description_error">Bent 10 simbolių</string>
     <string name="feedback_email_error">Neteisingas el. pašto adresas</string>
+    <string name="donate_button">Pavaišinkite mus kava</string>
+    <string name="donate_note">ARMA Files yra nemokama ir be reklamų. Jei ji jums naudinga, galite paremti jos kūrimą.</string>
 </resources>
