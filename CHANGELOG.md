@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2
+
+- „Postaw nam kawę”: link do wsparcia projektu na Ko-fi w Ustawienia → O aplikacji
+  i w menu ⋮ (wersja z -PdonateUrl= — np. dla Google Play — go nie pokazuje)
+
 ## 0.11.1
 
 - Ustawienia → O aplikacji: przycisk „Dodaj sugestię funkcjonalności lub
