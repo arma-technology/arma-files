@@ -167,4 +167,7 @@
     <string name="viewer_pick_line">Vybrať čiaru</string>
     <string name="viewer_aim_reference_line">Umiestnite zameriavač na referenčnú čiaru</string>
     <string name="viewer_no_line_here">Pod zameriavačom nie je žiadna čiara</string>
+    <string name="viewer_guide_lock">Vodidlo %1$s</string>
+    <string name="viewer_snap_guide">vodidlo</string>
+    <string name="viewer_snap_guide_intersection">vodidlo × čiara</string>
 </resources>

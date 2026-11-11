@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Избери линия</string>
     <string name="viewer_aim_reference_line">Насочете мерника към опорната линия</string>
     <string name="viewer_no_line_here">Под мерника няма линия</string>
+    <string name="viewer_guide_lock">Водач %1$s</string>
+    <string name="viewer_snap_guide">водач</string>
+    <string name="viewer_snap_guide_intersection">водач × линия</string>
 </resources>

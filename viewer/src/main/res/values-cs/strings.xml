@@ -167,4 +167,7 @@
     <string name="viewer_pick_line">Vybrat čáru</string>
     <string name="viewer_aim_reference_line">Umístěte zaměřovač na referenční čáru</string>
     <string name="viewer_no_line_here">Pod zaměřovačem není žádná čára</string>
+    <string name="viewer_guide_lock">Vodítko %1$s</string>
+    <string name="viewer_snap_guide">vodítko</string>
+    <string name="viewer_snap_guide_intersection">vodítko × čára</string>
 </resources>

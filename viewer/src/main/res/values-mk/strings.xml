@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Избери линија</string>
     <string name="viewer_aim_reference_line">Поставете го нишанот на референтната линија</string>
     <string name="viewer_no_line_here">Под нишанот нема линија</string>
+    <string name="viewer_guide_lock">Водилка %1$s</string>
+    <string name="viewer_snap_guide">водилка</string>
+    <string name="viewer_snap_guide_intersection">водилка × линија</string>
 </resources>

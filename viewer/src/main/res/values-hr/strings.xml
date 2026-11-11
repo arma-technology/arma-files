@@ -166,4 +166,7 @@
     <string name="viewer_pick_line">Odaberi liniju</string>
     <string name="viewer_aim_reference_line">Postavite nišan na referentnu liniju</string>
     <string name="viewer_no_line_here">Ispod nišana nema linije</string>
+    <string name="viewer_guide_lock">Vodilica %1$s</string>
+    <string name="viewer_snap_guide">vodilica</string>
+    <string name="viewer_snap_guide_intersection">vodilica × linija</string>
 </resources>

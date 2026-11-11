@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Vali joon</string>
     <string name="viewer_aim_reference_line">Suunake sihik tugijoonele</string>
     <string name="viewer_no_line_here">Sihiku all pole joont</string>
+    <string name="viewer_guide_lock">Juhtjoon %1$s</string>
+    <string name="viewer_snap_guide">juhtjoon</string>
+    <string name="viewer_snap_guide_intersection">juhtjoon × joon</string>
 </resources>

@@ -75,7 +75,9 @@ internal class MeasurePaints(
     val density: Float,
     /** Napisy rysowane na płótnie — zasobów nie da się czytać w DrawScope. */
     val setScale: String,
-    val snapLabels: Map<SnapKind, String>
+    val snapLabels: Map<SnapKind, String>,
+    /** Napisy celownika jadącego po prowadnicy zamiast po osi. */
+    val guideLabels: Map<SnapKind, String> = emptyMap()
 ) {
     val label = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
@@ -91,7 +93,11 @@ internal fun rememberMeasurePaints(): MeasurePaints {
     val density = LocalDensity.current.density
     val setScale = stringResource(R.string.viewer_set_scale_short)
     val snapLabels = SnapKind.entries.filter { it != SnapKind.NONE }.associateWith { stringResource(it.label) }
-    return remember(density, setScale) { MeasurePaints(density, setScale, snapLabels) }
+    val guideLabels = mapOf(
+        SnapKind.AXIS to stringResource(R.string.viewer_snap_guide),
+        SnapKind.AXIS_INTERSECTION to stringResource(R.string.viewer_snap_guide_intersection)
+    )
+    return remember(density, setScale) { MeasurePaints(density, setScale, snapLabels, guideLabels) }
 }
 
 private val MEASURE = Color(0xFFC62828)
@@ -230,7 +236,9 @@ internal fun DrawScope.drawCursor(
 
     if (cursor.snap.kind != SnapKind.NONE) {
         snapMarker(cursor.snap.kind, at)
-        pill(paints.snapLabels[cursor.snap.kind].orEmpty(), Offset(at.x, at.y + 26.dp.toPx()), paints, paints.cursorBackground)
+        val onGuide = state.pickingGuide == null && state.guide != null && state.guide?.page == state.firstPoint?.page
+        val label = (if (onGuide) paints.guideLabels[cursor.snap.kind] else null) ?: paints.snapLabels[cursor.snap.kind].orEmpty()
+        pill(label, Offset(at.x, at.y + 26.dp.toPx()), paints, paints.cursorBackground)
     } else if (state.placement == Placement.MEASURE) {
         drawCircle(CURSOR, 3.dp.toPx(), at)
     }
@@ -377,20 +385,31 @@ internal fun MeasurePanel(
                 Text(stringResource(R.string.viewer_edges_only), style = MaterialTheme.typography.labelLarge)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Oś i prowadnica wykluczają się, bo obie wyznaczają kierunek pomiaru,
+                // więc dzielą jeden przełącznik. Przy prowadnicy nazywa się on
+                // „Prowadnica”, a wyłączenie go kasuje prowadnicę i nie włącza osi.
+                val guideMode = state.pickingGuide ?: state.guide?.mode
                 Switch(
-                    checked = state.axisLock,
+                    checked = guideMode != null || state.axisLock,
                     onCheckedChange = {
-                        state.axisLock = it
-                        ViewerPreferences.setAxisLock(context, it)
-                        // Oś i prowadnica wykluczają się: obie wyznaczają kierunek pomiaru.
-                        if (it) {
+                        if (guideMode != null) {
                             state.guide = null
                             state.pickingGuide = null
+                        } else {
+                            state.axisLock = it
+                            ViewerPreferences.setAxisLock(context, it)
                         }
                     },
                     modifier = Modifier.scale(.8f)
                 )
-                Text(stringResource(R.string.viewer_axis_lock), style = MaterialTheme.typography.labelLarge)
+                Text(
+                    when (guideMode) {
+                        null -> stringResource(R.string.viewer_axis_lock)
+                        GuideMode.PARALLEL -> stringResource(R.string.viewer_guide_lock, "∥")
+                        GuideMode.PERPENDICULAR -> stringResource(R.string.viewer_guide_lock, "⊥")
+                    },
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }

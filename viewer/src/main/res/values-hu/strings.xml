@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Vonal kijelölése</string>
     <string name="viewer_aim_reference_line">Állítsd a célkeresztet a referenciavonalra</string>
     <string name="viewer_no_line_here">Nincs vonal a célkereszt alatt</string>
+    <string name="viewer_guide_lock">Vezetővonal %1$s</string>
+    <string name="viewer_snap_guide">vezetővonal</string>
+    <string name="viewer_snap_guide_intersection">vezetővonal × vonal</string>
 </resources>

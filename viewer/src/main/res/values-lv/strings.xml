@@ -166,4 +166,7 @@
     <string name="viewer_pick_line">Izvēlēties līniju</string>
     <string name="viewer_aim_reference_line">Novietojiet mērķekli uz atskaites līnijas</string>
     <string name="viewer_no_line_here">Zem mērķekļa nav līnijas</string>
+    <string name="viewer_guide_lock">Vadlīnija %1$s</string>
+    <string name="viewer_snap_guide">vadlīnija</string>
+    <string name="viewer_snap_guide_intersection">vadlīnija × līnija</string>
 </resources>

@@ -166,4 +166,7 @@
     <string name="viewer_pick_line">Alege linia</string>
     <string name="viewer_aim_reference_line">Țintește cu cătarea linia de referință</string>
     <string name="viewer_no_line_here">Nicio linie sub cătare</string>
+    <string name="viewer_guide_lock">Ghidaj %1$s</string>
+    <string name="viewer_snap_guide">ghidaj</string>
+    <string name="viewer_snap_guide_intersection">ghidaj × linie</string>
 </resources>

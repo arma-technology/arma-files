@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Linie wählen</string>
     <string name="viewer_aim_reference_line">Fadenkreuz auf die Bezugslinie setzen</string>
     <string name="viewer_no_line_here">Keine Linie unter dem Fadenkreuz</string>
+    <string name="viewer_guide_lock">Hilfslinie %1$s</string>
+    <string name="viewer_snap_guide">Hilfslinie</string>
+    <string name="viewer_snap_guide_intersection">Hilfslinie × Linie</string>
 </resources>

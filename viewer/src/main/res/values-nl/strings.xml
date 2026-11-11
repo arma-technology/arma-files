@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Lijn kiezen</string>
     <string name="viewer_aim_reference_line">Richt het vizier op de referentielijn</string>
     <string name="viewer_no_line_here">Geen lijn onder het vizier</string>
+    <string name="viewer_guide_lock">Hulplijn %1$s</string>
+    <string name="viewer_snap_guide">hulplijn</string>
+    <string name="viewer_snap_guide_intersection">hulplijn × lijn</string>
 </resources>

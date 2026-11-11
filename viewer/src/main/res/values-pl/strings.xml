@@ -167,4 +167,7 @@
     <string name="viewer_pick_line">Wskaż linię</string>
     <string name="viewer_aim_reference_line">Ustaw celownik na linii odniesienia</string>
     <string name="viewer_no_line_here">Pod celownikiem nie ma linii</string>
+    <string name="viewer_guide_lock">Prowadnica %1$s</string>
+    <string name="viewer_snap_guide">prowadnica</string>
+    <string name="viewer_snap_guide_intersection">prowadnica × linia</string>
 </resources>

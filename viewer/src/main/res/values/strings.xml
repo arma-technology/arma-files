@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Pick line</string>
     <string name="viewer_aim_reference_line">Aim the crosshair at the reference line</string>
     <string name="viewer_no_line_here">No line under the crosshair</string>
+    <string name="viewer_guide_lock">Guide %1$s</string>
+    <string name="viewer_snap_guide">guide</string>
+    <string name="viewer_snap_guide_intersection">guide × line</string>
 </resources>

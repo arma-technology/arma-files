@@ -165,4 +165,7 @@
     <string name="viewer_pick_line">Zgjidh vijën</string>
     <string name="viewer_aim_reference_line">Vendos shënjestrën te vija e referencës</string>
     <string name="viewer_no_line_here">Nuk ka vijë nën shënjestër</string>
+    <string name="viewer_guide_lock">Udhëzuese %1$s</string>
+    <string name="viewer_snap_guide">udhëzuese</string>
+    <string name="viewer_snap_guide_intersection">udhëzuese × vijë</string>
 </resources>

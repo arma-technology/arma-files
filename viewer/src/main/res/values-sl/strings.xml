@@ -167,4 +167,7 @@
     <string name="viewer_pick_line">Izberi črto</string>
     <string name="viewer_aim_reference_line">Merek postavite na referenčno črto</string>
     <string name="viewer_no_line_here">Pod merkom ni črte</string>
+    <string name="viewer_guide_lock">Vodilo %1$s</string>
+    <string name="viewer_snap_guide">vodilo</string>
+    <string name="viewer_snap_guide_intersection">vodilo × črta</string>
 </resources>

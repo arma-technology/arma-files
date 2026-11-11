@@ -167,4 +167,7 @@
     <string name="viewer_pick_line">Выбраць лінію</string>
     <string name="viewer_aim_reference_line">Навядзіце прыцэл на апорную лінію</string>
     <string name="viewer_no_line_here">Пад прыцэлам няма лініі</string>
+    <string name="viewer_guide_lock">Накіроўная %1$s</string>
+    <string name="viewer_snap_guide">накіроўная</string>
+    <string name="viewer_snap_guide_intersection">накіроўная × лінія</string>
 </resources>

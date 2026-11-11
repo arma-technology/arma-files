@@ -167,4 +167,7 @@
     <string name="viewer_pick_line">Pasirinkti liniją</string>
     <string name="viewer_aim_reference_line">Nutaikykite taikiklį į atskaitos liniją</string>
     <string name="viewer_no_line_here">Po taikikliu nėra linijos</string>
+    <string name="viewer_guide_lock">Kreipiamoji %1$s</string>
+    <string name="viewer_snap_guide">kreipiamoji</string>
+    <string name="viewer_snap_guide_intersection">kreipiamoji × linija</string>
 </resources>
