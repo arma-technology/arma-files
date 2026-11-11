@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Kopijavimo, perkėlimo ir trynimo eiga</string>
     <string name="offline_added">Pridėta neprisijungus — atsisiunčiama fone</string>
     <string name="offline_banner">Serveris nepasiekiamas — rodoma neprisijungus kopija iš %1$s</string>
-    <string name="offline_busy">Ankstesnis sinchronizavimas dar vyksta — bandykite vėliau.</string>
+    <string name="offline_skipped">Praleisti elementai: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Neprisijungus failų nesutapimai</string>
     <string name="offline_conflict_text">Failas pasikeitė ir serveryje, ir telefone. Kurią versiją palikti?
 Serveris: %1$s

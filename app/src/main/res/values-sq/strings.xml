@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Ecuria e kopjimit, zhvendosjes dhe fshirjes</string>
     <string name="offline_added">U shtua jashtë linje — po shkarkohet në sfond</string>
     <string name="offline_banner">Serveri nuk është i disponueshëm — po shfaqet kopja jashtë linje nga %1$s</string>
-    <string name="offline_busy">Një sinkronizim i mëparshëm është ende në vazhdim — provoni më vonë.</string>
+    <string name="offline_skipped">Elemente të anashkaluara: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Mospërputhje skedarësh jashtë linje</string>
     <string name="offline_conflict_text">Skedari ndryshoi si në server ashtu edhe në telefon. Cilin version të mbajmë?
 Serveri: %1$s

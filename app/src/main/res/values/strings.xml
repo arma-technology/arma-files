@@ -269,7 +269,7 @@
     <string name="notif_channel_desc">Progress of copying, moving and deleting</string>
     <string name="offline_added">Added to offline — downloading in the background</string>
     <string name="offline_banner">Server unavailable — showing the offline copy from %1$s</string>
-    <string name="offline_busy">A previous sync is still running — try again later.</string>
+    <string name="offline_skipped">Skipped items: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Offline file conflicts</string>
     <string name="offline_conflict_text">The file changed both on the server and on the phone. Which version should be kept?
 Server: %1$s

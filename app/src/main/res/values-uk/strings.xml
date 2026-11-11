@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Перебіг копіювання, переміщення та видалення</string>
     <string name="offline_added">Додано в офлайн — завантаження у фоні</string>
     <string name="offline_banner">Сервер недоступний — показано офлайн-копію від %1$s</string>
-    <string name="offline_busy">Попередня синхронізація ще триває — спробуйте пізніше.</string>
+    <string name="offline_skipped">Пропущені елементи: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Розбіжності офлайн-файлів</string>
     <string name="offline_conflict_text">Файл змінився і на сервері, і в телефоні. Яку версію зберегти?
 Сервер: %1$s

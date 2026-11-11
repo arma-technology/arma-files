@@ -160,4 +160,10 @@
     <string name="viewer_audio_error">Snimak se ne može reproducirati (%1$s)</string>
     <string name="viewer_text_formatted">Formatirani prikaz</string>
     <string name="viewer_text_source">Izvor</string>
+    <string name="viewer_edges_only">Ivice</string>
+    <string name="viewer_guide_parallel">∥ Paralelno</string>
+    <string name="viewer_guide_perpendicular">⊥ Okomito</string>
+    <string name="viewer_pick_line">Odaberi liniju</string>
+    <string name="viewer_aim_reference_line">Postavite nišan na referentnu liniju</string>
+    <string name="viewer_no_line_here">Ispod nišana nema linije</string>
 </resources>

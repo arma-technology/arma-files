@@ -88,6 +88,7 @@ internal fun SheetTools(
     currentPage: Int,
     pageCount: Int,
     zoomPercent: Int,
+    maxZoomPercent: Int,
     minZoomPercent: Int,
     commentCount: Int,
     hasLayers: Boolean,
@@ -166,7 +167,7 @@ internal fun SheetTools(
             Icon(Icons.Default.ZoomOut, stringResource(R.string.viewer_zoom_out))
         }
         Text("$zoomPercent%", style = MaterialTheme.typography.labelLarge)
-        IconButton(onClick = onZoomIn, enabled = zoomPercent < (MAX_ZOOM * 100).roundToInt(), modifier = button) {
+        IconButton(onClick = onZoomIn, enabled = zoomPercent < maxZoomPercent, modifier = button) {
             Icon(Icons.Default.ZoomIn, stringResource(R.string.viewer_zoom_in))
         }
         var menu by remember { mutableStateOf(false) }

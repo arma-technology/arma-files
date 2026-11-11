@@ -160,4 +160,10 @@
     <string name="viewer_audio_error">Ierakstu nevar atskaņot (%1$s)</string>
     <string name="viewer_text_formatted">Formatēts skats</string>
     <string name="viewer_text_source">Avots</string>
+    <string name="viewer_edges_only">Malas</string>
+    <string name="viewer_guide_parallel">∥ Paralēli</string>
+    <string name="viewer_guide_perpendicular">⊥ Perpendikulāri</string>
+    <string name="viewer_pick_line">Izvēlēties līniju</string>
+    <string name="viewer_aim_reference_line">Novietojiet mērķekli uz atskaites līnijas</string>
+    <string name="viewer_no_line_here">Zem mērķekļa nav līnijas</string>
 </resources>

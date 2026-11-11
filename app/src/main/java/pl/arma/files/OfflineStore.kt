@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -110,10 +111,21 @@ class OfflineStore(
         val connectivity = context.getSystemService(ConnectivityManager::class.java)
         runCatching {
             connectivity?.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+                @Volatile private var fresh = false
+
                 override fun onAvailable(network: Network) {
                     // Nowa sieć to nowa szansa na serwer — bez czekania na koniec przerwy.
                     attempts.clear()
-                    if (_entries.value.any { it.error != null }) syncAll(automatic = true)
+                    fresh = true
+                }
+
+                // Dopiero tu wiadomo, jaka to sieć: w onAvailable system potrafi
+                // jeszcze podawać poprzednią, więc „Tylko przez Wi-Fi” odrzucało
+                // synchronizację zaraz po przejściu z danych komórkowych na Wi-Fi.
+                override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                    if (!fresh || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) return
+                    fresh = false
+                    if (allowed(capabilities)) catchUp(checkNetwork = false)
                 }
             })
         }
@@ -305,12 +317,32 @@ class OfflineStore(
     fun refreshSoon(uri: Uri) {
         val entry = covering(uri)?.first ?: return
         if (context.getSystemService(ConnectivityManager::class.java)?.activeNetwork == null) return
+        if (due(entry.id, FRESH_MS)) sync(entry.id)
+    }
+
+    /** Czy minęła przerwa od ostatniej próby wpisu [id]; jeśli tak, odnotowuje nową próbę. */
+    private fun due(id: String, freshMs: Long): Boolean {
         val now = System.currentTimeMillis()
-        val (last, failures) = attempts[entry.id] ?: (0L to 0)
-        val wait = if (failures == 0) FRESH_MS else minOf(BACKOFF_MS shl (failures - 1).coerceAtMost(8), MAX_BACKOFF_MS)
-        if (now - last < wait) return
-        attempts[entry.id] = now to failures
-        sync(entry.id)
+        val (last, failures) = attempts[id] ?: (0L to 0)
+        val wait = if (failures == 0) freshMs else minOf(BACKOFF_MS shl (failures - 1).coerceAtMost(8), MAX_BACKOFF_MS)
+        if (now - last < wait) return false
+        attempts[id] = now to failures
+        return true
+    }
+
+    /**
+     * Dogania serwer bez udziału użytkownika: po powrocie sieci i przy każdym
+     * wejściu do aplikacji. Proces żyje w tle całymi dniami, więc sam start
+     * aplikacji zdarza się za rzadko, a praca w tle bywa odkładana przez system.
+     * Synchronizują się wpisy z błędem i te niesprawdzane od [STALE_MS].
+     */
+    fun catchUp(checkNetwork: Boolean = true) {
+        if (checkNetwork && !networkAllowed()) return
+        val now = System.currentTimeMillis()
+        _entries.value
+            .filter { it.error != null || now - it.lastSync > STALE_MS }
+            .filter { due(it.id, STALE_MS) }
+            .forEach { sync(it.id) }
     }
 
     /**
@@ -346,7 +378,6 @@ class OfflineStore(
             kotlinx.coroutines.delay(1_500)
             pending.remove(entry.id)
             attempts.remove(entry.id)
-            while (entry.id in _progress.value) kotlinx.coroutines.delay(500)
             runSync(entry.id)
         }
     }
@@ -408,58 +439,66 @@ class OfflineStore(
 
     // --- synchronizacja ----------------------------------------------------------
 
-    /**
-     * Synchronizuje wszystkie wpisy. Automatycznie (start, powrót sieci, praca
-     * w tle) tylko przy dozwolonej sieci — domyślnie bez limitu danych, czyli Wi-Fi.
-     */
-    fun syncAll(automatic: Boolean = false) {
-        if (automatic && !networkAllowed()) return
+    /** Synchronizuje wszystkie wpisy na życzenie użytkownika — przez każdą sieć. */
+    fun syncAll() {
         _entries.value.forEach { sync(it.id) }
     }
 
-    /** Dla pracy w tle: synchronizuje i czeka na koniec. */
-    suspend fun syncAllNow() {
-        if (!networkAllowed()) return
-        _entries.value.forEach { runSync(it.id) }
+    /**
+     * Dla pracy w tle: synchronizuje i czeka na koniec — także tych
+     * synchronizacji, które zaczął ktoś inny (start aplikacji obudzonej przez
+     * tę pracę). Gdyby praca kończyła się wcześniej, system zamrażałby proces
+     * w połowie pobierania.
+     */
+    suspend fun syncAllNow() = withContext(Dispatchers.IO) {
+        if (networkAllowed()) _entries.value.forEach { runSync(it.id) }
+        _progress.first { it.isEmpty() }
+        Unit
     }
 
     fun sync(id: String) {
         scope.launch { runSync(id) }
     }
 
+    /** Wpisy czekające na swoją kolej; trwająca synchronizacja już do nich nie należy. */
+    private val queued = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
     private suspend fun runSync(id: String) {
-        // Sprawdzenie i zajęcie w jednym kroku: dwa wywołania naraz (np. przycisk
-        // i powrót sieci) nie synchronizują tego samego wpisu równolegle.
-        var claimed = false
-        _progress.update { current ->
-            claimed = id !in current
-            if (claimed) current + (id to Progress(0, 0)) else current
-        }
-        if (!claimed) return
+        // Wpis synchronizuje się raz naraz, a za trwającą synchronizacją czeka
+        // najwyżej jedna następna: zobaczy wszystko, co zmieniło się w trakcie,
+        // więc kolejne prośby są zbędne. Czekanie nie ma limitu — wcześniej wpis,
+        // który nie doczekał się kolejki w dwie minuty (duży folder przed nim),
+        // kończył z błędem „Poprzednia synchronizacja jeszcze trwa” i zostawał
+        // nieaktualny. Zawieszony serwer przerywają limity czasu połączeń.
+        if (!queued.add(id)) return
+        _progress.update { if (id in it) it else it + (id to Progress(0, 0)) }
+        var waiting = true
         try {
-            // Wpis może czekać na inną synchronizację, ale nie w nieskończoność —
-            // zawieszony serwer nie powinien blokować wszystkiego do restartu.
-            val acquired = kotlinx.coroutines.withTimeoutOrNull(LOCK_WAIT_MS) { lock.lock() } != null
-            if (!acquired) {
-                change { list -> list.map { if (it.id == id) it.copy(error = text(R.string.offline_busy)) else it } }
-                return
-            }
-            try {
-                val entry = _entries.value.firstOrNull { it.id == id } ?: return
+            lock.withLock {
+                queued.remove(id)
+                waiting = false
+                _progress.update { it + (id to Progress(0, 0)) }
+                val entry = _entries.value.firstOrNull { it.id == id } ?: return@withLock
                 val conflicts = mutableListOf<Conflict>()
-                val result = runCatching { mirror(entry, conflicts) }
+                val skipped = Skipped()
+                val result = runCatching { mirror(entry, conflicts, skipped) }
+                val complete = result.isSuccess && skipped.items.isEmpty()
                 val previous = entry.conflicts.map { it.path }.toSet()
                 change { list ->
                     list.map {
                         if (it.id != id) it
                         else result.fold(
-                            onSuccess = { bytes -> it.copy(lastSync = System.currentTimeMillis(), bytes = bytes, error = null, conflicts = conflicts) },
+                            onSuccess = { bytes ->
+                                if (complete) it.copy(lastSync = System.currentTimeMillis(), bytes = bytes, error = null, conflicts = conflicts)
+                                // Reszta folderu jest aktualna; wpis zostaje z błędem i spróbuje ponownie.
+                                else it.copy(bytes = bytes, error = skipped.describe(), conflicts = conflicts)
+                            },
                             onFailure = { error -> it.copy(error = error.message ?: error::class.java.simpleName) }
                         )
                     }
                 }
                 val failures = attempts[id]?.second ?: 0
-                attempts[id] = System.currentTimeMillis() to (if (result.isSuccess) 0 else failures + 1)
+                attempts[id] = System.currentTimeMillis() to (if (complete) 0 else failures + 1)
                 if (result.isSuccess) {
                     val updated = _entries.value.first { it.id == id }
                     // Powiadamiamy tylko o nowych rozbieżnościach; rozwiązane znikają.
@@ -468,27 +507,51 @@ class OfflineStore(
                     if (fresh.isNotEmpty()) _newConflicts.tryEmit(id)
                     entry.conflicts.filter { old -> conflicts.none { it.path == old.path } }.forEach { notifier.cancel(entry, it) }
                 }
-            } finally {
-                lock.unlock()
             }
         } finally {
-            _progress.update { it - id }
+            if (waiting) queued.remove(id)
+            _progress.update { if (id in queued) it else it - id }
         }
+    }
+
+    /**
+     * Pliki i podfoldery, których nie udało się zsynchronizować. Jeden taki
+     * element (brak uprawnień, plik zablokowany na serwerze) nie zatrzymuje
+     * reszty folderu; kilka z rzędu oznacza, że padł serwer — wtedy koniec.
+     */
+    private class Skipped {
+        val items = mutableListOf<Pair<String, String>>()
+        var streak = 0
+
+        fun describe(): String {
+            val (path, reason) = items.first()
+            return text(R.string.offline_skipped, items.size, path.substringAfterLast('/'), reason)
+        }
+    }
+
+    private inline fun tolerating(path: String, skipped: Skipped, isFile: Boolean, block: () -> Long): Long = try {
+        block().also { if (isFile) skipped.streak = 0 }
+    } catch (error: Exception) {
+        if (++skipped.streak >= MAX_FAILURES_IN_A_ROW) throw error
+        skipped.items += path to (error.message ?: error::class.java.simpleName)
+        0L
     }
 
     private fun networkAllowed(): Boolean {
         val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return false
-        val capabilities = connectivity.getNetworkCapabilities(connectivity.activeNetwork) ?: return false
-        return !wifiOnly || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+        return allowed(connectivity.getNetworkCapabilities(connectivity.activeNetwork) ?: return false)
     }
 
+    private fun allowed(capabilities: NetworkCapabilities): Boolean =
+        !wifiOnly || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+
     /** Zwraca łączny rozmiar kopii. */
-    private fun mirror(entry: Entry, conflicts: MutableList<Conflict>): Long {
+    private fun mirror(entry: Entry, conflicts: MutableList<Conflict>, skipped: Skipped): Long {
         val states = readBases(entry)
         try {
             return if (entry.isDirectory) {
                 File(entry.dir).mkdirs()
-                mirrorDir(entry, entry.uri, "", states, conflicts)
+                mirrorDir(entry, entry.uri, "", states, conflicts, skipped)
             } else {
                 File(entry.dir).mkdirs()
                 val remote = repo.remoteInfo(entry.uri)
@@ -500,7 +563,14 @@ class OfflineStore(
         }
     }
 
-    private fun mirrorDir(entry: Entry, remoteDir: Uri, relative: String, states: MutableMap<String, Base>, conflicts: MutableList<Conflict>): Long {
+    private fun mirrorDir(
+        entry: Entry,
+        remoteDir: Uri,
+        relative: String,
+        states: MutableMap<String, Base>,
+        conflicts: MutableList<Conflict>,
+        skipped: Skipped
+    ): Long {
         val local = localFor(entry, relative).apply { mkdirs() }
         // Nazwa „..” albo z ukośnikiem z listingu serwera nie trafia do kopii w telefonie.
         val children = repo.remoteList(remoteDir).filter { LocalNames.isSafe(it.name) }
@@ -509,9 +579,9 @@ class OfflineStore(
         children.forEach { child ->
             val path = if (relative.isEmpty()) child.name else "$relative/${child.name}"
             if (child.isDirectory) {
-                total += mirrorDir(entry, child.uri, path, states, conflicts)
+                total += tolerating(path, skipped, isFile = false) { mirrorDir(entry, child.uri, path, states, conflicts, skipped) }
             } else {
-                syncFile(entry, child.uri, path, child, states, conflicts)
+                tolerating(path, skipped, isFile = true) { syncFile(entry, child.uri, path, child, states, conflicts); 0L }
                 total += localFor(entry, path).takeIf { it.isFile }?.length() ?: 0L
             }
         }
@@ -536,11 +606,16 @@ class OfflineStore(
                         }
                     }
                 } else {
-                    val created = repo.remoteCreateFolder(remoteDir, file.name)
-                    total += mirrorDir(entry, created, path, states, conflicts)
+                    total += tolerating(path, skipped, isFile = false) {
+                        val created = repo.remoteCreateFolder(remoteDir, file.name)
+                        mirrorDir(entry, created, path, states, conflicts, skipped)
+                    }
                 }
             } else {
-                syncFile(entry, Uri.EMPTY, path, null, states, conflicts, remoteParent = remoteDir)
+                tolerating(path, skipped, isFile = true) {
+                    syncFile(entry, Uri.EMPTY, path, null, states, conflicts, remoteParent = remoteDir)
+                    0L
+                }
                 total += file.takeIf { it.isFile }?.length() ?: 0L
             }
         }
@@ -687,7 +762,10 @@ class OfflineStore(
 
     private companion object {
         const val PART = ".offline-part"
-        const val LOCK_WAIT_MS = 120_000L
+        /** Tyle nieudanych elementów z rzędu przerywa synchronizację wpisu. */
+        const val MAX_FAILURES_IN_A_ROW = 3
+        /** Kopia niesprawdzana tak długo dogania serwer przy wejściu do aplikacji i po powrocie sieci. */
+        const val STALE_MS = 10 * 60_000L
         /** Kopia sprawdzona z powodzeniem — następne sprawdzenie w tle najwcześniej po minucie. */
         const val FRESH_MS = 60_000L
         /** Serwer nie odpowiedział — przerwa zaczyna się od minuty i rośnie dwukrotnie… */

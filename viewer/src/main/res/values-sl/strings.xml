@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Posnetka ni mogoče predvajati (%1$s)</string>
     <string name="viewer_text_formatted">Oblikovan prikaz</string>
     <string name="viewer_text_source">Izvor</string>
+    <string name="viewer_edges_only">Robovi</string>
+    <string name="viewer_guide_parallel">∥ Vzporedno</string>
+    <string name="viewer_guide_perpendicular">⊥ Pravokotno</string>
+    <string name="viewer_pick_line">Izberi črto</string>
+    <string name="viewer_aim_reference_line">Merek postavite na referenčno črto</string>
+    <string name="viewer_no_line_here">Pod merkom ni črte</string>
 </resources>

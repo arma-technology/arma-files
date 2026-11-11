@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Nie można odtworzyć nagrania (%1$s)</string>
     <string name="viewer_text_formatted">Widok sformatowany</string>
     <string name="viewer_text_source">Źródło</string>
+    <string name="viewer_edges_only">Krawędzie</string>
+    <string name="viewer_guide_parallel">∥ Równolegle</string>
+    <string name="viewer_guide_perpendicular">⊥ Prostopadle</string>
+    <string name="viewer_pick_line">Wskaż linię</string>
+    <string name="viewer_aim_reference_line">Ustaw celownik na linii odniesienia</string>
+    <string name="viewer_no_line_here">Pod celownikiem nie ma linii</string>
 </resources>

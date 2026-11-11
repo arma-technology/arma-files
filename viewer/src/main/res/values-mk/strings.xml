@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Снимката не може да се пушти (%1$s)</string>
     <string name="viewer_text_formatted">Форматиран приказ</string>
     <string name="viewer_text_source">Извор</string>
+    <string name="viewer_edges_only">Рабови</string>
+    <string name="viewer_guide_parallel">∥ Паралелно</string>
+    <string name="viewer_guide_perpendicular">⊥ Нормално</string>
+    <string name="viewer_pick_line">Избери линија</string>
+    <string name="viewer_aim_reference_line">Поставете го нишанот на референтната линија</string>
+    <string name="viewer_no_line_here">Под нишанот нема линија</string>
 </resources>

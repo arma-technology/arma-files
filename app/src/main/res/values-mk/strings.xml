@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Напредок на копирање, преместување и бришење</string>
     <string name="offline_added">Додадено офлајн — преземање во позадина</string>
     <string name="offline_banner">Серверот е недостапен — се прикажува офлајн копијата од %1$s</string>
-    <string name="offline_busy">Претходната синхронизација сè уште трае — обидете се подоцна.</string>
+    <string name="offline_skipped">Прескокнати ставки: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Несогласувања на офлајн датотеки</string>
     <string name="offline_conflict_text">Датотеката е променета и на серверот и на телефонот. Која верзија да се задржи?
 Сервер: %1$s

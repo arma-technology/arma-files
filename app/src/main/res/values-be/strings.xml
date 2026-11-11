@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Ход капіравання, перамяшчэння і выдалення</string>
     <string name="offline_added">Дададзена ў афлайн — спампоўка ў фоне</string>
     <string name="offline_banner">Сервер недаступны — паказваецца афлайн-копія ад %1$s</string>
-    <string name="offline_busy">Папярэдняя сінхранізацыя яшчэ ідзе — паспрабуйце пазней.</string>
+    <string name="offline_skipped">Прапушчаныя элементы: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Разыходжанні афлайн-файлаў</string>
     <string name="offline_conflict_text">Файл змяніўся і на серверы, і ў тэлефоне. Якую версію захаваць?
 Сервер: %1$s

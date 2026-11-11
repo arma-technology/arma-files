@@ -60,6 +60,15 @@ class SheetLayout(
         return (viewHeight / (tallest + 2 * margin)).coerceIn(MIN_FIT_ZOOM, 1f)
     }
 
+    /**
+     * Największe powiększenie tego dokumentu. Przesunięcie widoku to piksele
+     * we Float: powyżej kilku milionów tracą dokładność i obraz przy
+     * przesuwaniu skacze. Pojedynczy arkusz dostaje pełne [MAX_ZOOM], a długi
+     * dokument tyle, na ile pozwala jego wysokość — nie mniej niż [LONG_DOCUMENT_ZOOM].
+     */
+    fun maxZoom(): Float =
+        (MAX_OFFSET / maxOf(height, viewWidth, 1f)).coerceIn(LONG_DOCUMENT_ZOOM, MAX_ZOOM)
+
     /** Strona, na której leży punkt [y] dokumentu przy powiększeniu 1. */
     fun pageAt(y: Float): Int {
         if (pageCount == 0) return 0
@@ -143,3 +152,9 @@ data class SheetView(val zoom: Float = 1f, val x: Float = 0f, val y: Float = 0f)
 
 /** Dolna granica oddalenia, żeby bardzo wysoka strona nie zmalała do kreski. */
 internal const val MIN_FIT_ZOOM = 0.05f
+
+/** Największe przesunięcie widoku w pikselach, przy którym Float trzyma jeszcze pół piksela. */
+private const val MAX_OFFSET = 8_000_000f
+
+/** Powiększenie dostępne także w najdłuższym dokumencie. */
+private const val LONG_DOCUMENT_ZOOM = 64f

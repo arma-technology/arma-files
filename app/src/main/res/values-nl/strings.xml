@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Voortgang van kopiëren, verplaatsen en verwijderen</string>
     <string name="offline_added">Toegevoegd aan offline — downloaden op de achtergrond</string>
     <string name="offline_banner">Server niet bereikbaar — offline kopie van %1$s wordt getoond</string>
-    <string name="offline_busy">Een eerdere synchronisatie loopt nog — probeer het later.</string>
+    <string name="offline_skipped">Overgeslagen items: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Conflicten in offline bestanden</string>
     <string name="offline_conflict_text">Het bestand is zowel op de server als op de telefoon gewijzigd. Welke versie bewaren?
 Server: %1$s

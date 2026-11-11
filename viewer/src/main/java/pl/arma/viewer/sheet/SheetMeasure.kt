@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -96,6 +98,7 @@ private val MEASURE = Color(0xFFC62828)
 private val CURSOR = Color(0xFF1565C0)
 private val SNAP = Color(0xFF00C853)
 private val SELECTED = Color(0xFF2962FF)
+private val GUIDE = Color(0xFFFF6D00)
 
 /** Napis w zaokrąglonym prostokącie, wyśrodkowany w punkcie. */
 private fun DrawScope.pill(text: String, at: Offset, paints: MeasurePaints, background: Paint) {
@@ -163,7 +166,25 @@ internal fun DrawScope.drawCommentMarks(
  * Celownik w punkcie [center], znacznik punktu, do którego przyciągnął,
  * i gumka od pierwszego punktu z bieżącą długością.
  */
-internal fun DrawScope.drawCursor(p: Projection, state: SheetViewerState, cursor: PagePoint?, center: Offset, paints: MeasurePaints) {
+internal fun DrawScope.drawCursor(
+    p: Projection,
+    state: SheetViewerState,
+    cursor: PagePoint?,
+    pickLine: Pair<Int, FloatArray>?,
+    center: Offset,
+    paints: MeasurePaints
+) {
+    if (state.placement == Placement.MEASURE) {
+        // Linia odniesienia prowadnicy: wskazywana właśnie albo już wybrana.
+        val reference = pickLine ?: state.guide?.takeIf { state.pickingGuide == null }?.let { it.page to it.line }
+        if (reference != null) {
+            val (page, line) = reference
+            val a = p.toScreen(page, line[0], line[1])
+            val b = p.toScreen(page, line[2], line[3])
+            drawLine(Color.White, a, b, strokeWidth = 6.dp.toPx())
+            drawLine(GUIDE, a, b, strokeWidth = 3.dp.toPx())
+        }
+    }
     val arm = 16.dp.toPx()
     val gap = 5.dp.toPx()
     val stroke = 1.5.dp.toPx()
@@ -180,7 +201,17 @@ internal fun DrawScope.drawCursor(p: Projection, state: SheetViewerState, cursor
     val first = state.firstPoint
     if (first != null && state.placement == Placement.MEASURE) {
         val a = p.toScreen(first.page, first.snap.x, first.snap.y)
-        if (state.axisLock) {
+        val guide = state.guide?.takeIf { it.page == first.page && state.pickingGuide == null }
+        if (guide != null) {
+            // Prowadnica przez pierwszy punkt, przez cały ekran.
+            val ahead = p.toScreen(first.page, first.snap.x + guide.directionX, first.snap.y + guide.directionY)
+            val length = hypot(ahead.x - a.x, ahead.y - a.y)
+            if (length > 0f) {
+                val reach = (size.width + size.height) / length
+                val d = Offset((ahead.x - a.x) * reach, (ahead.y - a.y) * reach)
+                drawLine(GUIDE.copy(alpha = .6f), a - d, a + d, strokeWidth = 1.5.dp.toPx())
+            }
+        } else if (state.axisLock) {
             // Prowadnice osi przez pierwszy punkt.
             val guide = Color(0x661565C0)
             drawLine(guide, Offset(0f, a.y), Offset(size.width, a.y), strokeWidth = 1.dp.toPx())
@@ -250,6 +281,7 @@ private fun DrawScope.snapMarker(kind: SnapKind, at: Offset) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun MeasurePanel(
     state: SheetViewerState,
@@ -264,12 +296,14 @@ internal fun MeasurePanel(
         state.measurePrefsLoaded = true
         state.snapping = ViewerPreferences.snapping(context)
         state.axisLock = ViewerPreferences.axisLock(context)
+        state.edgesOnly = ViewerPreferences.edgesOnly(context)
     }
     val page = cursor?.page ?: 0
     val scale = state.scaleFor(page)
     val first = state.firstPoint
     val readout = when {
         state.loadingGeometry[page] == true -> stringResource(R.string.viewer_loading_lines)
+        state.pickingGuide != null -> stringResource(R.string.viewer_aim_reference_line)
         first == null -> stringResource(R.string.viewer_aim_first_point)
         cursor == null || first.page != cursor.page -> stringResource(R.string.viewer_second_point_same_page)
         else -> {
@@ -323,7 +357,8 @@ internal fun MeasurePanel(
     }
     // Przełączniki zawsze na widoku — w przewijanym rzędzie nikt ich nie znajdował.
     val switches: @Composable () -> Unit = {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Na wąskim ekranie przełączniki łamią się do drugiego rzędu.
+        FlowRow(verticalArrangement = Arrangement.Center, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(
                     checked = state.snapping,
@@ -334,11 +369,56 @@ internal fun MeasurePanel(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(
+                    checked = state.edgesOnly,
+                    onCheckedChange = { state.edgesOnly = it; ViewerPreferences.setEdgesOnly(context, it) },
+                    enabled = state.snapping,
+                    modifier = Modifier.scale(.8f)
+                )
+                Text(stringResource(R.string.viewer_edges_only), style = MaterialTheme.typography.labelLarge)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(
                     checked = state.axisLock,
-                    onCheckedChange = { state.axisLock = it; ViewerPreferences.setAxisLock(context, it) },
+                    onCheckedChange = {
+                        state.axisLock = it
+                        ViewerPreferences.setAxisLock(context, it)
+                        // Oś i prowadnica wykluczają się: obie wyznaczają kierunek pomiaru.
+                        if (it) {
+                            state.guide = null
+                            state.pickingGuide = null
+                        }
+                    },
                     modifier = Modifier.scale(.8f)
                 )
                 Text(stringResource(R.string.viewer_axis_lock), style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+    // Równolegle albo prostopadle do linii: pierwsze dotknięcie prosi o wskazanie
+    // linii, dotknięcie drugiego rodzaju zmienia kierunek przy tej samej linii,
+    // a ponowne dotknięcie wybranego wyłącza prowadnicę.
+    val guides: @Composable () -> Unit = {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (mode in GuideMode.entries) {
+                val active = state.guide
+                FilterChip(
+                    selected = if (state.pickingGuide != null) state.pickingGuide == mode else active?.mode == mode,
+                    onClick = {
+                        when {
+                            state.pickingGuide == mode -> state.pickingGuide = null
+                            state.pickingGuide != null -> state.pickingGuide = mode
+                            active == null -> state.pickingGuide = mode
+                            active.mode == mode -> state.guide = null
+                            else -> state.guide = Guide(active.page, mode, active.line)
+                        }
+                    },
+                    label = {
+                        Text(
+                            stringResource(if (mode == GuideMode.PARALLEL) R.string.viewer_guide_parallel else R.string.viewer_guide_perpendicular),
+                            maxLines = 1
+                        )
+                    }
+                )
             }
         }
     }
@@ -346,7 +426,16 @@ internal fun MeasurePanel(
         Button(onClick = onPoint, modifier = modifier, enabled = cursor != null) {
             Icon(Icons.Default.GpsFixed, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text(if (state.firstPoint == null) stringResource(R.string.viewer_first_point) else stringResource(R.string.viewer_second_point), maxLines = 1)
+            Text(
+                stringResource(
+                    when {
+                        state.pickingGuide != null -> R.string.viewer_pick_line
+                        state.firstPoint == null -> R.string.viewer_first_point
+                        else -> R.string.viewer_second_point
+                    }
+                ),
+                maxLines = 1
+            )
         }
     }
     BoxWithConstraints(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -359,6 +448,8 @@ internal fun MeasurePanel(
                     switches()
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    guides()
+                    Spacer(Modifier.width(8.dp))
                     Box(Modifier.weight(1f)) { controls() }
                     Spacer(Modifier.width(8.dp))
                     pointButton(Modifier)
@@ -368,6 +459,7 @@ internal fun MeasurePanel(
             Column(Modifier.widthIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 readoutRow(Modifier)
                 switches()
+                guides()
                 controls()
                 pointButton(Modifier.fillMaxWidth())
             }
@@ -588,4 +680,9 @@ object ViewerPreferences {
     fun axisLock(context: Context): Boolean = prefs(context).getBoolean("axis_lock", false)
 
     fun setAxisLock(context: Context, on: Boolean) = prefs(context).edit().putBoolean("axis_lock", on).apply()
+
+    /** Przyciąganie tylko do krawędzi kształtów, z pominięciem kreskowań. */
+    fun edgesOnly(context: Context): Boolean = prefs(context).getBoolean("edges_only", false)
+
+    fun setEdgesOnly(context: Context, on: Boolean) = prefs(context).edit().putBoolean("edges_only", on).apply()
 }

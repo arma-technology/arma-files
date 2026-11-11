@@ -118,7 +118,10 @@ class SnapGeometry private constructor(
         fun build(): SnapGeometry {
             val c = coords.copyOf(count * 4)
             val p = points.copyOf(pointCount * 2)
-            return SnapGeometry(c, flags.copyOf(count), count, p, pointKinds.copyOf(pointCount), pointCount, Grid.build(c, count, p, pointCount))
+            val f = flags.copyOf(count)
+            val grid = Grid.build(c, count, p, pointCount)
+            markHatching(c, f, count, grid)
+            return SnapGeometry(c, f, count, p, pointKinds.copyOf(pointCount), pointCount, grid)
         }
     }
 
@@ -127,9 +130,13 @@ class SnapGeometry private constructor(
      *
      * @param from pierwszy punkt pomiaru — włącza przyciąganie prostopadłe
      * @param axisLock kursor wiedziony po osi poziomej albo pionowej przez [from]
+     * @param edgesOnly pomija linie kreskowania — zostają krawędzie kształtów
      */
-    fun snap(x: Float, y: Float, radius: Float, from: SnapResult? = null, axisLock: Boolean = false): SnapResult {
-        if (axisLock && from != null) return snapOnAxis(x, y, radius, from)
+    fun snap(
+        x: Float, y: Float, radius: Float,
+        from: SnapResult? = null, axisLock: Boolean = false, edgesOnly: Boolean = false
+    ): SnapResult {
+        if (axisLock && from != null) return snapOnAxis(x, y, radius, from, edgesOnly)
 
         val candidates = index.segmentsNear(x, y, radius)
         var best: SnapResult? = null
@@ -172,8 +179,9 @@ class SnapGeometry private constructor(
             val o = i * 4
             val x1 = coords[o]; val y1 = coords[o + 1]; val x2 = coords[o + 2]; val y2 = coords[o + 3]
             if (distanceToSegment(x, y, x1, y1, x2, y2) > radius) continue
-            near += i
             val f = flags[i].toInt()
+            if (edgesOnly && f and HATCH != 0) continue
+            near += i
             if (f and START != 0) offer(x1, y1, SnapKind.END)
             if (f and END_FLAG != 0) offer(x2, y2, SnapKind.END)
             if (f and CURVE == 0) offer((x1 + x2) / 2f, (y1 + y2) / 2f, SnapKind.MIDPOINT)
@@ -213,19 +221,36 @@ class SnapGeometry private constructor(
      * szukamy przecięcia z linią rysunku: to dokładnie „odległość elementu od
      * ściany w poziomie”.
      */
-    private fun snapOnAxis(x: Float, y: Float, radius: Float, from: SnapResult): SnapResult {
+    private fun snapOnAxis(x: Float, y: Float, radius: Float, from: SnapResult, edgesOnly: Boolean): SnapResult {
         val horizontal = abs(x - from.x) >= abs(y - from.y)
-        val ax = if (horizontal) x else from.x
-        val ay = if (horizontal) from.y else y
+        return if (horizontal) snapOnLine(x, y, radius, from, 1f, 0f, edgesOnly) else snapOnLine(x, y, radius, from, 0f, 1f, edgesOnly)
+    }
+
+    /**
+     * Kursor na prostej przez [from] o kierunku ([dirX], [dirY]) — prowadnicy
+     * równoległej albo prostopadłej do wskazanej linii. Tak jak na osi,
+     * szukamy na niej przecięcia z linią rysunku.
+     */
+    fun snapOnLine(
+        x: Float, y: Float, radius: Float, from: SnapResult,
+        dirX: Float, dirY: Float, edgesOnly: Boolean = false
+    ): SnapResult {
+        val length = hypot(dirX, dirY)
+        if (length == 0f) return SnapResult(x, y, SnapKind.NONE)
+        val ux = dirX / length
+        val uy = dirY / length
+        val t = (x - from.x) * ux + (y - from.y) * uy
+        val ax = from.x + t * ux
+        val ay = from.y + t * uy
         var best: SnapResult? = null
         var bestDistance = Float.MAX_VALUE
         for (i in index.segmentsNear(ax, ay, radius)) {
+            if (edgesOnly && flags[i].toInt() and HATCH != 0) continue
             val o = i * 4
-            val hit = if (horizontal) {
-                intersect(ax - radius, ay, ax + radius, ay, coords[o], coords[o + 1], coords[o + 2], coords[o + 3])
-            } else {
-                intersect(ax, ay - radius, ax, ay + radius, coords[o], coords[o + 1], coords[o + 2], coords[o + 3])
-            } ?: continue
+            val hit = intersect(
+                ax - radius * ux, ay - radius * uy, ax + radius * ux, ay + radius * uy,
+                coords[o], coords[o + 1], coords[o + 2], coords[o + 3]
+            ) ?: continue
             val d = hypot(hit.first - ax, hit.second - ay)
             if (d < bestDistance) {
                 bestDistance = d
@@ -235,13 +260,35 @@ class SnapGeometry private constructor(
         return best ?: SnapResult(ax, ay, SnapKind.AXIS)
     }
 
+    /**
+     * Odcinek najbliżej kursora — linia odniesienia dla prowadnicy. Zwraca
+     * [x1, y1, x2, y2] albo null, gdy w promieniu nie ma żadnej linii.
+     */
+    fun nearestSegment(x: Float, y: Float, radius: Float, edgesOnly: Boolean = false): FloatArray? {
+        var best = -1
+        var bestDistance = radius
+        for (i in index.segmentsNear(x, y, radius)) {
+            if (edgesOnly && flags[i].toInt() and HATCH != 0) continue
+            val o = i * 4
+            val d = distanceToSegment(x, y, coords[o], coords[o + 1], coords[o + 2], coords[o + 3])
+            if (d <= bestDistance) {
+                bestDistance = d
+                best = i
+            }
+        }
+        return if (best < 0) null else segment(best)
+    }
+
+    /** Czy odcinek [i] został rozpoznany jako linia kreskowania. */
+    fun isHatching(i: Int): Boolean = flags[i].toInt() and HATCH != 0
+
     /** Odcinki w prostokącie — do narysowania podświetlenia linii pod kursorem. */
     fun segment(i: Int): FloatArray = coords.copyOfRange(i * 4, i * 4 + 4)
 
     private class Grid(
         private val minX: Float,
         private val minY: Float,
-        private val cell: Float,
+        val cell: Float,
         private val columns: Int,
         private val rows: Int,
         private val starts: IntArray,
@@ -267,6 +314,28 @@ class SnapGeometry private constructor(
                 }
             }
             return out
+        }
+
+        /** Wynik [collectNear]; ważny do następnego wywołania. */
+        var buffer = IntArray(256)
+            private set
+
+        /** Jak [segmentsNear], ale bez tworzenia listy — do przejścia po całym rysunku. */
+        fun collectNear(x: Float, y: Float, r: Float): Int {
+            if (columns == 0) return 0
+            generation++
+            var count = 0
+            forCells(x, y, r) { c ->
+                for (k in starts[c] until starts[c + 1]) {
+                    val i = items[k]
+                    if (stamp[i] != generation) {
+                        stamp[i] = generation
+                        if (count == buffer.size) buffer = buffer.copyOf(count * 2)
+                        buffer[count++] = i
+                    }
+                }
+            }
+            return count
         }
 
         fun pointsNear(x: Float, y: Float, r: Float): List<Int> {
@@ -365,7 +434,112 @@ class SnapGeometry private constructor(
         private const val START = 1
         private const val END_FLAG = 2
         private const val CURVE = 4
+        private const val HATCH = 8
         private const val MAX_INTERSECTION_CANDIDATES = 48
+
+        /** Tyle równo rozstawionych linii równoległych to już kreskowanie, nie ściana. */
+        private const val HATCH_MIN_LINES = 5
+        private const val HATCH_SPACING_TOLERANCE = .12f
+        private const val HATCH_PARALLEL_SINE = .01f
+
+        /**
+         * Oznacza linie kreskowania: odcinek, który razem z sąsiadami tworzy
+         * rodzinę co najmniej [HATCH_MIN_LINES] równoległych linii w równych
+         * odstępach. Sąsiadów szukamy na prostopadłej przez środek odcinka.
+         *
+         * Krawędź kształtu równoległa do kreskowania potrafi leżeć dokładnie
+         * o jeden odstęp od pierwszej kreski. Odróżnia ją to, że w narożniku
+         * styka się końcem z końcem innej linii — kreski kończą się na
+         * krawędziach, a nie w wierzchołkach.
+         */
+        private fun markHatching(c: FloatArray, flags: ByteArray, n: Int, grid: Grid) {
+            if (n < HATCH_MIN_LINES) return
+            var offsets = FloatArray(64)
+            for (i in 0 until n) {
+                if (flags[i].toInt() and CURVE != 0) continue
+                val o = i * 4
+                val dx = c[o + 2] - c[o]
+                val dy = c[o + 3] - c[o + 1]
+                val length = hypot(dx, dy)
+                val ux = dx / length
+                val uy = dy / length
+                val mx = (c[o] + c[o + 2]) / 2f
+                val my = (c[o + 1] + c[o + 3]) / 2f
+                var radius = grid.cell * 1.5f
+                var spacing = 0f
+                var found = 0
+                for (attempt in 0..1) {
+                    found = 0
+                    spacing = Float.MAX_VALUE
+                    val near = grid.collectNear(mx, my, radius)
+                    val candidates = grid.buffer
+                    for (q in 0 until near) {
+                        val j = candidates[q]
+                        if (j == i || flags[j].toInt() and CURVE != 0) continue
+                        val p = j * 4
+                        val ex = c[p + 2] - c[p]
+                        val ey = c[p + 3] - c[p + 1]
+                        val other = hypot(ex, ey)
+                        if (abs(ux * ey - uy * ex) > HATCH_PARALLEL_SINE * other) continue
+                        // Odległość środka od prostej sąsiada, ze znakiem strony.
+                        val t = (c[p] - mx) * -uy + (c[p + 1] - my) * ux
+                        if (abs(t) > radius || abs(t) < radius * 1e-4f) continue
+                        // Prostopadła przez środek musi trafiać w sąsiada.
+                        val a = (c[p] - mx) * ux + (c[p + 1] - my) * uy
+                        val b = (c[p + 2] - mx) * ux + (c[p + 3] - my) * uy
+                        val slack = other * .05f
+                        if (min(a, b) > slack || max(a, b) < -slack) continue
+                        if (found == offsets.size) offsets = offsets.copyOf(found * 2)
+                        offsets[found++] = t
+                        if (abs(t) < spacing) spacing = abs(t)
+                    }
+                    // Rodzina musi się zmieścić w przeszukanym kole; przy rzadkim
+                    // kreskowaniu szukamy raz jeszcze, szerzej.
+                    val needed = spacing * (HATCH_MIN_LINES - 1) * (1f + HATCH_SPACING_TOLERANCE)
+                    if (attempt == 1 || (found > 0 && needed <= radius)) break
+                    radius = if (found > 0) needed else radius * 3f
+                }
+                if (found < HATCH_MIN_LINES - 1) continue
+                fun lineAt(k: Int): Boolean {
+                    val wanted = k * spacing
+                    for (q in 0 until found) if (abs(offsets[q] - wanted) <= HATCH_SPACING_TOLERANCE * spacing) return true
+                    return false
+                }
+                var run = 1
+                var k = 1
+                while (run < HATCH_MIN_LINES && lineAt(k)) { run++; k++ }
+                k = -1
+                while (run < HATCH_MIN_LINES && lineAt(k)) { run++; k-- }
+                if (run < HATCH_MIN_LINES) continue
+                val tolerance = spacing * .05f
+                if (sharesVertex(c, grid, i, c[o], c[o + 1], ux, uy, tolerance) ||
+                    sharesVertex(c, grid, i, c[o + 2], c[o + 3], ux, uy, tolerance)
+                ) continue
+                flags[i] = (flags[i].toInt() or HATCH).toByte()
+            }
+        }
+
+        /**
+         * Czy w punkcie ([x], [y]) kończy się inny odcinek niż [self], biegnący
+         * w innym kierunku niż ([ux], [uy]). Przedłużenie tej samej linii to
+         * nie narożnik: kreska bywa zapisana w kilku kawałkach.
+         */
+        private fun sharesVertex(
+            c: FloatArray, grid: Grid, self: Int, x: Float, y: Float, ux: Float, uy: Float, tolerance: Float
+        ): Boolean {
+            val near = grid.collectNear(x, y, tolerance)
+            val candidates = grid.buffer
+            for (q in 0 until near) {
+                val j = candidates[q]
+                if (j == self) continue
+                val p = j * 4
+                if (hypot(c[p] - x, c[p + 1] - y) > tolerance && hypot(c[p + 2] - x, c[p + 3] - y) > tolerance) continue
+                val ex = c[p + 2] - c[p]
+                val ey = c[p + 3] - c[p + 1]
+                if (abs(ux * ey - uy * ex) > HATCH_PARALLEL_SINE * hypot(ex, ey)) return true
+            }
+            return false
+        }
 
         val EMPTY: SnapGeometry = Builder().build()
 

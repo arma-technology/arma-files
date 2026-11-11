@@ -194,6 +194,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         vm.setForeground(true)
+        // Proces żyje w tle całymi dniami — kopie offline doganiają serwer przy każdym wejściu.
+        armaApp.offline.catchUp()
     }
 
     override fun onStop() {

@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Немагчыма прайграць запіс (%1$s)</string>
     <string name="viewer_text_formatted">Фарматаваны выгляд</string>
     <string name="viewer_text_source">Зыходны тэкст</string>
+    <string name="viewer_edges_only">Краі</string>
+    <string name="viewer_guide_parallel">∥ Паралельна</string>
+    <string name="viewer_guide_perpendicular">⊥ Перпендыкулярна</string>
+    <string name="viewer_pick_line">Выбраць лінію</string>
+    <string name="viewer_aim_reference_line">Навядзіце прыцэл на апорную лінію</string>
+    <string name="viewer_no_line_here">Пад прыцэлам няма лініі</string>
 </resources>

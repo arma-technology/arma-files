@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Cannot play this recording (%1$s)</string>
     <string name="viewer_text_formatted">Formatted view</string>
     <string name="viewer_text_source">Source</string>
+    <string name="viewer_edges_only">Edges</string>
+    <string name="viewer_guide_parallel">∥ Parallel</string>
+    <string name="viewer_guide_perpendicular">⊥ Perpendicular</string>
+    <string name="viewer_pick_line">Pick line</string>
+    <string name="viewer_aim_reference_line">Aim the crosshair at the reference line</string>
+    <string name="viewer_no_line_here">No line under the crosshair</string>
 </resources>

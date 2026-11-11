@@ -148,4 +148,113 @@ class SnapTest {
         assertEquals(1722.60f, s.x, 0.01f)
         assertEquals(0f, s.y, 0.01f)
     }
+
+    // Prostokąt 1000 x 600 zakreskowany pod kątem 45° co 40 jednostek; kreski
+    // kończą się na krawędziach, jak w rysunku wydrukowanym do PDF.
+    private fun hatched(extra: SnapGeometry.Builder.() -> Unit = {}): SnapGeometry = SnapGeometry.Builder().apply {
+        polyline(floatArrayOf(0f, 0f, 1000f, 0f, 1000f, 600f, 0f, 600f), closed = true)
+        var c = -560f
+        while (c < 1000f) {
+            // y = x - c przycięte do prostokąta
+            val x1 = maxOf(0f, c)
+            val x2 = minOf(1000f, c + 600f)
+            if (x2 > x1) line(x1, x1 - c, x2, x2 - c)
+            c += 40f
+        }
+        extra()
+    }.build()
+
+    @Test
+    fun `kreskowanie rozpoznane a krawedzie nie`() {
+        val g = hatched()
+        for (i in 0 until 4) assertEquals("krawędź $i", false, g.isHatching(i))
+        val marked = (4 until g.segmentCount).count { g.isHatching(it) }
+        // Skrajne kreski w narożnikach nie mają pełnej rodziny sąsiadów.
+        assertEquals(true, marked >= g.segmentCount - 4 - 6)
+    }
+
+    @Test
+    fun `krawedzie maja pierwszenstwo przed kreskowaniem`() {
+        val g = hatched()
+        // Tuż przy dolnej krawędzi, obok końca kreski.
+        val plain = g.snap(523f, 596f, radius = 12f)
+        assertEquals(520f, plain.x, 0.01f)
+        val edges = g.snap(523f, 596f, radius = 12f, edgesOnly = true)
+        assertEquals(SnapKind.NEAREST, edges.kind)
+        assertEquals(600f, edges.y, 0.01f)
+        assertEquals(523f, edges.x, 0.01f)
+        // W środku kreskowania nie ma do czego przyciągać.
+        assertEquals(SnapKind.NONE, g.snap(500f, 300f, radius = 12f, edgesOnly = true).kind)
+    }
+
+    @Test
+    fun `sciana z dwoch linii i schody z czterech stopni to nie kreskowanie`() {
+        val g = SnapGeometry.Builder().apply {
+            line(0f, 0f, 1000f, 0f)
+            line(0f, 25f, 1000f, 25f)
+            for (k in 0 until 4) line(2000f + 30f * k, 0f, 2000f + 30f * k, 120f)
+        }.build()
+        for (i in 0 until g.segmentCount) assertEquals(false, g.isHatching(i))
+    }
+
+    @Test
+    fun `krawedz rownolegla do kreskowania o jeden odstep zostaje krawedzia`() {
+        // Poziome kreski co 20 w prostokącie, którego dolna i górna krawędź
+        // leżą dokładnie o jeden odstęp od skrajnych kresek.
+        val g = SnapGeometry.Builder().apply {
+            polyline(floatArrayOf(0f, 0f, 500f, 0f, 500f, 200f, 0f, 200f), closed = true)
+            for (k in 1..9) line(0f, 20f * k, 500f, 20f * k)
+        }.build()
+        for (i in 0 until 4) assertEquals(false, g.isHatching(i))
+        assertEquals(9, (4 until g.segmentCount).count { g.isHatching(it) })
+    }
+
+    @Test
+    fun `prowadnica prostopadla trafia w linie naprzeciwko`() {
+        // Dwie ściany pod kątem; z punktu na pierwszej prostopadle do drugiej.
+        val g = SnapGeometry.Builder().apply {
+            line(0f, 0f, 1000f, 1000f)
+            line(0f, 200f, 1000f, 1200f)
+        }.build()
+        val from = SnapResult(500f, 500f, SnapKind.NEAREST)
+        // Kierunek prostopadły do ściany (1, 1) to (-1, 1); celownik niedokładnie.
+        val s = g.snapOnLine(410f, 615f, radius = 40f, from = from, dirX = -1f, dirY = 1f)
+        assertEquals(SnapKind.AXIS_INTERSECTION, s.kind)
+        assertEquals(400f, s.x, 0.01f)
+        assertEquals(600f, s.y, 0.01f)
+        // Daleko od linii kursor zostaje na prowadnicy.
+        val free = g.snapOnLine(470f, 540f, radius = 10f, from = from, dirX = -1f, dirY = 1f)
+        assertEquals(SnapKind.AXIS, free.kind)
+        assertEquals(1000f, free.x + free.y, 0.01f)
+    }
+
+    @Test
+    fun `najblizszy odcinek jako linia odniesienia`() {
+        val s = room.nearestSegment(3990f, 1400f, radius = 50f)!!
+        assertEquals(4000f, s[0], 0.01f)
+        assertEquals(4000f, s[2], 0.01f)
+        assertNull(room.nearestSegment(3000f, 1500f, radius = 50f))
+    }
+
+    @Test
+    fun `rozpoznanie kreskowania na duzym rysunku miesci sie w czasie`() {
+        val b = SnapGeometry.Builder()
+        val random = java.util.Random(7)
+        // 300 tys. odcinków: połowa to gęste kreskowania, połowa luźne linie.
+        repeat(1500) {
+            val ox = random.nextFloat() * 20000f
+            val oy = random.nextFloat() * 20000f
+            for (k in 0 until 100) b.line(ox + k * 3f, oy, ox + k * 3f + 150f, oy + 150f)
+        }
+        repeat(150_000) {
+            val x = random.nextFloat() * 20000f
+            val y = random.nextFloat() * 20000f
+            b.line(x, y, x + random.nextFloat() * 400f - 200f, y + random.nextFloat() * 400f - 200f)
+        }
+        val start = System.nanoTime()
+        val g = b.build()
+        val ms = (System.nanoTime() - start) / 1_000_000
+        println("hatch build: $ms ms, segments ${g.segmentCount}")
+        assertEquals(true, ms < 20_000)
+    }
 }

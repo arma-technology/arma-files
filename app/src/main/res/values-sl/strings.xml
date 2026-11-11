@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Potek kopiranja, premikanja in brisanja</string>
     <string name="offline_added">Dodano za način brez povezave — prenos v ozadju</string>
     <string name="offline_banner">Strežnik ni dosegljiv — prikazana je kopija brez povezave z dne %1$s</string>
-    <string name="offline_busy">Prejšnja sinhronizacija še poteka — poskusite pozneje.</string>
+    <string name="offline_skipped">Preskočeni elementi: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Neskladja datotek brez povezave</string>
     <string name="offline_conflict_text">Datoteka se je spremenila na strežniku in v telefonu. Katero različico obdržim?
 Strežnik: %1$s

@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Fortschritt beim Kopieren, Verschieben und Löschen</string>
     <string name="offline_added">Offline hinzugefügt — Download im Hintergrund</string>
     <string name="offline_banner">Server nicht erreichbar — Offline-Kopie vom %1$s wird angezeigt</string>
-    <string name="offline_busy">Eine frühere Synchronisierung läuft noch — später erneut versuchen.</string>
+    <string name="offline_skipped">Übersprungene Elemente: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Konflikte bei Offline-Dateien</string>
     <string name="offline_conflict_text">Die Datei wurde auf dem Server und auf dem Telefon geändert. Welche Version behalten?
 Server: %1$s

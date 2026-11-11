@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Napredak kopiranja, premještanja i brisanja</string>
     <string name="offline_added">Dodano izvan mreže — preuzimanje u pozadini</string>
     <string name="offline_banner">Poslužitelj nije dostupan — prikazuje se izvanmrežna kopija od %1$s</string>
-    <string name="offline_busy">Prethodna sinkronizacija još traje — pokušajte kasnije.</string>
+    <string name="offline_skipped">Preskočene stavke: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Neusklađenosti izvanmrežnih datoteka</string>
     <string name="offline_conflict_text">Datoteka je promijenjena i na poslužitelju i na telefonu. Koju verziju zadržati?
 Poslužitelj: %1$s

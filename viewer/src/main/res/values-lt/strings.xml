@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Įrašo nepavyksta paleisti (%1$s)</string>
     <string name="viewer_text_formatted">Suformatuotas rodinys</string>
     <string name="viewer_text_source">Šaltinis</string>
+    <string name="viewer_edges_only">Kraštai</string>
+    <string name="viewer_guide_parallel">∥ Lygiagrečiai</string>
+    <string name="viewer_guide_perpendicular">⊥ Statmenai</string>
+    <string name="viewer_pick_line">Pasirinkti liniją</string>
+    <string name="viewer_aim_reference_line">Nutaikykite taikiklį į atskaitos liniją</string>
+    <string name="viewer_no_line_here">Po taikikliu nėra linijos</string>
 </resources>

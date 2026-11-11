@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Nahrávku nemožno prehrať (%1$s)</string>
     <string name="viewer_text_formatted">Formátované zobrazenie</string>
     <string name="viewer_text_source">Zdroj</string>
+    <string name="viewer_edges_only">Hrany</string>
+    <string name="viewer_guide_parallel">∥ Rovnobežne</string>
+    <string name="viewer_guide_perpendicular">⊥ Kolmo</string>
+    <string name="viewer_pick_line">Vybrať čiaru</string>
+    <string name="viewer_aim_reference_line">Umiestnite zameriavač na referenčnú čiaru</string>
+    <string name="viewer_no_line_here">Pod zameriavačom nie je žiadna čiara</string>
 </resources>

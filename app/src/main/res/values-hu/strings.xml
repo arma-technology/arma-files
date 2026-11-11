@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Másolás, áthelyezés és törlés folyamata</string>
     <string name="offline_added">Offline elérhetővé téve — letöltés a háttérben</string>
     <string name="offline_banner">A szerver nem érhető el — az offline másolat látható (%1$s)</string>
-    <string name="offline_busy">Egy korábbi szinkronizálás még fut — próbálja később.</string>
+    <string name="offline_skipped">Kihagyott elemek: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Offline fájlok ütközései</string>
     <string name="offline_conflict_text">A fájl a szerveren és a telefonon is megváltozott. Melyik verzió maradjon?
 Szerver: %1$s

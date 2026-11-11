@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Progresul copierii, mutării și ștergerii</string>
     <string name="offline_added">Adăugat offline — se descarcă în fundal</string>
     <string name="offline_banner">Server indisponibil — se afișează copia offline din %1$s</string>
-    <string name="offline_busy">O sincronizare anterioară încă rulează — încercați mai târziu.</string>
+    <string name="offline_skipped">Elemente omise: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Conflicte fișiere offline</string>
     <string name="offline_conflict_text">Fișierul s-a modificat atât pe server, cât și pe telefon. Ce versiune păstrăm?
 Server: %1$s

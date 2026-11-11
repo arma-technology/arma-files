@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Kan deze opname niet afspelen (%1$s)</string>
     <string name="viewer_text_formatted">Opgemaakte weergave</string>
     <string name="viewer_text_source">Bron</string>
+    <string name="viewer_edges_only">Randen</string>
+    <string name="viewer_guide_parallel">∥ Evenwijdig</string>
+    <string name="viewer_guide_perpendicular">⊥ Loodrecht</string>
+    <string name="viewer_pick_line">Lijn kiezen</string>
+    <string name="viewer_aim_reference_line">Richt het vizier op de referentielijn</string>
+    <string name="viewer_no_line_here">Geen lijn onder het vizier</string>
 </resources>

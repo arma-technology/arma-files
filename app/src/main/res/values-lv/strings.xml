@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Kopēšanas, pārvietošanas un dzēšanas gaita</string>
     <string name="offline_added">Pievienots bezsaistei — lejupielāde fonā</string>
     <string name="offline_banner">Serveris nav pieejams — tiek rādīta bezsaistes kopija no %1$s</string>
-    <string name="offline_busy">Iepriekšējā sinhronizācija vēl notiek — mēģiniet vēlāk.</string>
+    <string name="offline_skipped">Izlaistie vienumi: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Bezsaistes failu neatbilstības</string>
     <string name="offline_conflict_text">Fails ir mainījies gan serverī, gan tālrunī. Kuru versiju paturēt?
 Serveris: %1$s

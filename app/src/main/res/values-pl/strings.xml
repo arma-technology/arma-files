@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Postęp kopiowania, przenoszenia i usuwania</string>
     <string name="offline_added">Dodano do offline — pobieranie w tle</string>
     <string name="offline_banner">Serwer niedostępny — pokazuję kopię offline z %1$s</string>
-    <string name="offline_busy">Poprzednia synchronizacja jeszcze trwa — spróbuj później.</string>
+    <string name="offline_skipped">Pominięte elementy: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Rozbieżności plików offline</string>
     <string name="offline_conflict_text">Plik zmienił się na serwerze i w telefonie. Którą wersję zachować?
 Serwer: %1$s

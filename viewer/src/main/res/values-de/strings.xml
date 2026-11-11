@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Aufnahme kann nicht abgespielt werden (%1$s)</string>
     <string name="viewer_text_formatted">Formatierte Ansicht</string>
     <string name="viewer_text_source">Quelltext</string>
+    <string name="viewer_edges_only">Kanten</string>
+    <string name="viewer_guide_parallel">∥ Parallel</string>
+    <string name="viewer_guide_perpendicular">⊥ Lotrecht</string>
+    <string name="viewer_pick_line">Linie wählen</string>
+    <string name="viewer_aim_reference_line">Fadenkreuz auf die Bezugslinie setzen</string>
+    <string name="viewer_no_line_here">Keine Linie unter dem Fadenkreuz</string>
 </resources>

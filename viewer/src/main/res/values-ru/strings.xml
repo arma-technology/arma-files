@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Не удаётся воспроизвести запись (%1$s)</string>
     <string name="viewer_text_formatted">Форматированный вид</string>
     <string name="viewer_text_source">Исходный текст</string>
+    <string name="viewer_edges_only">Края</string>
+    <string name="viewer_guide_parallel">∥ Параллельно</string>
+    <string name="viewer_guide_perpendicular">⊥ Перпендикулярно</string>
+    <string name="viewer_pick_line">Выбрать линию</string>
+    <string name="viewer_aim_reference_line">Наведите прицел на опорную линию</string>
+    <string name="viewer_no_line_here">Под прицелом нет линии</string>
 </resources>

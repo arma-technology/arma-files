@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">A felvétel nem játszható le (%1$s)</string>
     <string name="viewer_text_formatted">Formázott nézet</string>
     <string name="viewer_text_source">Forrás</string>
+    <string name="viewer_edges_only">Élek</string>
+    <string name="viewer_guide_parallel">∥ Párhuzamos</string>
+    <string name="viewer_guide_perpendicular">⊥ Merőleges</string>
+    <string name="viewer_pick_line">Vonal kijelölése</string>
+    <string name="viewer_aim_reference_line">Állítsd a célkeresztet a referenciavonalra</string>
+    <string name="viewer_no_line_here">Nincs vonal a célkereszt alatt</string>
 </resources>

@@ -268,7 +268,7 @@
     <string name="notif_channel_desc">Průběh kopírování, přesouvání a mazání</string>
     <string name="offline_added">Přidáno do offline — stahuje se na pozadí</string>
     <string name="offline_banner">Server je nedostupný — zobrazuje se offline kopie z %1$s</string>
-    <string name="offline_busy">Předchozí synchronizace ještě běží — zkuste to později.</string>
+    <string name="offline_skipped">Přeskočené položky: %1$d (%2$s: %3$s)</string>
     <string name="offline_conflict_channel">Rozpory offline souborů</string>
     <string name="offline_conflict_text">Soubor se změnil na serveru i v telefonu. Kterou verzi zachovat?
 Server: %1$s

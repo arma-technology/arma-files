@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import kotlinx.coroutines.launch
 import androidx.compose.ui.geometry.Offset
@@ -264,8 +265,10 @@ fun FullscreenImageViewer(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         HiddenSystemBars()
+        val chrome = rememberFadingChrome()
+        val chromeAlpha = chrome.alpha
         Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-            Box(Modifier.fillMaxSize().background(Color.Black)) {
+            Box(Modifier.fillMaxSize().background(Color.Black).chromeTaps(chrome)) {
                 if (image == null) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (error == null) CircularProgressIndicator() else Text(error, color = Color.White)
@@ -282,8 +285,8 @@ fun FullscreenImageViewer(
                     swipe = swipe
                 )
 
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                if (chromeAlpha > 0f) Surface(
+                    modifier = Modifier.alpha(chromeAlpha).align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
                     shape = RoundedCornerShape(18.dp),
                     color = Color.Black.copy(alpha = .58f)
                 ) {
@@ -292,9 +295,9 @@ fun FullscreenImageViewer(
                     }
                 }
 
-                if (position.isNotBlank()) {
+                if (position.isNotBlank() && chromeAlpha > 0f) {
                     Surface(
-                        modifier = Modifier.align(Alignment.TopStart)
+                        modifier = Modifier.alpha(chromeAlpha).align(Alignment.TopStart)
                             .windowInsetsPadding(WindowInsets.safeDrawing)
                             .padding(12.dp),
                         shape = RoundedCornerShape(18.dp),
@@ -311,8 +314,8 @@ fun FullscreenImageViewer(
                     }
                 }
 
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                if (chromeAlpha > 0f) Surface(
+                    modifier = Modifier.alpha(chromeAlpha).align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
                     shape = RoundedCornerShape(22.dp),
                     color = Color.Black.copy(alpha = .62f)
                 ) {
@@ -352,8 +355,10 @@ fun FullscreenSvgViewer(model: Any, name: String, onDismiss: () -> Unit) {
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         HiddenSystemBars()
+        val chrome = rememberFadingChrome()
+        val chromeAlpha = chrome.alpha
         Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-            Box(Modifier.fillMaxSize().background(Color.Black)) {
+            Box(Modifier.fillMaxSize().background(Color.Black).chromeTaps(chrome)) {
                 AsyncImage(
                     model = model,
                     contentDescription = name,
@@ -384,8 +389,8 @@ fun FullscreenSvgViewer(model: Any, name: String, onDismiss: () -> Unit) {
                         }
                 )
 
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                if (chromeAlpha > 0f) Surface(
+                    modifier = Modifier.alpha(chromeAlpha).align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
                     shape = RoundedCornerShape(18.dp),
                     color = Color.Black.copy(alpha = .58f)
                 ) {
@@ -394,8 +399,8 @@ fun FullscreenSvgViewer(model: Any, name: String, onDismiss: () -> Unit) {
                     }
                 }
 
-                Surface(
-                    modifier = Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
+                if (chromeAlpha > 0f) Surface(
+                    modifier = Modifier.alpha(chromeAlpha).align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
                     shape = RoundedCornerShape(22.dp),
                     color = Color.Black.copy(alpha = .62f)
                 ) {

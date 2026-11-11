@@ -200,7 +200,9 @@ private fun DocumentView(
     // krzyżyk zamknięcia stał na pasku obok pomiaru i zamykał cały plik.
     val inTool = state.placement != Placement.NONE || state.searchOpen
     fun leaveTool() {
-        if (state.placement != Placement.NONE) {
+        if (state.pickingGuide != null) {
+            state.pickingGuide = null
+        } else if (state.placement != Placement.NONE) {
             state.placement = Placement.NONE
             state.firstPoint = null
         } else {
@@ -259,8 +261,10 @@ private fun DocumentView(
     fun insetTop(): Float = if (state.placement != Placement.NONE && immersive) toolbarHeight.toFloat() else 0f
     fun insetBottom(): Float = if (state.placement != Placement.NONE) panelHeight.toFloat() else 0f
 
+    fun maxZoom(): Float = layout?.maxZoom() ?: MAX_ZOOM
+
     fun settled(next: SheetView): SheetView =
-        layout?.let { next.clamped(it, viewSize.height.toFloat(), MAX_ZOOM, insetTop(), insetBottom()) } ?: next
+        layout?.let { next.clamped(it, viewSize.height.toFloat(), maxZoom(), insetTop(), insetBottom()) } ?: next
 
     // Po obrocie na środku ekranu zostaje to samo miejsce dokumentu. Lewy
     // górny róg byłby złą kotwicą: w poziomie widać zupełnie inny wycinek.
@@ -301,7 +305,7 @@ private fun DocumentView(
     fun minZoom(): Float = layout?.minZoom(viewSize.height.toFloat()) ?: 1f
 
     fun zoomBy(factor: Float, focus: Offset = Offset(viewSize.width / 2f, viewSize.height / 2f)) =
-        animateTo { state.view.zoomedAround(factor, focus.x, focus.y, MAX_ZOOM, minZoom()) }
+        animateTo { state.view.zoomedAround(factor, focus.x, focus.y, maxZoom(), minZoom()) }
 
     fun showPage(index: Int) {
         val current = layout ?: return
@@ -333,7 +337,7 @@ private fun DocumentView(
         val px = current.margin + rect.centerX() * s
         val py = current.tops[page] + rect.centerY() * s
         val height = (rect.height() * s).coerceAtLeast(1f)
-        val wanted = (targetPixels / height).coerceIn(1f, MAX_ZOOM)
+        val wanted = (targetPixels / height).coerceIn(1f, maxZoom())
         val zoom = if (onlyCloser) maxOf(state.view.zoom, wanted) else wanted
         animateTo { SheetView().centeredOn(px, py, zoom, viewSize.width.toFloat(), viewSize.height.toFloat()) }
     }
@@ -450,8 +454,21 @@ private fun DocumentView(
     // Celownik startuje pośrodku; po wyjściu z pomiaru dokument wraca spod
     // pasów, w które mógł wyjechać, gdy narzędzia go zasłaniały.
     LaunchedEffect(state.placement) {
+        if (state.placement != Placement.MEASURE) state.pickingGuide = null
         if (state.placement != Placement.NONE) state.aim = Offset(0.5f, 0.5f)
         else animateTo { state.view }
+    }
+
+    /** Linia pod celownikiem przy wskazywaniu odniesienia prowadnicy: strona i odcinek. */
+    val pickLine by remember {
+        derivedStateOf {
+            if (state.placement != Placement.MEASURE || state.pickingGuide == null) return@derivedStateOf null
+            val p = projection() ?: return@derivedStateOf null
+            val aim = aimPx()
+            val (page, ux, uy) = p.toPage(aim.x, aim.y)
+            val radius = with(density) { SNAP_RADIUS.toPx() } * p.unitsPerPixel(page)
+            state.geometries[page]?.nearestSegment(ux, uy, radius, state.edgesOnly)?.let { page to it }
+        }
     }
 
     /** Strona i punkt pod celownikiem, przyciągnięty do linii. */
@@ -464,8 +481,22 @@ private fun DocumentView(
             val geometry = state.geometries[page]
             val first = state.firstPoint?.takeIf { it.page == page }?.snap
             val radius = with(density) { SNAP_RADIUS.toPx() } * p.unitsPerPixel(page)
-            val snap = if (geometry != null && state.snapping && state.placement == Placement.MEASURE) {
-                geometry.snap(ux, uy, radius, first, state.axisLock && first != null)
+            val measuring = state.placement == Placement.MEASURE
+            val guide = state.guide?.takeIf { it.page == page }
+            val snap = if (measuring && state.pickingGuide != null) {
+                // Celownik pokazuje linię, która zostanie odniesieniem.
+                val line = pickLine?.takeIf { it.first == page }?.second
+                if (line != null) {
+                    val (nx, ny) = SnapGeometry.nearestOnSegment(ux, uy, line[0], line[1], line[2], line[3])
+                    SnapResult(nx, ny, SnapKind.NEAREST)
+                } else {
+                    SnapResult(ux, uy, SnapKind.NONE)
+                }
+            } else if (measuring && first != null && guide != null) {
+                (geometry?.takeIf { state.snapping } ?: SnapGeometry.EMPTY)
+                    .snapOnLine(ux, uy, radius, first, guide.directionX, guide.directionY, state.edgesOnly)
+            } else if (geometry != null && state.snapping && measuring) {
+                geometry.snap(ux, uy, radius, first, state.axisLock && first != null, state.edgesOnly)
             } else if (first != null && state.axisLock && state.placement == Placement.MEASURE) {
                 SnapGeometry.EMPTY.snap(ux, uy, radius, first, axisLock = true)
             } else {
@@ -502,6 +533,18 @@ private fun DocumentView(
     }
 
     fun placePoint() {
+        val mode = state.pickingGuide
+        if (mode != null) {
+            val picked = pickLine
+            if (picked == null) {
+                state.message = context.getString(R.string.viewer_no_line_here)
+                return
+            }
+            state.guide = Guide(picked.first, mode, picked.second)
+            state.pickingGuide = null
+            state.axisLock = false
+            return
+        }
         val point = cursor ?: return
         val first = state.firstPoint
         if (first == null) {
@@ -544,6 +587,7 @@ private fun DocumentView(
             currentPage = currentPage,
             pageCount = pageCount,
             zoomPercent = zoomPercent,
+            maxZoomPercent = (maxZoom() * 100).roundToInt(),
             minZoomPercent = (minZoom() * 100).roundToInt(),
             commentCount = comments.size,
             hasLayers = layers.isNotEmpty(),
@@ -643,7 +687,7 @@ private fun DocumentView(
                                     // inaczej punkt pod nim uciekałby przy każdym geście.
                                     val focus = if (state.placement != Placement.NONE) aimPx() else centroid
                                     state.view = settled(
-                                        state.view.zoomedAround(zoom, focus.x, focus.y, MAX_ZOOM, minZoom())
+                                        state.view.zoomedAround(zoom, focus.x, focus.y, maxZoom(), minZoom())
                                             .panned(pan.x, pan.y)
                                     )
                                     event.changes.forEach { it.consume() }
@@ -771,7 +815,7 @@ private fun DocumentView(
                 }
                 drawCommentMarks(p, comments, state.selectedComment, first..last)
                 drawMeasurements(p, state, first..last, overlay)
-                if (state.placement != Placement.NONE) drawCursor(p, state, cursor, aimPx(), overlay)
+                if (state.placement != Placement.NONE) drawCursor(p, state, cursor, pickLine, aimPx(), overlay)
             }
             if (state.bases[currentPage - 1] == null) {
                 CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -1022,8 +1066,11 @@ internal fun HiddenSystemBars() {
     }
 }
 
-/** Największe powiększenie. Ostrość nie zależy od niego — wycinek ma rozdzielczość ekranu. */
-internal const val MAX_ZOOM = 64f
+/**
+ * Największe powiększenie. Ostrość nie zależy od niego — wycinek ma rozdzielczość
+ * ekranu. Długi dokument dostaje mniejsze, zob. [SheetLayout.maxZoom].
+ */
+internal const val MAX_ZOOM = 1024f
 internal const val ZOOM_STEP = 1.5f
 private const val DOUBLE_TAP_MS = 280L
 

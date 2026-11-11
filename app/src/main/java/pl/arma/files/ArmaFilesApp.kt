@@ -63,7 +63,7 @@ class ArmaFilesApp : Application() {
         cacheJanitor.applyDwgLimit()
         cacheJanitor.trimAsync()
         // Kopie offline doganiają serwer przy każdym starcie — tylko przez Wi-Fi.
-        offline.syncAll(automatic = true)
+        offline.catchUp()
         OfflineSyncWorker.schedule(this, offline.intervalMinutes, offline.wifiOnly)
         // Także po to, żeby ręcznie zbudowany indeks zapisał czas i zajętość.
         indexAutomation.checkOnStartup()

@@ -160,4 +160,10 @@
     <string name="viewer_audio_error">Înregistrarea nu poate fi redată (%1$s)</string>
     <string name="viewer_text_formatted">Vizualizare formatată</string>
     <string name="viewer_text_source">Sursă</string>
+    <string name="viewer_edges_only">Muchii</string>
+    <string name="viewer_guide_parallel">∥ Paralel</string>
+    <string name="viewer_guide_perpendicular">⊥ Perpendicular</string>
+    <string name="viewer_pick_line">Alege linia</string>
+    <string name="viewer_aim_reference_line">Țintește cu cătarea linia de referință</string>
+    <string name="viewer_no_line_here">Nicio linie sub cătare</string>
 </resources>

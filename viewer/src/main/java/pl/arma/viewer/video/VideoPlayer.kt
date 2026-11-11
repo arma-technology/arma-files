@@ -177,6 +177,12 @@ fun FullscreenVideoPlayer(
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         HiddenSystemBars()
+        // Po otwarciu przyciski znikają najpóźniej po dwóch sekundach, także gdy
+        // film z serwera jeszcze się wczytuje — chyba że ktoś ich właśnie dotyka.
+        LaunchedEffect(Unit) {
+            delay(CONTROLS_TIMEOUT_MS - CONTROLS_FADE_MS)
+            if (touchedAt == 0L && !touching && error == null) view[0]?.hideController()
+        }
         LaunchedEffect(controls, playing, touching, touchedAt) {
             if (controls && playing && !touching) {
                 delay(CONTROLS_TIMEOUT_MS)
@@ -257,7 +263,9 @@ fun FullscreenVideoPlayer(
     }
 }
 
-private const val CONTROLS_TIMEOUT_MS = 3_000L
+private const val CONTROLS_TIMEOUT_MS = 2_000L
+/** Zanikanie paska z nazwą; odliczamy je, żeby po dwóch sekundach nie było już nic. */
+private const val CONTROLS_FADE_MS = 300L
 
 /**
  * Miejsce, na którym przerwano film. Krótkie fragmenty na początku i końcu

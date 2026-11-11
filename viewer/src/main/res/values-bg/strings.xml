@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Записът не може да се възпроизведе (%1$s)</string>
     <string name="viewer_text_formatted">Форматиран изглед</string>
     <string name="viewer_text_source">Източник</string>
+    <string name="viewer_edges_only">Ръбове</string>
+    <string name="viewer_guide_parallel">∥ Успоредно</string>
+    <string name="viewer_guide_perpendicular">⊥ Перпендикулярно</string>
+    <string name="viewer_pick_line">Избери линия</string>
+    <string name="viewer_aim_reference_line">Насочете мерника към опорната линия</string>
+    <string name="viewer_no_line_here">Под мерника няма линия</string>
 </resources>

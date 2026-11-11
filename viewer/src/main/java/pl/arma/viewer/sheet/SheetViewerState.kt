@@ -30,6 +30,18 @@ internal data class PagePoint(val page: Int, val snap: SnapResult)
 
 internal enum class Placement { NONE, MEASURE, COMMENT }
 
+internal enum class GuideMode { PARALLEL, PERPENDICULAR }
+
+/**
+ * Prowadnica drugiego punktu pomiaru: prosta przez pierwszy punkt, równoległa
+ * albo prostopadła do wskazanej linii rysunku ([line] to x1, y1, x2, y2
+ * w jednostkach strony).
+ */
+internal class Guide(val page: Int, val mode: GuideMode, val line: FloatArray) {
+    val directionX: Float get() = if (mode == GuideMode.PARALLEL) line[2] - line[0] else -(line[3] - line[1])
+    val directionY: Float get() = if (mode == GuideMode.PARALLEL) line[3] - line[1] else line[2] - line[0]
+}
+
 /**
  * Stan przeglądarki: otwarty dokument, widok, wyrenderowane strony,
  * wyszukiwanie i pomiary.
@@ -70,6 +82,11 @@ class SheetViewerState internal constructor() {
     internal var firstPoint by mutableStateOf<PagePoint?>(null)
     internal var axisLock by mutableStateOf(false)
     internal var snapping by mutableStateOf(true)
+    /** Przyciąganie pomija kreskowania — celownik łapie krawędzie kształtów. */
+    internal var edgesOnly by mutableStateOf(false)
+    internal var guide by mutableStateOf<Guide?>(null)
+    /** Następne naciśnięcie przycisku punktu wskazuje linię odniesienia prowadnicy. */
+    internal var pickingGuide by mutableStateOf<GuideMode?>(null)
     /**
      * Celownik jako ułamek szerokości i wysokości obszaru dokumentu — po
      * obrocie zostaje w tym samym miejscu ekranu, choć zmienia się jego rozmiar.

@@ -161,4 +161,10 @@
     <string name="viewer_audio_error">Не вдається відтворити запис (%1$s)</string>
     <string name="viewer_text_formatted">Форматований вигляд</string>
     <string name="viewer_text_source">Джерело</string>
+    <string name="viewer_edges_only">Краї</string>
+    <string name="viewer_guide_parallel">∥ Паралельно</string>
+    <string name="viewer_guide_perpendicular">⊥ Перпендикулярно</string>
+    <string name="viewer_pick_line">Вибрати лінію</string>
+    <string name="viewer_aim_reference_line">Наведіть приціл на опорну лінію</string>
+    <string name="viewer_no_line_here">Під прицілом немає лінії</string>
 </resources>

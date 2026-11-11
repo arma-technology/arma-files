@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Regjistrimi nuk mund të luhet (%1$s)</string>
     <string name="viewer_text_formatted">Pamje e formatuar</string>
     <string name="viewer_text_source">Burimi</string>
+    <string name="viewer_edges_only">Skajet</string>
+    <string name="viewer_guide_parallel">∥ Paralel</string>
+    <string name="viewer_guide_perpendicular">⊥ Pingul</string>
+    <string name="viewer_pick_line">Zgjidh vijën</string>
+    <string name="viewer_aim_reference_line">Vendos shënjestrën te vija e referencës</string>
+    <string name="viewer_no_line_here">Nuk ka vijë nën shënjestër</string>
 </resources>

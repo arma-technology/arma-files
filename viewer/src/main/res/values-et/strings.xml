@@ -159,4 +159,10 @@
     <string name="viewer_audio_error">Salvestist ei saa esitada (%1$s)</string>
     <string name="viewer_text_formatted">Vormindatud vaade</string>
     <string name="viewer_text_source">Lähtetekst</string>
+    <string name="viewer_edges_only">Servad</string>
+    <string name="viewer_guide_parallel">∥ Paralleelselt</string>
+    <string name="viewer_guide_perpendicular">⊥ Risti</string>
+    <string name="viewer_pick_line">Vali joon</string>
+    <string name="viewer_aim_reference_line">Suunake sihik tugijoonele</string>
+    <string name="viewer_no_line_here">Sihiku all pole joont</string>
 </resources>
