@@ -1,0 +1,5 @@
+• Measure: parallel and perpendicular guides to a picked line
+• Measure: “Edges” — snapping skips hatching
+• PDF and CAD: zoom up to 1024×
+• More reliable offline sync
+• Video and photo controls hide after 2 s

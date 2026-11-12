@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.12.0
+
+- Pomiar: prowadnice „∥ Równolegle” i „⊥ Prostopadle” — wskazujesz linię
+  rysunku, a drugi punkt jedzie po prostej równoległej albo prostopadłej do niej;
+  przełącznik „Oś” zmienia się wtedy w „Prowadnica”
+- Pomiar: przełącznik „Krawędzie” — przyciąganie pomija kreskowania narysowane
+  zwykłymi liniami i łapie krawędzie kształtów
+- PDF i CAD: powiększenie do 1024× (długie dokumenty wielostronicowe mniej)
+- Offline: wpis czeka na swoją kolej zamiast kończyć się błędem „Poprzednia
+  synchronizacja jeszcze trwa”; pojedynczy plik, którego nie da się
+  zsynchronizować, nie zatrzymuje reszty folderu; kopie doganiają serwer przy
+  każdym wejściu do aplikacji i po zmianie sieci
+- Film i zdjęcie na całym ekranie: przyciski znikają najpóźniej 2 s po otwarciu,
+  stuknięcie przywraca je na zdjęciu
+
 ## 0.11.2
 
 - „Postaw nam kawę”: link do wsparcia projektu na Ko-fi w Ustawienia → O aplikacji

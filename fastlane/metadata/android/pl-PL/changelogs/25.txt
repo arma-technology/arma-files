@@ -1,0 +1,5 @@
+• Pomiar: prowadnice równoległa i prostopadła do wskazanej linii
+• Pomiar: „Krawędzie” — przyciąganie pomija kreskowania
+• PDF i CAD: powiększenie do 1024×
+• Pewniejsza synchronizacja offline
+• Przyciski filmu i zdjęcia znikają po 2 s
