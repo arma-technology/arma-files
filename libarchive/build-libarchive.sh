@@ -4,17 +4,19 @@
 # RAR5, ISO 9660, CAB, LHA, XAR. Kompresja zlib z NDK, bez OpenSSL i iconv.
 set -eu
 VERSION=3.8.9
+SHA256=888c934f9d95648ecb9163dc8e23ab80a476ecb81a8f1154704a227b5b676dde
 NDK=${ANDROID_NDK:-$HOME/Android/Sdk/ndk/28.2.13676358}
 CMAKE=${CMAKE:-$HOME/Android/Sdk/cmake/3.31.6/bin/cmake}
 WORK=${WORK:-$(mktemp -d)}
 HERE=$(cd "$(dirname "$0")" && pwd)
 cd "$WORK"
-curl -sLO https://github.com/libarchive/libarchive/releases/download/v$VERSION/libarchive-$VERSION.tar.xz
+curl -fsSLO https://github.com/libarchive/libarchive/releases/download/v$VERSION/libarchive-$VERSION.tar.xz
+echo "$SHA256  libarchive-$VERSION.tar.xz" | sha256sum -c -
 tar xf libarchive-$VERSION.tar.xz
 for abi in arm64-v8a x86_64; do
   rm -rf "build-$abi"
   "$CMAKE" -S libarchive-$VERSION -B "build-$abi" -G Ninja \
-    -DCMAKE_MAKE_PROGRAM="$(dirname "$CMAKE")/ninja" \
+    -DCMAKE_MAKE_PROGRAM="${NINJA:-$(dirname "$CMAKE")/ninja}" \
     -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
     -DANDROID_ABI=$abi -DANDROID_PLATFORM=android-26 -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_C_FLAGS="-fPIC -ffunction-sections -fdata-sections" \

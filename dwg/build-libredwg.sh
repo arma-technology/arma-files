@@ -4,12 +4,15 @@
 # czytały niektóre napisy poza ich końcem (śmieci w MTEXT).
 set -eu
 VERSION=${VERSION:-0.14.8612}
+# Suma źródeł domyślnej wersji; inna wersja podaje własną: SHA256=...
+SHA256=${SHA256:-8518443d9c5473c64ae8b90b7f380c45abebfb08a25b71145923020b2a66c4fe}
 NDK=${ANDROID_NDK:-$HOME/Android/Sdk/ndk/28.2.13676358}
 TC=$NDK/toolchains/llvm/prebuilt/linux-x86_64
 WORK=${WORK:-$(mktemp -d)}
 HERE=$(cd "$(dirname "$0")" && pwd)
 cd "$WORK"
-curl -sLO "https://github.com/LibreDWG/libredwg/releases/download/$VERSION/libredwg-$VERSION.tar.xz"
+curl -fsSLO "https://github.com/LibreDWG/libredwg/releases/download/$VERSION/libredwg-$VERSION.tar.xz"
+echo "$SHA256  libredwg-$VERSION.tar.xz" | sha256sum -c -
 tar xf "libredwg-$VERSION.tar.xz"
 SRC="$WORK/libredwg-$VERSION"
 for pair in aarch64:arm64-v8a x86_64:x86_64; do
